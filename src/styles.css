@@ -1,0 +1,245 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light blue, light pink, white */
+    --background: 210 45% 98%;
+    --foreground: 222 35% 18%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 35% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 35% 18%;
+
+    --primary: 200 75% 72%;
+    --primary-foreground: 222 40% 22%;
+
+    --secondary: 330 35% 96%;
+    --secondary-foreground: 222 35% 22%;
+
+    --muted: 210 35% 94%;
+    --muted-foreground: 215 18% 42%;
+
+    --accent: 330 45% 94%;
+    --accent-foreground: 330 30% 32%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 35% 90%;
+    --input: 210 30% 92%;
+    --ring: 200 60% 75%;
+
+    --radius: 0.75rem;
+
+    --error-bg: 254 242 242;
+    --error-text: 31 41 55;
+    --error-border: 254 202 202;
+    --error-button: 239 68 68;
+    --error-button-hover: 220 38 38;
+
+    --success-bg: 240 253 244;
+    --success-text: 21 128 61;
+    --success-border: 220 252 231;
+    --success-button: 34 197 94;
+
+    --warning-bg: 254 251 235;
+    --warning-text: 161 98 7;
+    --warning-border: 253 230 138;
+    --warning-button: 245 158 11;
+
+    --info-bg: 236 254 255;
+    --info-text: 14 116 144;
+    --info-border: 165 243 252;
+    --info-button: 8 145 178;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (max-width: 640px) {
+    html {
+      font-size: 15px;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    html {
+      font-size: 17px;
+    }
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  ::selection {
+    @apply bg-pink-200/50 text-sky-950;
+  }
+}
+
+@layer components {
+  .card-base {
+    @apply border border-border/80 bg-card/90 shadow-sm backdrop-blur-sm;
+  }
+
+  .card-hover {
+    @apply transition-all duration-200 hover:border-primary/20 hover:shadow-md;
+  }
+
+  .card-interactive {
+    @apply cursor-pointer;
+  }
+
+  .btn-primary {
+    @apply rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition-colors hover:bg-primary/90;
+  }
+
+  .btn-secondary {
+    @apply rounded-lg bg-secondary px-4 py-2 font-semibold text-secondary-foreground transition-colors hover:bg-secondary/80;
+  }
+
+  .btn-danger {
+    @apply rounded-lg bg-destructive px-4 py-2 font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90;
+  }
+
+  .btn-outline {
+    @apply rounded-lg border border-input px-4 py-2 font-semibold text-foreground transition-colors hover:bg-muted;
+  }
+
+  .input-base {
+    @apply rounded-lg border border-input bg-card px-3 py-2 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30;
+  }
+
+  .input-error {
+    @apply border-destructive focus-visible:ring-destructive/30;
+  }
+
+  .input-disabled {
+    @apply cursor-not-allowed bg-muted text-muted-foreground;
+  }
+
+  .text-title {
+    @apply text-xl font-bold text-foreground;
+  }
+
+  .text-subtitle {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+
+  .text-body {
+    @apply text-sm text-foreground;
+  }
+
+  .text-muted {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .layout-container {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .layout-section {
+    @apply py-8 sm:py-12;
+  }
+
+  .theme-error-bg {
+    background-color: hsl(var(--error-bg));
+  }
+
+  .theme-error-text {
+    color: hsl(var(--error-text));
+  }
+
+  .theme-error-border {
+    border-color: hsl(var(--error-border));
+  }
+
+  .theme-success-bg {
+    background-color: hsl(var(--success-bg));
+  }
+
+  .theme-success-text {
+    color: hsl(var(--success-text));
+  }
+
+  .theme-success-border {
+    border-color: hsl(var(--success-border));
+  }
+
+  .theme-warning-bg {
+    background-color: hsl(var(--warning-bg));
+  }
+
+  .theme-warning-text {
+    color: hsl(var(--warning-text));
+  }
+
+  .theme-warning-border {
+    border-color: hsl(var(--warning-border));
+  }
+
+  .theme-info-bg {
+    background-color: hsl(var(--info-bg));
+  }
+
+  .theme-info-text {
+    color: hsl(var(--info-text));
+  }
+
+  .theme-info-border {
+    border-color: hsl(var(--info-border));
+  }
+}
+
+@layer utilities {
+  .animate-optimized {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --error-bg: 127 29 29;
+    --error-text: 254 242 242;
+    --error-border: 153 27 27;
+    --error-button: 220 38 38;
+    --error-button-hover: 239 68 68;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,111 @@
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { AuthenticationError, AuthorizationError } from '../utils/errors';
+import { logger } from '../utils/logger';
+
+export interface JwtPayload {
+  userId: number;
+  username: string;
+  role: 'admin' | 'user';
+  iat?: number;
+  exp?: number;
+}
+
+// Extend Express Request to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload;
+    }
+  }
+}
+
+/**
+ * Middleware that requires a valid JWT token.
+ * Attaches decoded payload to req.user.
+ */
+export const requireAuth = (req: Request, _res: Response, next: NextFunction): void => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new AuthenticationError('No authentication token provided');
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      logger.error('JWT_SECRET is not configured');
+      throw new AuthenticationError('Server authentication configuration error');
+    }
+
+    if (jwtSecret === 'CHANGE_ME_TO_A_STRONG_RANDOM_SECRET_MINIMUM_32_CHARACTERS') {
+      logger.error('JWT_SECRET is using the default placeholder value');
+      throw new AuthenticationError('Server authentication not properly configured');
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    req.user = decoded;
+    next();
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      next(error);
+    } else if (error instanceof jwt.TokenExpiredError) {
+      next(new AuthenticationError('Token has expired'));
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      next(new AuthenticationError('Invalid token'));
+    } else if (error instanceof jwt.NotBeforeError) {
+      next(new AuthenticationError('Token not active'));
+    } else {
+      logger.error('Unexpected authentication error:', error);
+      next(new AuthenticationError('Authentication failed'));
+    }
+  }
+};
+
+/**
+ * Middleware that optionally attaches user if token is present.
+ * Does NOT reject requests without a token.
+ */
+export const optionalAuth = (req: Request, _res: Response, next: NextFunction): void => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    req.user = decoded;
+    next();
+  } catch {
+    // Token invalid/expired — proceed without user
+    next();
+  }
+};
+
+/**
+ * Middleware factory that requires a specific role.
+ * Must be used AFTER requireAuth.
+ */
+export const requireRole = (...roles: Array<'admin' | 'user'>) => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      return next(new AuthenticationError('Authentication required'));
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AuthorizationError(`Role '${req.user.role}' does not have access to this resource`)
+      );
+    }
+
+    next();
+  };
+};

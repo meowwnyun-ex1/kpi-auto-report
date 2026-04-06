@@ -1,0 +1,1 @@
+{"watch": ["server"], "ext": "ts,json", "ignore": ["server/dist/*", "node_modules/*"], "exec": "tsx", "env": {"NODE_ENV": "development"}}
