@@ -16,8 +16,8 @@ const config: ServerConfig = {
       process.env.NODE_ENV === 'production'
         ? (process.env.CORS_ORIGINS_PROD?.split(',').map((origin) => origin.trim()) ?? [])
         : (process.env.CORS_ORIGINS_DEV?.split(',').map((origin) => origin.trim()) ?? [
-            `http://${process.env.SERVER_IP}:3006`,
-            `http://${process.env.SERVER_IP}:4006`,
+            `http://${process.env.SERVER_IP}:3007`,
+            `http://${process.env.SERVER_IP}:4007`,
           ]),
     credentials: true,
   },

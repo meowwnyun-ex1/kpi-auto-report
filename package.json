@@ -12,17 +12,17 @@
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=production node server/dist/api.js",
     "start:prod": "cross-env NODE_ENV=production node server/dist/api.js",
-    "preview:prod": "cross-env NODE_ENV=production vite preview --port 3006",
+    "preview:prod": "cross-env NODE_ENV=production vite preview --port 3007",
     "deploy": "deploy.bat",
     "pm2:start": "cross-env NODE_ENV=production pm2 start ecosystem.config.cjs",
-    "pm2:stop": "pm2 stop app-store-api",
-    "pm2:restart": "pm2 restart app-store-api",
+    "pm2:stop": "pm2 stop kpi-auto-report-api",
+    "pm2:restart": "pm2 restart kpi-auto-report-api",
     "pm2:list": "pm2 list",
     "pm2:logs": "pm2 logs",
     "pm2:save": "pm2 save",
     "pm2:resurrect": "pm2 resurrect",
     "db:migrate": "tsx server/scripts/migrate.ts",
-    "api-docs": "echo \"\udcda API Documentation available at: http://localhost:3006/redoc\" && echo \"🌐 Alternative routes: /docs, /api-docs, /swagger, /status\" && pnpm dev:frontend"
+    "api-docs": "echo \"\udcda API Documentation available at: http://localhost:3007/redoc\" && echo \"\udc83 Alternative routes: /docs, /api-docs, /swagger, /status\" && pnpm dev:frontend"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

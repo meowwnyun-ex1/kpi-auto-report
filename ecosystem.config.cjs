@@ -2,7 +2,7 @@
 const config = {
   apps: [
     {
-      name: 'app-store-api',
+      name: 'kpi-auto-report-api',
       script: 'server/dist/api.js',
       interpreter: 'node',
       // Cluster mode - 2 instances for zero-downtime deployment
@@ -21,11 +21,11 @@ const config = {
       listen_timeout: 10000,
       env: {
         NODE_ENV: 'production',
-        API_PORT: 4006,
+        API_PORT: 4007,
       },
       env_development: {
         NODE_ENV: 'development',
-        API_PORT: 4006,
+        API_PORT: 4007,
       },
       error_file: 'logs/pm2-error.log',
       out_file: 'logs/pm2-out.log',

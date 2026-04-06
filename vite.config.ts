@@ -14,12 +14,12 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: parseInt(process.env.FRONTEND_PORT || '3006'),
+      port: parseInt(process.env.FRONTEND_PORT || '3007'),
       host: true,
       open: false,
       proxy: {
         '/api': {
-          target: `${process.env.API_URL || `http://${process.env.SERVER_IP || 'localhost'}:${process.env.API_PORT || '4006'}`}`,
+          target: `${process.env.API_URL || `http://${process.env.SERVER_IP || 'localhost'}:${process.env.API_PORT || '4007'}`}`,
           changeOrigin: true,
           secure: false,
         },
