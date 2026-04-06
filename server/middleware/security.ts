@@ -1,14 +1,11 @@
-import DOMPurify from 'isomorphic-dompurify';
 import validator from 'validator';
 import { Request, Response, NextFunction } from 'express';
 
-// Sanitize HTML content to prevent XSS
+// Sanitize HTML content to prevent XSS (simplified for KPI - no rich text needed)
 export const sanitizeHtml = (content: string): string => {
   if (!content || typeof content !== 'string') return '';
-  return DOMPurify.sanitize(content, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'br', 'ul', 'ol', 'li'],
-    ALLOWED_ATTR: [],
-  });
+  // KPI system doesn't need rich HTML - just escape all HTML
+  return validator.escape(content);
 };
 
 // Sanitize string input
