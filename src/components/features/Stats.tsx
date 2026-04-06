@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getApiUrl } from '@/config/api';
-import { Package, Eye, Clock } from 'lucide-react';
+import { Target, TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface StatsData {
-  totalApps: number;
-  totalViews: number;
-  pendingApps: number;
+  totalMetrics: number;
+  achievedMetrics: number;
+  warningMetrics: number;
+  criticalMetrics: number;
 }
 
 export function StatsWidget() {
@@ -38,9 +39,10 @@ export function StatsWidget() {
 
       if (mountedRef.current) {
         setStats({
-          totalApps: data.totalApps ?? 0,
-          totalViews: data.totalViews ?? 0,
-          pendingApps: data.pendingApps ?? 0,
+          totalMetrics: data.totalMetrics ?? 0,
+          achievedMetrics: data.achievedMetrics ?? 0,
+          warningMetrics: data.warningMetrics ?? 0,
+          criticalMetrics: data.criticalMetrics ?? 0,
         });
         setLoading(false);
         retryCountRef.current = 0;
@@ -90,7 +92,7 @@ export function StatsWidget() {
 
   // Build items based on role
   const items: Array<{
-    icon: typeof Package;
+    icon: typeof Target;
     value: number;
     label: string;
     color: string;
@@ -98,32 +100,40 @@ export function StatsWidget() {
     border: string;
   }> = [
     {
-      icon: Package,
-      value: stats?.totalApps ?? 0,
-      label: 'Apps',
+      icon: Target,
+      value: stats?.totalMetrics ?? 0,
+      label: 'Metrics',
       color: 'text-sky-800',
       bg: 'bg-sky-50/95',
       border: 'border-sky-300/90',
     },
     {
-      icon: Eye,
-      value: stats?.totalViews ?? 0,
-      label: 'Views',
-      color: 'text-pink-800',
-      bg: 'bg-pink-50/95',
-      border: 'border-pink-300/90',
+      icon: TrendingUp,
+      value: stats?.achievedMetrics ?? 0,
+      label: 'Achieved',
+      color: 'text-green-800',
+      bg: 'bg-green-50/95',
+      border: 'border-green-300/90',
     },
   ];
 
-  // Only show Pending count for admin users
+  // Only show Warning and Critical for admin users
   if (isAdmin) {
     items.push({
-      icon: Clock,
-      value: stats?.pendingApps ?? 0,
-      label: 'Pending',
+      icon: AlertTriangle,
+      value: stats?.warningMetrics ?? 0,
+      label: 'Warning',
       color: 'text-yellow-700',
       bg: 'bg-yellow-50/95',
       border: 'border-yellow-300/90',
+    });
+    items.push({
+      icon: AlertTriangle,
+      value: stats?.criticalMetrics ?? 0,
+      label: 'Critical',
+      color: 'text-red-700',
+      bg: 'bg-red-50/95',
+      border: 'border-red-300/90',
     });
   }
 

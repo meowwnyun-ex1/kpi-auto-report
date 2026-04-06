@@ -12,14 +12,11 @@ import { logger } from './utils/logger';
 import { AppError, ValidationError as AppValidationError, NotFoundError } from './utils/errors';
 
 // Import routes
-import appsRoutes from './routes/apps';
 import authRoutes from './routes/auth';
-import categoriesRoutes from './routes/categories';
 import statsRoutes from './routes/stats';
 // import visitorTrackingRoutes from './routes/visitor-tracking'; // Temporarily disabled
-import bannersRoutes from './routes/banners';
-import tripsRoutes from './routes/trips';
-import filesRoutes from './routes/files';
+// KPI routes will be added here
+// import kpiRoutes from './routes/kpi';
 
 const app = express();
 const PORT = parseInt(process.env.API_PORT!);
@@ -119,8 +116,8 @@ const writeRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api/apps', writeRateLimit);
-app.use('/api/categories', writeRateLimit);
+// KPI write rate limit will be added here
+// app.use('/api/kpi', writeRateLimit);
 
 // ============================================
 // Body Parsing (MUST be before sanitization)
@@ -203,13 +200,10 @@ app.get('/api/health', async (_req, res) => {
 // ============================================
 // API Routes
 // ============================================
-app.use('/api/apps', appsRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/categories', categoriesRoutes);
 app.use('/api/stats', statsRoutes);
-app.use('/api/banners', bannersRoutes);
-app.use('/api/trips', tripsRoutes);
-app.use('/api/files', filesRoutes);
+// KPI routes will be added here
+// app.use('/api/kpi', kpiRoutes);
 // app.use('/api/visitor-tracking', visitorTrackingRoutes); // Temporarily disabled
 
 // ============================================
