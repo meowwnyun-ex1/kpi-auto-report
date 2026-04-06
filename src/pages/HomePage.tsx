@@ -208,7 +208,7 @@ export default function HomePage() {
                   <Card
                     key={config.key}
                     className="hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                    onClick={() => navigate(`/${config.key}/dashboard`)}>
+                    onClick={() => navigate(`/${config.key}`)}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div
@@ -264,21 +264,10 @@ export default function HomePage() {
                               className="flex-1 gap-1 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/${config.key}/dashboard`);
+                                navigate(`/${config.key}`);
                               }}>
                               <BarChart3 className="h-3 w-3" />
-                              Dashboard
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 gap-1 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/${config.key}/entry`);
-                              }}>
-                              <ClipboardList className="h-3 w-3" />
-                              กรอกข้อมูล
+                              ดูรายละเอียด
                             </Button>
                           </div>
                         </>

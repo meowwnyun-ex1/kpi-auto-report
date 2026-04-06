@@ -1,12 +1,13 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoadingProvider, useInitialLoading } from './contexts/LoadingContext';
 import { RefreshProvider } from './contexts/RefreshContext';
 import { ErrorBoundary } from './components/features/ErrorBoundary';
 import { Toaster } from './components/ui/toaster';
 import { UnifiedError } from './components/ui/unified-error';
 import { HomePage, LoginPage } from './pages';
+import { MainDashboard } from './pages/dashboard';
 import { KPIDashboard, KPIDataEntry, KPIDepartment } from './pages/kpi';
 import InitialLoading from './components/ui/initial-loading';
 import { ShellLayout } from '@/features/shell';
@@ -24,6 +25,21 @@ const KPI_CATEGORIES = [
   'cost',
 ];
 
+// Protected Route Component - Manager/Admin only
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
+
+  const isManagerOrAdmin =
+    isAuthenticated &&
+    (user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'manager');
+
+  if (!isManagerOrAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const AppContent: React.FC = () => {
   const { isLoading: isInitialLoading } = useInitialLoading();
 
@@ -39,12 +55,28 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/index" element={<HomePage />} />
 
-          {/* KPI Routes - Dynamic for all categories */}
+          {/* Main KPI Dashboard - Accessible by all users */}
+          <Route path="/dashboard" element={<MainDashboard />} />
+
+          {/* KPI Routes - Data Entry protected for Manager/Admin */}
           {KPI_CATEGORIES.map((category) => (
             <React.Fragment key={category}>
-              <Route path={`/${category}/dashboard`} element={<KPIDashboard />} />
-              <Route path={`/${category}/entry`} element={<KPIDataEntry />} />
-              <Route path={`/${category}/dept`} element={<KPIDepartment />} />
+              <Route
+                path={`/${category}/entry`}
+                element={
+                  <ProtectedRoute>
+                    <KPIDataEntry />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path={`/${category}/dept`}
+                element={
+                  <ProtectedRoute>
+                    <KPIDepartment />
+                  </ProtectedRoute>
+                }
+              />
               <Route path={`/${category}`} element={<KPIDashboard />} />
             </React.Fragment>
           ))}

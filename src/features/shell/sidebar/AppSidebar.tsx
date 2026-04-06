@@ -19,6 +19,8 @@ import {
   ChevronDown,
   ChevronRight,
   Building2,
+  LayoutDashboard,
+  Lock,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -51,14 +53,13 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// KPI Categories
-const KPI_CATEGORIES: NavItem[] = [
+// KPI Categories - Data Entry only (Manager/Admin access)
+const KPI_DATA_ENTRY: NavItem[] = [
   {
     title: 'Safety',
     url: '/safety',
     icon: Shield,
     children: [
-      { title: 'Dashboard', url: '/safety/dashboard', icon: BarChart3 },
       { title: 'Data Entry', url: '/safety/entry', icon: ClipboardList },
       { title: 'By Department', url: '/safety/dept', icon: Building2 },
     ],
@@ -68,7 +69,6 @@ const KPI_CATEGORIES: NavItem[] = [
     url: '/quality',
     icon: Award,
     children: [
-      { title: 'Dashboard', url: '/quality/dashboard', icon: BarChart3 },
       { title: 'Data Entry', url: '/quality/entry', icon: ClipboardList },
       { title: 'By Department', url: '/quality/dept', icon: Building2 },
     ],
@@ -78,7 +78,6 @@ const KPI_CATEGORIES: NavItem[] = [
     url: '/delivery',
     icon: Truck,
     children: [
-      { title: 'Dashboard', url: '/delivery/dashboard', icon: BarChart3 },
       { title: 'Data Entry', url: '/delivery/entry', icon: ClipboardList },
       { title: 'By Department', url: '/delivery/dept', icon: Building2 },
     ],
@@ -88,7 +87,6 @@ const KPI_CATEGORIES: NavItem[] = [
     url: '/compliance',
     icon: FileCheck,
     children: [
-      { title: 'Dashboard', url: '/compliance/dashboard', icon: BarChart3 },
       { title: 'Data Entry', url: '/compliance/entry', icon: ClipboardList },
       { title: 'By Department', url: '/compliance/dept', icon: Building2 },
     ],
@@ -98,7 +96,6 @@ const KPI_CATEGORIES: NavItem[] = [
     url: '/hr',
     icon: Users,
     children: [
-      { title: 'Dashboard', url: '/hr/dashboard', icon: BarChart3 },
       { title: 'Data Entry', url: '/hr/entry', icon: ClipboardList },
       { title: 'By Department', url: '/hr/dept', icon: Building2 },
     ],
@@ -108,7 +105,6 @@ const KPI_CATEGORIES: NavItem[] = [
     url: '/attractive',
     icon: Star,
     children: [
-      { title: 'Dashboard', url: '/attractive/dashboard', icon: BarChart3 },
       { title: 'Data Entry', url: '/attractive/entry', icon: ClipboardList },
       { title: 'By Department', url: '/attractive/dept', icon: Building2 },
     ],
@@ -118,7 +114,6 @@ const KPI_CATEGORIES: NavItem[] = [
     url: '/environment',
     icon: Leaf,
     children: [
-      { title: 'Dashboard', url: '/environment/dashboard', icon: BarChart3 },
       { title: 'Data Entry', url: '/environment/entry', icon: ClipboardList },
       { title: 'By Department', url: '/environment/dept', icon: Building2 },
     ],
@@ -128,7 +123,6 @@ const KPI_CATEGORIES: NavItem[] = [
     url: '/cost',
     icon: DollarSign,
     children: [
-      { title: 'Dashboard', url: '/cost/dashboard', icon: BarChart3 },
       { title: 'Data Entry', url: '/cost/entry', icon: ClipboardList },
       { title: 'By Department', url: '/cost/dept', icon: Building2 },
     ],
@@ -156,6 +150,11 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [openCategories, setOpenCategories] = React.useState<string[]>([]);
+
+  // Check if user has Manager or Admin role
+  const isManagerOrAdmin =
+    isAuthenticated &&
+    (user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'manager');
 
   const isAdminRole =
     (isAuthenticated && user?.role === 'admin') || (isAuthenticated && user?.role === 'superadmin');
@@ -205,7 +204,7 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <SidebarContent className="bg-white px-3 py-4 overflow-y-auto">
-        {/* Home Menu */}
+        {/* Dashboard Menu - Main overview for all users */}
         <SidebarGroup>
           <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase">
             Menu
@@ -232,75 +231,99 @@ export function AppSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={location.pathname === '/dashboard'}
+                className={cn(
+                  'w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                  location.pathname === '/dashboard'
+                    ? 'bg-sky-50 text-sky-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                )}>
+                <Link to="/dashboard" className="flex items-center gap-3">
+                  <LayoutDashboard
+                    className={cn(
+                      'h-5 w-5',
+                      location.pathname === '/dashboard' ? 'text-sky-600' : 'text-gray-400'
+                    )}
+                  />
+                  <span>KPI Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
 
-        {/* KPI Categories */}
-        <SidebarGroup className="mt-2">
-          <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase">
-            KPI Categories
-          </SidebarGroupLabel>
-          <SidebarMenu className="space-y-1">
-            {KPI_CATEGORIES.map((category) => {
-              const isActive = isPathActive(location.pathname, category.url);
-              const isOpen = openCategories.includes(category.url);
+        {/* KPI Categories - Data Entry (Manager/Admin only) */}
+        {isManagerOrAdmin && (
+          <SidebarGroup className="mt-2">
+            <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase flex items-center gap-1">
+              <Lock className="h-3 w-3" />
+              KPI Data Entry
+            </SidebarGroupLabel>
+            <SidebarMenu className="space-y-1">
+              {KPI_DATA_ENTRY.map((category) => {
+                const isActive = isPathActive(location.pathname, category.url);
+                const isOpen = openCategories.includes(category.url);
 
-              return (
-                <Collapsible
-                  key={category.url}
-                  open={isOpen}
-                  onOpenChange={() => toggleCategory(category.url)}
-                  className="group/collapsible">
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className={cn(
-                          'w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                          isActive
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                        )}>
-                        <category.icon
-                          className={cn('h-5 w-5', isActive ? 'text-blue-600' : 'text-gray-400')}
-                        />
-                        <span className="flex-1">{category.title}</span>
-                        {isOpen ? (
-                          <ChevronDown className="h-4 w-4 text-gray-400" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        )}
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub className="ml-4 mt-1 space-y-1">
-                        {category.children?.map((child) => {
-                          const childActive = location.pathname === child.url;
-                          return (
-                            <SidebarMenuSubItem key={child.url}>
-                              <SidebarMenuSubButton
-                                asChild
-                                className={cn(
-                                  'w-full rounded-lg px-3 py-2 text-sm transition-colors',
-                                  childActive
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                )}>
-                                <Link to={child.url} className="flex items-center gap-2">
-                                  <child.icon className="h-4 w-4" />
-                                  <span>{child.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          );
-                        })}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              );
-            })}
-          </SidebarMenu>
-        </SidebarGroup>
+                return (
+                  <Collapsible
+                    key={category.url}
+                    open={isOpen}
+                    onOpenChange={() => toggleCategory(category.url)}
+                    className="group/collapsible">
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          className={cn(
+                            'w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                            isActive
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          )}>
+                          <category.icon
+                            className={cn('h-5 w-5', isActive ? 'text-blue-600' : 'text-gray-400')}
+                          />
+                          <span className="flex-1">{category.title}</span>
+                          {isOpen ? (
+                            <ChevronDown className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub className="ml-4 mt-1 space-y-1">
+                          {category.children?.map((child) => {
+                            const childActive = location.pathname === child.url;
+                            return (
+                              <SidebarMenuSubItem key={child.url}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  className={cn(
+                                    'w-full rounded-lg px-3 py-2 text-sm transition-colors',
+                                    childActive
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : 'text-gray-600 hover:bg-gray-50'
+                                  )}>
+                                  <Link to={child.url} className="flex items-center gap-2">
+                                    <child.icon className="h-4 w-4" />
+                                    <span>{child.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            );
+                          })}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
 
         {/* Admin Menu - Only for admins */}
         {isAdminRole && (
