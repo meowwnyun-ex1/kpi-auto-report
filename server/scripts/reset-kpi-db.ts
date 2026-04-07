@@ -8,12 +8,10 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.development') });
  * RESET KPI DATABASE
  * Creates only tables actually used in CRUD operations
  *
- * Server 76 (10.73.148.76) - READ-WRITE
+ * Server 76 (10.73.148.76) - ALL DATABASES
  * - kpi-db: Main KPI application database
  * - SPO_Dev: Department names
- *
- * Server 77 (10.73.148.77) - READ-ONLY (DO NOT MODIFY)
- * - CAS: Employee data for user creation
+ * - CAS_Dev: Employee data
  */
 
 const config = {

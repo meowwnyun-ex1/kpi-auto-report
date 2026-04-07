@@ -7,11 +7,10 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.development') });
 /**
  * Seed departments from SPO_Dev data
  *
- * Server 76 (10.73.148.76) - READ-WRITE
+ * Server 76 (10.73.148.76) - ALL DATABASES
  * - kpi-db: Main KPI application database (where departments are stored)
  * - SPO_Dev: Source of department names
- *
- * Server 77 (10.73.148.77) - READ-ONLY (DO NOT MODIFY)
+ * - CAS_Dev: Employee data
  *
  * Run: npx tsx server/scripts/seed-spo-departments.ts
  */

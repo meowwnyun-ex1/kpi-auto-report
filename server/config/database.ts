@@ -5,12 +5,10 @@ import { logger } from '../utils/logger';
 /**
  * Database Configuration
  *
- * Server 76 (10.73.148.76) - READ-WRITE
+ * Server 76 (10.73.148.76) - ALL DATABASES
  * - kpi-db: Main KPI application database
  * - SPO_Dev: Department names
- *
- * Server 77 (10.73.148.77) - READ-ONLY (DO NOT MODIFY)
- * - CAS: Employee data for user creation
+ * - CAS_Dev: Employee data
  */
 
 // KPI database (Server 76) - Main application database
@@ -40,10 +38,10 @@ const kpiConfig: sql.config = {
   },
 };
 
-// CAS database (Server 77) - READ-ONLY for employee data
+// CAS_Dev database (Server 76) - Employee data
 const casConfig: sql.config = {
-  server: process.env.CAS_DB_HOST || '10.73.148.77',
-  database: process.env.CAS_DB_NAME || 'CAS',
+  server: process.env.CAS_DB_HOST || '10.73.148.76',
+  database: process.env.CAS_DB_NAME || 'CAS_Dev',
   user: process.env.CAS_DB_USER || 'inn@admin',
   password: process.env.CAS_DB_PASSWORD || 'i@NN636195',
   port: parseInt(process.env.CAS_DB_PORT || '1433'),
@@ -54,7 +52,6 @@ const casConfig: sql.config = {
     connectionTimeout: 60000,
     requestTimeout: 60000,
     integratedSecurity: false,
-    readOnlyIntent: true, // READ-ONLY flag
   },
   pool: {
     max: 10,

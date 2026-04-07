@@ -8,10 +8,10 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.development') });
 /**
  * Seed admin users to kpi-db (Server 76)
  *
- * Server 76 (10.73.148.76) - READ-WRITE
+ * Server 76 (10.73.148.76) - ALL DATABASES
  * - kpi-db: Main KPI application database
- *
- * Server 77 (10.73.148.77) - READ-ONLY (DO NOT MODIFY)
+ * - SPO_Dev: Department names
+ * - CAS_Dev: Employee data
  */
 
 async function seedAdminUsers() {
