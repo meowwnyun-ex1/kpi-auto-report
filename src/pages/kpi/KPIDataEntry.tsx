@@ -548,258 +548,278 @@ export const KPIDataEntry: React.FC = () => {
 
         {/* No Department Selected */}
         {!selectedDepartment && !loading && selectedCategory && (
-          <Card>
+          <Card className="border-amber-200 bg-amber-50">
             <CardContent className="p-12 text-center">
-              <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <AlertCircle className="h-12 w-12 mx-auto text-amber-500 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Department</h3>
-              <p className="text-gray-500">
+              <p className="text-gray-600 mb-4">
                 {departmentsWithMetrics.length > 0
-                  ? `${departmentsWithMetrics.length} departments have KPI metrics for ${categoryConfig?.name_en}`
-                  : 'No departments have metrics for this category yet'}
+                  ? `${departmentsWithMetrics.length} departments have KPI metrics for ${categoryConfig?.name_en}. Select one to continue.`
+                  : 'No departments have metrics for this category yet. Please add metrics first.'}
               </p>
+              {departmentsWithMetrics.length > 0 && (
+                <p className="text-sm text-amber-600">
+                  ⚠️ You must select Category, Department, Year, and Month before entering data.
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Data Entry Form with Tabs */}
-        {!loading && !error && selectedDepartment && subCategoriesWithMetrics.size > 0 && (
-          <Tabs defaultValue="entry" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="entry" className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4" />
-                Data Entry
-              </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Historical Data
-              </TabsTrigger>
-            </TabsList>
+        {/* All selections complete - show data entry form */}
+        {!loading &&
+          !error &&
+          selectedDepartment &&
+          selectedYear &&
+          selectedMonth &&
+          subCategoriesWithMetrics.size > 0 && (
+            <Tabs defaultValue="entry" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="entry" className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  Data Entry
+                </TabsTrigger>
+                <TabsTrigger value="history" className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  Historical Data
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Data Entry Tab */}
-            <TabsContent value="entry">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Sub-Categories with Metrics */}
-                {Array.from(subCategoriesWithMetrics.entries()).map(([key, group]) => (
-                  <Card key={key} className="overflow-hidden">
-                    {/* Sub-Category Header */}
-                    <div
-                      className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => toggleSubCategory(key)}>
-                      <div className="flex items-center gap-3">
-                        {expandedSubCategories.has(key) ? (
-                          <ChevronDown className="h-5 w-5 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-500" />
-                        )}
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{group.name}</h3>
-                          <p className="text-sm text-gray-500">{group.metrics.length} indicators</p>
+              {/* Data Entry Tab */}
+              <TabsContent value="entry">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Sub-Categories with Metrics */}
+                  {Array.from(subCategoriesWithMetrics.entries()).map(([key, group]) => (
+                    <Card key={key} className="overflow-hidden">
+                      {/* Sub-Category Header */}
+                      <div
+                        className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => toggleSubCategory(key)}>
+                        <div className="flex items-center gap-3">
+                          {expandedSubCategories.has(key) ? (
+                            <ChevronDown className="h-5 w-5 text-gray-500" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-gray-500" />
+                          )}
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{group.name}</h3>
+                            <p className="text-sm text-gray-500">
+                              {group.metrics.length} indicators
+                            </p>
+                          </div>
                         </div>
+                        <Badge variant="outline">
+                          {group.metrics.filter((m) => entries.get(m.id)?.result).length} /{' '}
+                          {group.metrics.length} filled
+                        </Badge>
                       </div>
-                      <Badge variant="outline">
-                        {group.metrics.filter((m) => entries.get(m.id)?.result).length} /{' '}
-                        {group.metrics.length} filled
-                      </Badge>
-                    </div>
 
-                    {/* Metrics Table */}
-                    {expandedSubCategories.has(key) && (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead className="bg-gray-50 border-y">
+                      {/* Metrics Table */}
+                      {expandedSubCategories.has(key) && (
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-gray-50 border-y">
+                              <tr>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-48">
+                                  Measurement
+                                </th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-20">
+                                  Unit
+                                </th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-24">
+                                  Target
+                                </th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-24">
+                                  Result
+                                </th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-28">
+                                  Accumulated
+                                </th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-24">
+                                  Forecast
+                                </th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
+                                  Recovery Plan
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                              {group.metrics.map((metric) => {
+                                const entry = entries.get(metric.id);
+                                if (!entry) return null;
+
+                                return (
+                                  <tr key={metric.id} className="hover:bg-gray-50">
+                                    <td className="py-3 px-4">
+                                      <span className="text-sm">{metric.measurement}</span>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <span className="text-sm text-gray-600">
+                                        {metric.unit || '-'}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <Input
+                                        type="text"
+                                        value={entry.target}
+                                        onChange={(e) =>
+                                          updateEntry(metric.id, 'target', e.target.value)
+                                        }
+                                        className="h-8 w-20"
+                                        placeholder="Target"
+                                      />
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <Input
+                                        type="text"
+                                        value={entry.result}
+                                        onChange={(e) =>
+                                          updateEntry(metric.id, 'result', e.target.value)
+                                        }
+                                        className="h-8 w-20"
+                                        placeholder="Result"
+                                      />
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <div className="flex gap-1">
+                                        <Input
+                                          type="text"
+                                          value={entry.accu_target}
+                                          onChange={(e) =>
+                                            updateEntry(metric.id, 'accu_target', e.target.value)
+                                          }
+                                          className="h-8 w-16"
+                                          placeholder="Target"
+                                        />
+                                        <Input
+                                          type="text"
+                                          value={entry.accu_result}
+                                          onChange={(e) =>
+                                            updateEntry(metric.id, 'accu_result', e.target.value)
+                                          }
+                                          className="h-8 w-16"
+                                          placeholder="Result"
+                                        />
+                                      </div>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <Input
+                                        type="text"
+                                        value={entry.forecast}
+                                        onChange={(e) =>
+                                          updateEntry(metric.id, 'forecast', e.target.value)
+                                        }
+                                        className="h-8 w-20"
+                                        placeholder="Forecast"
+                                      />
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <div className="space-y-1">
+                                        <Textarea
+                                          value={entry.recover_activity}
+                                          onChange={(e) =>
+                                            updateEntry(
+                                              metric.id,
+                                              'recover_activity',
+                                              e.target.value
+                                            )
+                                          }
+                                          className="h-16 text-xs"
+                                          placeholder="Recovery plan..."
+                                        />
+                                        <Input
+                                          type="text"
+                                          value={entry.recovery_month}
+                                          onChange={(e) =>
+                                            updateEntry(metric.id, 'recovery_month', e.target.value)
+                                          }
+                                          className="h-7 text-xs"
+                                          placeholder="Recovery month"
+                                        />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </Card>
+                  ))}
+
+                  {/* Submit Buttons */}
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button type="button" variant="outline" onClick={() => navigate('/')}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={saving} className="gap-2">
+                      <Save className="h-4 w-4" />
+                      {saving ? 'Saving...' : 'Save Data'}
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+
+              {/* Historical Data Tab */}
+              <TabsContent value="history">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Historical KPI Data</CardTitle>
+                    <CardDescription>All entered data for this department</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {historyLoading ? (
+                      <div className="flex justify-center py-8">
+                        <Skeleton className="h-40 w-full" />
+                      </div>
+                    ) : historicalData.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No historical data found
+                      </div>
+                    ) : (
+                      <div className="overflow-auto max-h-[calc(100vh-400px)]">
+                        <table className="w-full text-sm">
+                          <thead className="bg-muted/50 sticky top-0">
                             <tr>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-48">
-                                Measurement
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-20">
-                                Unit
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-24">
-                                Target
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-24">
-                                Result
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-28">
-                                Accumulated
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600 w-24">
-                                Forecast
-                              </th>
-                              <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                                Recovery Plan
-                              </th>
+                              <th className="text-left py-2 px-3">Year</th>
+                              <th className="text-left py-2 px-3">Month</th>
+                              <th className="text-left py-2 px-3">Measurement</th>
+                              <th className="text-center py-2 px-3">Target</th>
+                              <th className="text-center py-2 px-3">Result</th>
+                              <th className="text-center py-2 px-3">Accu. Target</th>
+                              <th className="text-center py-2 px-3">Accu. Result</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y">
-                            {group.metrics.map((metric) => {
-                              const entry = entries.get(metric.id);
-                              if (!entry) return null;
-
-                              return (
-                                <tr key={metric.id} className="hover:bg-gray-50">
-                                  <td className="py-3 px-4">
-                                    <span className="text-sm">{metric.measurement}</span>
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <span className="text-sm text-gray-600">
-                                      {metric.unit || '-'}
-                                    </span>
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <Input
-                                      type="text"
-                                      value={entry.target}
-                                      onChange={(e) =>
-                                        updateEntry(metric.id, 'target', e.target.value)
-                                      }
-                                      className="h-8 w-20"
-                                      placeholder="Target"
-                                    />
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <Input
-                                      type="text"
-                                      value={entry.result}
-                                      onChange={(e) =>
-                                        updateEntry(metric.id, 'result', e.target.value)
-                                      }
-                                      className="h-8 w-20"
-                                      placeholder="Result"
-                                    />
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <div className="flex gap-1">
-                                      <Input
-                                        type="text"
-                                        value={entry.accu_target}
-                                        onChange={(e) =>
-                                          updateEntry(metric.id, 'accu_target', e.target.value)
-                                        }
-                                        className="h-8 w-16"
-                                        placeholder="Target"
-                                      />
-                                      <Input
-                                        type="text"
-                                        value={entry.accu_result}
-                                        onChange={(e) =>
-                                          updateEntry(metric.id, 'accu_result', e.target.value)
-                                        }
-                                        className="h-8 w-16"
-                                        placeholder="Result"
-                                      />
-                                    </div>
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <Input
-                                      type="text"
-                                      value={entry.forecast}
-                                      onChange={(e) =>
-                                        updateEntry(metric.id, 'forecast', e.target.value)
-                                      }
-                                      className="h-8 w-20"
-                                      placeholder="Forecast"
-                                    />
-                                  </td>
-                                  <td className="py-3 px-4">
-                                    <div className="space-y-1">
-                                      <Textarea
-                                        value={entry.recover_activity}
-                                        onChange={(e) =>
-                                          updateEntry(metric.id, 'recover_activity', e.target.value)
-                                        }
-                                        className="h-16 text-xs"
-                                        placeholder="Recovery plan..."
-                                      />
-                                      <Input
-                                        type="text"
-                                        value={entry.recovery_month}
-                                        onChange={(e) =>
-                                          updateEntry(metric.id, 'recovery_month', e.target.value)
-                                        }
-                                        className="h-7 text-xs"
-                                        placeholder="Recovery month"
-                                      />
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
+                            {historicalData.map((row, i) => (
+                              <tr key={i} className="hover:bg-muted/30">
+                                <td className="py-2 px-3">{row.year}</td>
+                                <td className="py-2 px-3">{MONTHS[row.month - 1]}</td>
+                                <td className="py-2 px-3">{row.measurement}</td>
+                                <td className="py-2 px-3 text-center text-blue-600">
+                                  {row.target}
+                                </td>
+                                <td className="py-2 px-3 text-center text-green-600">
+                                  {row.result}
+                                </td>
+                                <td className="py-2 px-3 text-center text-blue-600">
+                                  {row.accu_target}
+                                </td>
+                                <td className="py-2 px-3 text-center text-green-600">
+                                  {row.accu_result}
+                                </td>
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>
                     )}
-                  </Card>
-                ))}
-
-                {/* Submit Buttons */}
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => navigate('/')}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={saving} className="gap-2">
-                    <Save className="h-4 w-4" />
-                    {saving ? 'Saving...' : 'Save Data'}
-                  </Button>
-                </div>
-              </form>
-            </TabsContent>
-
-            {/* Historical Data Tab */}
-            <TabsContent value="history">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Historical KPI Data</CardTitle>
-                  <CardDescription>All entered data for this department</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {historyLoading ? (
-                    <div className="flex justify-center py-8">
-                      <Skeleton className="h-40 w-full" />
-                    </div>
-                  ) : historicalData.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No historical data found
-                    </div>
-                  ) : (
-                    <div className="overflow-auto max-h-[calc(100vh-400px)]">
-                      <table className="w-full text-sm">
-                        <thead className="bg-muted/50 sticky top-0">
-                          <tr>
-                            <th className="text-left py-2 px-3">Year</th>
-                            <th className="text-left py-2 px-3">Month</th>
-                            <th className="text-left py-2 px-3">Measurement</th>
-                            <th className="text-center py-2 px-3">Target</th>
-                            <th className="text-center py-2 px-3">Result</th>
-                            <th className="text-center py-2 px-3">Accu. Target</th>
-                            <th className="text-center py-2 px-3">Accu. Result</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y">
-                          {historicalData.map((row, i) => (
-                            <tr key={i} className="hover:bg-muted/30">
-                              <td className="py-2 px-3">{row.year}</td>
-                              <td className="py-2 px-3">{MONTHS[row.month - 1]}</td>
-                              <td className="py-2 px-3">{row.measurement}</td>
-                              <td className="py-2 px-3 text-center text-blue-600">{row.target}</td>
-                              <td className="py-2 px-3 text-center text-green-600">{row.result}</td>
-                              <td className="py-2 px-3 text-center text-blue-600">
-                                {row.accu_target}
-                              </td>
-                              <td className="py-2 px-3 text-center text-green-600">
-                                {row.accu_result}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )}
 
         {/* No Metrics Available */}
         {!loading && !error && selectedDepartment && subCategoriesWithMetrics.size === 0 && (

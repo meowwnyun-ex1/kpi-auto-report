@@ -173,6 +173,7 @@ async function resetKpiDatabase() {
       await pool.request().query(`
         CREATE TABLE ${category}_metrics (
           id INT IDENTITY(1,1) PRIMARY KEY,
+          department_id NVARCHAR(50) NULL,
           sub_category_id INT NULL,
           no NVARCHAR(50) NULL,
           measurement NVARCHAR(500) NOT NULL,
@@ -184,8 +185,10 @@ async function resetKpiDatabase() {
           sort_order INT DEFAULT 0,
           created_at DATETIME DEFAULT GETDATE(),
           updated_at DATETIME DEFAULT GETDATE(),
-          CONSTRAINT FK_${category}_metrics_subcat FOREIGN KEY (sub_category_id) REFERENCES ${category}_sub_categories(id)
+          CONSTRAINT FK_${category}_metrics_subcat FOREIGN KEY (sub_category_id) REFERENCES ${category}_sub_categories(id),
+          CONSTRAINT FK_${category}_metrics_dept FOREIGN KEY (department_id) REFERENCES departments(dept_id)
         );
+        CREATE INDEX IX_${category}_metrics_dept ON ${category}_metrics(department_id);
       `);
 
       // Data entries

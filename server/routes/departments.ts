@@ -141,20 +141,19 @@ router.get('/with-metrics/:category', async (req, res) => {
     const { category } = req.params;
     const kpiDb = await getKpiDb();
 
-    // Get departments with metrics for this category and their entry status
+    // Get departments with metrics for this category from category-specific tables
     const result = await kpiDb.request().input('category', sql.NVarChar, category).query(`
       SELECT 
         d.dept_id,
         d.name_en,
         1 as has_metrics,
         COUNT(DISTINCT m.id) as metric_count,
-        COUNT(DISTINCT CASE WHEN me.id IS NOT NULL THEN m.id END) as filled_count
+        COUNT(DISTINCT CASE WHEN de.id IS NOT NULL THEN m.id END) as filled_count
       FROM departments d
-      INNER JOIN kpi_metrics m ON m.department_id = d.dept_id
-      INNER JOIN kpi_categories c ON m.category_id = c.id
-      LEFT JOIN monthly_entries me ON me.metric_id = m.id
-      WHERE c.[key] = @category
-        AND d.status = 'Active'
+      INNER JOIN ${category}_metrics m ON m.department_id = d.dept_id
+      LEFT JOIN ${category}_data_entries de ON de.metric_id = m.id
+        AND de.year = YEAR(GETDATE())
+      WHERE d.status = 'Active'
       GROUP BY d.dept_id, d.name_en
       ORDER BY d.name_en
     `);
@@ -215,33 +214,13 @@ router.get('/:dept_id/sub-categories/:category', async (req, res) => {
     const { dept_id, category } = req.params;
     const kpiDb = await getKpiDb();
 
-    // Get the table name for this category
-    const categoryResult = await kpiDb
-      .request()
-      .input('category_key', sql.NVarChar, category)
-      .query(`SELECT id FROM kpi_categories WHERE [key] = @category_key`);
-
-    if (categoryResult.recordset.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'NOT_FOUND',
-        message: 'Category not found',
-      });
-    }
-
-    const categoryId = categoryResult.recordset[0].id;
-
-    // Get sub-categories with metrics for this department
-    const result = await kpiDb
-      .request()
-      .input('dept_id', sql.NVarChar, dept_id)
-      .input('category_id', sql.Int, categoryId).query(`
+    // Get sub-categories with metrics for this department from category-specific tables
+    const result = await kpiDb.request().input('dept_id', sql.NVarChar, dept_id).query(`
       SELECT DISTINCT
         sc.id, sc.name_en, sc.name_th, sc.[key], sc.sort_order
-      FROM kpi_sub_categories sc
-      INNER JOIN kpi_metrics m ON m.sub_category_id = sc.id
-      WHERE m.category_id = @category_id 
-        AND (m.department_id = @dept_id OR m.department_id IS NULL)
+      FROM ${category}_sub_categories sc
+      INNER JOIN ${category}_metrics m ON m.sub_category_id = sc.id
+      WHERE m.department_id = @dept_id
       ORDER BY sc.sort_order
     `);
 
@@ -273,12 +252,10 @@ router.get('/:dept_id/metrics/:category/:sub_category?', async (req, res) => {
         m.id, m.no, m.measurement, m.unit, m.fy25_target, m.main, m.main_relate,
         m.description_of_target, m.sub_category_id, sc.name_en as sub_category_name,
         sc.[key] as sub_category_key, m.department_id, d.name_en as department_name
-      FROM kpi_metrics m
-      INNER JOIN kpi_sub_categories sc ON m.sub_category_id = sc.id
-      INNER JOIN kpi_categories c ON m.category_id = c.id
+      FROM ${category}_metrics m
+      INNER JOIN ${category}_sub_categories sc ON m.sub_category_id = sc.id
       LEFT JOIN departments d ON m.department_id = d.dept_id
-      WHERE c.[key] = @category
-        AND (m.department_id = @dept_id OR m.department_id IS NULL)
+      WHERE m.department_id = @dept_id
     `;
 
     if (sub_category) {
@@ -287,10 +264,7 @@ router.get('/:dept_id/metrics/:category/:sub_category?', async (req, res) => {
 
     query += ` ORDER BY sc.sort_order, m.no`;
 
-    const request = kpiDb
-      .request()
-      .input('category', sql.NVarChar, category)
-      .input('dept_id', sql.NVarChar, dept_id);
+    const request = kpiDb.request().input('dept_id', sql.NVarChar, dept_id);
 
     if (sub_category) {
       request.input('sub_category', sql.NVarChar, sub_category);
