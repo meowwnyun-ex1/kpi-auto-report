@@ -22,6 +22,7 @@
     "pm2:save": "pm2 save",
     "pm2:resurrect": "pm2 resurrect",
     "db:setup": "tsx server/scripts/setup-database.ts",
+    "db:reset": "tsx server/scripts/reset-kpi-db.ts",
     "db:cleanup": "tsx server/scripts/cleanup-database.ts",
     "db:seed-users": "tsx server/scripts/seed-admin-users.ts",
     "db:seed-departments": "tsx server/scripts/seed-spo-departments.ts",

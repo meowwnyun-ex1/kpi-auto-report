@@ -2580,11 +2580,11 @@ const SKD_DEPARTMENTS = [
 const ALL_DEPARTMENTS = [...SDM_DEPARTMENTS, ...SKD_DEPARTMENTS];
 
 async function seedSpoDepartments(): Promise<void> {
-  logger.info('='.repeat(80));
-  logger.info('SPO DEPARTMENTS SEEDING');
-  logger.info('='.repeat(80));
-  logger.info(`Server: ${config.server}`);
-  logger.info(`Database: ${config.database}\n`);
+  console.log('='.repeat(80));
+  console.log('SPO DEPARTMENTS SEEDING');
+  console.log('='.repeat(80));
+  console.log(`Server: ${config.server}`);
+  console.log(`Database: ${config.database}\n`);
 
   try {
     const db = await new sql.ConnectionPool(config).connect();
