@@ -6,15 +6,22 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.development') });
 
 /**
  * Seed departments from SPO_Dev data
+ *
+ * Server 76 (10.73.148.76) - READ-WRITE
+ * - kpi-db: Main KPI application database (where departments are stored)
+ * - SPO_Dev: Source of department names
+ *
+ * Server 77 (10.73.148.77) - READ-ONLY (DO NOT MODIFY)
+ *
  * Run: npx tsx server/scripts/seed-spo-departments.ts
  */
 
 const config = {
-  server: process.env.DB_HOST || '10.73.148.76',
-  database: process.env.DB_NAME || 'kpi-db',
-  user: process.env.DB_USER || 'inn@admin',
-  password: process.env.DB_PASSWORD || 'i@NN636195',
-  port: parseInt(process.env.DB_PORT || '1433'),
+  server: process.env.KPI_DB_HOST || '10.73.148.76',
+  database: process.env.KPI_DB_NAME || 'kpi-db',
+  user: process.env.KPI_DB_USER || 'inn@admin',
+  password: process.env.KPI_DB_PASSWORD || 'i@NN636195',
+  port: parseInt(process.env.KPI_DB_PORT || '1433'),
   options: {
     trustServerCertificate: true,
     encrypt: false,

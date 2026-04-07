@@ -8,16 +8,20 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env.development') });
  * RESET KPI DATABASE
  * Creates only tables actually used in CRUD operations
  *
- * Server 76: READ-ONLY (CAS, SPO_Dev for data sync)
- * Server 77: READ-WRITE (CAS database for KPI application)
+ * Server 76 (10.73.148.76) - READ-WRITE
+ * - kpi-db: Main KPI application database
+ * - SPO_Dev: Department names
+ *
+ * Server 77 (10.73.148.77) - READ-ONLY (DO NOT MODIFY)
+ * - CAS: Employee data for user creation
  */
 
 const config = {
-  server: process.env.DB_HOST || '10.73.148.77',
-  database: process.env.DB_NAME || 'CAS',
-  user: process.env.DB_USER || 'inn@admin',
-  password: process.env.DB_PASSWORD || 'i@NN636195',
-  port: parseInt(process.env.DB_PORT || '1433'),
+  server: process.env.KPI_DB_HOST || '10.73.148.76',
+  database: process.env.KPI_DB_NAME || 'kpi-db',
+  user: process.env.KPI_DB_USER || 'inn@admin',
+  password: process.env.KPI_DB_PASSWORD || 'i@NN636195',
+  port: parseInt(process.env.KPI_DB_PORT || '1433'),
   options: {
     trustServerCertificate: true,
     encrypt: false,

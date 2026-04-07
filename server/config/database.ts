@@ -2,13 +2,24 @@ import sql from 'mssql';
 import { getKpiDbConfig } from './app-config';
 import { logger } from '../utils/logger';
 
-// KPI Auto Report database
+/**
+ * Database Configuration
+ *
+ * Server 76 (10.73.148.76) - READ-WRITE
+ * - kpi-db: Main KPI application database
+ * - SPO_Dev: Department names
+ *
+ * Server 77 (10.73.148.77) - READ-ONLY (DO NOT MODIFY)
+ * - CAS: Employee data for user creation
+ */
+
+// KPI database (Server 76) - Main application database
 const kpiConfig: sql.config = {
-  server: process.env.KPI_DB_HOST || process.env.DB_HOST!,
+  server: process.env.KPI_DB_HOST || '10.73.148.76',
   database: process.env.KPI_DB_NAME || 'kpi-db',
-  user: process.env.KPI_DB_USER || process.env.DB_USER!,
-  password: process.env.KPI_DB_PASSWORD || process.env.DB_PASSWORD!,
-  port: parseInt(process.env.KPI_DB_PORT || process.env.DB_PORT!),
+  user: process.env.KPI_DB_USER || 'inn@admin',
+  password: process.env.KPI_DB_PASSWORD || 'i@NN636195',
+  port: parseInt(process.env.KPI_DB_PORT || '1433'),
   options: {
     encrypt: false,
     trustServerCertificate: true,
@@ -29,13 +40,13 @@ const kpiConfig: sql.config = {
   },
 };
 
-// CAS database (for employees)
+// CAS database (Server 77) - READ-ONLY for employee data
 const casConfig: sql.config = {
-  server: process.env.CAS_DB_HOST || process.env.DB_HOST!,
+  server: process.env.CAS_DB_HOST || '10.73.148.77',
   database: process.env.CAS_DB_NAME || 'CAS',
-  user: process.env.CAS_DB_USER || process.env.DB_USER!,
-  password: process.env.CAS_DB_PASSWORD || process.env.DB_PASSWORD!,
-  port: parseInt(process.env.CAS_DB_PORT || process.env.DB_PORT!),
+  user: process.env.CAS_DB_USER || 'inn@admin',
+  password: process.env.CAS_DB_PASSWORD || 'i@NN636195',
+  port: parseInt(process.env.CAS_DB_PORT || '1433'),
   options: {
     encrypt: false,
     trustServerCertificate: true,
@@ -43,6 +54,7 @@ const casConfig: sql.config = {
     connectionTimeout: 60000,
     requestTimeout: 60000,
     integratedSecurity: false,
+    readOnlyIntent: true, // READ-ONLY flag
   },
   pool: {
     max: 10,
@@ -51,13 +63,13 @@ const casConfig: sql.config = {
   },
 };
 
-// SPO_Dev database (for departments)
+// SPO_Dev database (Server 76) - Department names
 const spoConfig: sql.config = {
-  server: process.env.SPO_DB_HOST || process.env.DB_HOST!,
+  server: process.env.SPO_DB_HOST || '10.73.148.76',
   database: process.env.SPO_DB_NAME || 'SPO_Dev',
-  user: process.env.SPO_DB_USER || process.env.DB_USER!,
-  password: process.env.SPO_DB_PASSWORD || process.env.DB_PASSWORD!,
-  port: parseInt(process.env.SPO_DB_PORT || process.env.DB_PORT!),
+  user: process.env.SPO_DB_USER || 'inn@admin',
+  password: process.env.SPO_DB_PASSWORD || 'i@NN636195',
+  port: parseInt(process.env.SPO_DB_PORT || '1433'),
   options: {
     encrypt: false,
     trustServerCertificate: true,
