@@ -398,7 +398,9 @@ export const KPIDataEntry: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900">
                 {categoryConfig?.name_en || 'KPI'} Data Entry
               </h1>
-              <p className="text-sm text-gray-500">{categoryConfig?.description || 'Select a category to begin'}</p>
+              <p className="text-sm text-gray-500">
+                {categoryConfig?.description || 'Select a category to begin'}
+              </p>
             </div>
           </div>
         </div>
@@ -453,71 +455,72 @@ export const KPIDataEntry: React.FC = () => {
                   <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departmentsWithMetrics.map((dept) => (
-                      <SelectItem key={dept.dept_id} value={dept.dept_id}>
-                        <div className="flex items-center gap-2">
-                          {dept.filled_count === dept.metric_count ? (
-                            <CheckCircle2 className="h-3 w-3 text-green-500" />
-                          ) : (
-                            <AlertCircle className="h-3 w-3 text-amber-500" />
-                          )}
-                          <span>{dept.name_en}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({dept.filled_count}/{dept.metric_count})
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departmentsWithMetrics.map((dept) => (
+                        <SelectItem key={dept.dept_id} value={dept.dept_id}>
+                          <div className="flex items-center gap-2">
+                            {dept.filled_count === dept.metric_count ? (
+                              <CheckCircle2 className="h-3 w-3 text-green-500" />
+                            ) : (
+                              <AlertCircle className="h-3 w-3 text-amber-500" />
+                            )}
+                            <span>{dept.name_en}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({dept.filled_count}/{dept.metric_count})
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Year Select */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Year
-                </Label>
-                <Select
-                  value={selectedYear.toString()}
-                  onValueChange={(v) => setSelectedYear(parseInt(v))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[2024, 2025, 2026].map((y) => (
-                      <SelectItem key={y} value={y.toString()}>
-                        {y}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                {/* Year Select */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Year
+                  </Label>
+                  <Select
+                    value={selectedYear.toString()}
+                    onValueChange={(v) => setSelectedYear(parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[2024, 2025, 2026].map((y) => (
+                        <SelectItem key={y} value={y.toString()}>
+                          {y}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Month Select */}
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Month
-                </Label>
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MONTHS.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Month Select */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Month
+                  </Label>
+                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MONTHS.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Loading State */}
         {loading && selectedDepartment && (
@@ -639,13 +642,17 @@ export const KPIDataEntry: React.FC = () => {
                                     <span className="text-sm">{metric.measurement}</span>
                                   </td>
                                   <td className="py-3 px-4">
-                                    <span className="text-sm text-gray-600">{metric.unit || '-'}</span>
+                                    <span className="text-sm text-gray-600">
+                                      {metric.unit || '-'}
+                                    </span>
                                   </td>
                                   <td className="py-3 px-4">
                                     <Input
                                       type="text"
                                       value={entry.target}
-                                      onChange={(e) => updateEntry(metric.id, 'target', e.target.value)}
+                                      onChange={(e) =>
+                                        updateEntry(metric.id, 'target', e.target.value)
+                                      }
                                       className="h-8 w-20"
                                       placeholder="Target"
                                     />
@@ -654,7 +661,9 @@ export const KPIDataEntry: React.FC = () => {
                                     <Input
                                       type="text"
                                       value={entry.result}
-                                      onChange={(e) => updateEntry(metric.id, 'result', e.target.value)}
+                                      onChange={(e) =>
+                                        updateEntry(metric.id, 'result', e.target.value)
+                                      }
                                       className="h-8 w-20"
                                       placeholder="Result"
                                     />
@@ -774,8 +783,12 @@ export const KPIDataEntry: React.FC = () => {
                               <td className="py-2 px-3">{row.measurement}</td>
                               <td className="py-2 px-3 text-center text-blue-600">{row.target}</td>
                               <td className="py-2 px-3 text-center text-green-600">{row.result}</td>
-                              <td className="py-2 px-3 text-center text-blue-600">{row.accu_target}</td>
-                              <td className="py-2 px-3 text-center text-green-600">{row.accu_result}</td>
+                              <td className="py-2 px-3 text-center text-blue-600">
+                                {row.accu_target}
+                              </td>
+                              <td className="py-2 px-3 text-center text-green-600">
+                                {row.accu_result}
+                              </td>
                             </tr>
                           ))}
                         </tbody>

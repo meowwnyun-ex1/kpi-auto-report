@@ -6,9 +6,9 @@ import { logger } from '../utils/logger';
  * Database Configuration
  *
  * Server 76 (10.73.148.76) - ALL DATABASES
- * - kpi-db: Main KPI application database
- * - SPO_Dev: Department names
- * - CAS_Dev: Employee data
+ * - kpi-db: Main KPI application database (READ-WRITE)
+ * - SPO_Dev: Department names (READ-WRITE)
+ * - CAS_Dev: Employee data (READ-ONLY)
  */
 
 // KPI database (Server 76) - Main application database
