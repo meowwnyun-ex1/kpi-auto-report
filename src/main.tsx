@@ -6,7 +6,7 @@ import App from './App.tsx';
 import './styles.css';
 
 // Dynamic basename based on environment
-const basename = import.meta.env.PROD ? '/app-store' : '/';
+const basename = import.meta.env.PROD ? '/kpi-auto-report' : '/';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

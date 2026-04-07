@@ -1,4 +1,4 @@
-# Deploy SDM&SKD App Store to Production (PowerShell Script)
+# Deploy KPI : Auto Report to Production (PowerShell Script)
 # Usage: .\deploy.ps1 [-Clean]
 #   -Clean: Force clean reinstall of dependencies
 
@@ -6,7 +6,7 @@ param(
     [switch]$Clean
 )
 
-Write-Host "Deploying SDM&SKD App Store to Production..." -ForegroundColor Green
+Write-Host "Deploying KPI : Auto Report to Production..." -ForegroundColor Green
 Write-Host ""
 
 # Change to project directory
@@ -272,7 +272,7 @@ Start-Sleep -Seconds 5
 # Health check
 Write-Host "Performing health check..." -ForegroundColor Blue
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:4006/health" -UseBasicParsing -TimeoutSec 10
+    $response = Invoke-WebRequest -Uri "http://localhost:4007/health" -UseBasicParsing -TimeoutSec 10
     if ($response.StatusCode -eq 200) {
         Write-Host "SUCCESS: Health check passed" -ForegroundColor Green
     } else {
@@ -341,8 +341,8 @@ Write-Host "========================================" -ForegroundColor Green
 Write-Host "DEPLOYMENT COMPLETED SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "App Store is now running at: http://10.73.148.75/app-store/" -ForegroundColor Cyan
-Write-Host "API Server: http://localhost:4006" -ForegroundColor Cyan
+Write-Host "KPI is now running at: http://10.73.148.75/app-store/" -ForegroundColor Cyan
+Write-Host "API Server: http://localhost:4007" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "PM2 processes will auto-restart on system reboot" -ForegroundColor Gray
 Write-Host ""

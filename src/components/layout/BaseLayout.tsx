@@ -5,7 +5,6 @@ import { Separator } from '@/components/ui/separator';
 import { Breadcrumb } from '@/components/features/Breadcrumb';
 import { Menu } from 'lucide-react';
 import { StatsWidget } from '@/components/features/Stats';
-import ContactWidget from '@/components/features/ContactWidget';
 
 export type LayoutVariant = 'user' | 'admin' | 'public' | 'minimal';
 
@@ -14,9 +13,9 @@ export interface BaseLayoutProps {
   variant?: LayoutVariant;
   breadcrumbExtra?: string;
   showSidebar?: boolean;
-  showContactWidget?: boolean;
   showStats?: boolean;
   showHeader?: boolean;
+  showFooter?: boolean;
   headerContent?: React.ReactNode;
   sidebarContent?: React.ReactNode;
   className?: string;
@@ -27,9 +26,9 @@ const BaseLayout: React.FC<BaseLayoutProps> = ({
   variant = 'user',
   breadcrumbExtra,
   showSidebar = true,
-  showContactWidget = false,
   showStats = true,
   showHeader = true,
+  showFooter = true,
   headerContent,
   sidebarContent,
   className = '',
@@ -140,14 +139,18 @@ const BaseLayout: React.FC<BaseLayoutProps> = ({
             )}
 
             {/* Main Content */}
-            <main className={`flex-1 overflow-auto ${getMainPaddingClasses()}`}>
+            <main className={`flex-1 overflow-y-auto ${getMainPaddingClasses()}`}>
               {children || <Outlet />}
             </main>
+
+            {/* Footer */}
+            {showFooter && variant !== 'minimal' && (
+              <footer className="flex-shrink-0 border-t border-gray-100 bg-white/80 backdrop-blur-sm px-4 py-2 text-center text-xs text-gray-500">
+                © 2026 App Design & Development by Thammaphon Chittasuwanna (SDM)
+              </footer>
+            )}
           </div>
         </div>
-
-        {/* Contact Widget - only for non-admin pages */}
-        {showContactWidget && variant !== 'admin' && <ContactWidget />}
       </SidebarProvider>
     </div>
   );

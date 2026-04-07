@@ -1,4 +1,4 @@
-# Zero-Downtime Deploy Script for SDM&SKD App Store
+# Zero-Downtime Deploy Script for KPI : Auto Report
 # Usage: .\deploy-zero-downtime.ps1 [-SkipBuild] [-FrontendOnly] [-BackendOnly]
 #
 # IMPORTANT: This script ONLY manages app-store-api PM2 process
@@ -16,7 +16,7 @@ $ProgressPreference = "SilentlyContinue"
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Zero-Downtime Deployment" -ForegroundColor Cyan
-Write-Host "  SDM&SKD App Store" -ForegroundColor Cyan
+Write-Host "  KPI : Auto Report" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  (Only affects app-store-api)" -ForegroundColor Gray
 Write-Host "========================================" -ForegroundColor Cyan
@@ -178,7 +178,7 @@ Write-Host ""
 Start-Sleep -Seconds 2
 
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:4006/api/health" -UseBasicParsing -TimeoutSec 10
+    $response = Invoke-WebRequest -Uri "http://localhost:4007/api/health" -UseBasicParsing -TimeoutSec 10
     if ($response.StatusCode -eq 200) {
         Write-Host "  Health check: PASSED" -ForegroundColor Green
     }
@@ -196,7 +196,7 @@ Write-Host "  DEPLOYMENT COMPLETE" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "  URL: http://10.73.148.75/app-store/" -ForegroundColor Cyan
-Write-Host "  API: http://localhost:4006" -ForegroundColor Cyan
+Write-Host "  API: http://localhost:4007" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Zero downtime achieved!" -ForegroundColor Green
 Write-Host "  Other systems were NOT affected." -ForegroundColor Gray

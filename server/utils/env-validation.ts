@@ -7,9 +7,9 @@ interface EnvVar {
 }
 
 const ENV_VARS: EnvVar[] = [
-  // App Store Database
+  // KPI Database
   { name: 'DB_HOST', required: true },
-  { name: 'DB_NAME', required: true },
+  { name: 'DB_NAME', required: false },
   { name: 'DB_USER', required: true },
   { name: 'DB_PASSWORD', required: true },
   { name: 'DB_PORT', required: true },

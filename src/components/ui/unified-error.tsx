@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Image } from '@/components/ui/Image';
 import { Home, RefreshCw, Mail } from 'lucide-react';
+import { ShellLayout } from '@/features/shell';
 
 export type ErrorType =
   | '404'
@@ -293,6 +294,7 @@ interface UnifiedErrorProps {
   onContact?: () => void;
   className?: string;
   compact?: boolean;
+  useShellLayout?: boolean;
 }
 
 export const UnifiedError: React.FC<UnifiedErrorProps> = ({
@@ -310,6 +312,7 @@ export const UnifiedError: React.FC<UnifiedErrorProps> = ({
   onContact,
   className,
   compact,
+  useShellLayout = true,
 }) => {
   const errorType = type || 'general';
   const config = errorConfigs[errorType];
@@ -388,66 +391,80 @@ export const UnifiedError: React.FC<UnifiedErrorProps> = ({
     );
   }
 
-  return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col items-center justify-center px-4 py-8">
-      <div
-        className={`${errorType === '404' ? 'max-w-4xl' : 'max-w-lg'} w-full flex flex-col items-center`}>
-        {/* Error Icon */}
-        <div className="mb-6 flex justify-center">
-          <div
-            className={`flex items-center justify-center ${errorType === '404' ? 'w-[32rem] h-64' : 'w-64 h-64'}`}>
-            <Image
-              src={config.image}
-              alt={title || config.title}
-              className={errorType === '404' ? 'object-contain' : 'object-contain'}
-              width={errorType === '404' ? 512 : 256}
-              height={errorType === '404' ? 256 : 256}
-              fallbackType={errorType === '404' ? 'not-found' : 'error'}
-            />
-          </div>
-        </div>
-
-        {/* Error Content */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{title || config.title}</h1>
-          <p className="text-lg text-gray-700 mb-6 font-medium">{message || config.message}</p>
-          <div className="text-base text-gray-600 space-y-2">
-            {renderDescription(description || config.description)}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          {config.showRetry && (
-            <Button
-              onClick={handleRetry}
-              className={`${getButtonColor(config.severity)} text-base px-6 py-3 font-semibold`}>
-              <RefreshCw className="w-5 h-5 mr-2" />
-              {config.action || 'Try Again'}
-            </Button>
-          )}
-
-          {config.showHome && (
-            <Button
-              onClick={handleHome}
-              className={`${getSecondaryButtonColor()} text-base px-6 py-3 font-medium`}>
-              <Home className="w-5 h-5 mr-2" />
-              Go Home
-            </Button>
-          )}
-
-          {config.showContact && (
-            <Button
-              onClick={handleContact}
-              className={`${getSecondaryButtonColor()} text-base px-6 py-3 font-medium`}>
-              <Mail className="w-5 h-5 mr-2" />
-              Contact Support
-            </Button>
-          )}
-
-          {customActions}
+  const errorContent = (
+    <div
+      className={`${errorType === '404' ? 'max-w-4xl' : 'max-w-lg'} w-full flex flex-col items-center`}>
+      {/* Error Icon */}
+      <div className="mb-6 flex justify-center">
+        <div
+          className={`flex items-center justify-center ${errorType === '404' ? 'w-[32rem] h-64' : 'w-64 h-64'}`}>
+          <Image
+            src={config.image}
+            alt={title || config.title}
+            className={errorType === '404' ? 'object-contain' : 'object-contain'}
+            width={errorType === '404' ? 512 : 256}
+            height={errorType === '404' ? 256 : 256}
+            fallbackType={errorType === '404' ? 'not-found' : 'error'}
+          />
         </div>
       </div>
+
+      {/* Error Content */}
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">{title || config.title}</h1>
+        <p className="text-lg text-gray-700 mb-6 font-medium">{message || config.message}</p>
+        <div className="text-base text-gray-600 space-y-2">
+          {renderDescription(description || config.description)}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        {config.showRetry && (
+          <Button
+            onClick={handleRetry}
+            className={`${getButtonColor(config.severity)} text-base px-6 py-3 font-semibold`}>
+            <RefreshCw className="w-5 h-5 mr-2" />
+            {config.action || 'Try Again'}
+          </Button>
+        )}
+
+        {config.showHome && (
+          <Button
+            onClick={handleHome}
+            className={`${getSecondaryButtonColor()} text-base px-6 py-3 font-medium`}>
+            <Home className="w-5 h-5 mr-2" />
+            Go Home
+          </Button>
+        )}
+
+        {config.showContact && (
+          <Button
+            onClick={handleContact}
+            className={`${getSecondaryButtonColor()} text-base px-6 py-3 font-medium`}>
+            <Mail className="w-5 h-5 mr-2" />
+            Contact Support
+          </Button>
+        )}
+
+        {customActions}
+      </div>
+    </div>
+  );
+
+  if (useShellLayout) {
+    return (
+      <ShellLayout variant="sidebar">
+        <div className="min-h-[calc(100vh-4rem)] w-full flex flex-col items-center justify-center px-4 py-8">
+          {errorContent}
+        </div>
+      </ShellLayout>
+    );
+  }
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col items-center justify-center px-4 py-8">
+      {errorContent}
     </div>
   );
 };

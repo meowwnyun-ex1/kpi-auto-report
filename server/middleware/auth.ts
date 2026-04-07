@@ -3,10 +3,12 @@ import jwt from 'jsonwebtoken';
 import { AuthenticationError, AuthorizationError } from '../utils/errors';
 import { logger } from '../utils/logger';
 
+export type UserRole = 'superadmin' | 'admin' | 'manager' | 'user' | 'guest';
+
 export interface JwtPayload {
   userId: number;
   username: string;
-  role: 'admin' | 'user';
+  role: UserRole;
   iat?: number;
   exp?: number;
 }
@@ -19,6 +21,48 @@ declare global {
     }
   }
 }
+
+/**
+ * Create a guest user object for unauthenticated requests
+ */
+export const createGuestUser = (): JwtPayload => ({
+  userId: 0,
+  username: 'guest',
+  role: 'guest',
+});
+
+/**
+ * Middleware that allows both authenticated and guest users.
+ * For guest users, attaches a guest user object to req.user.
+ * Use this for routes that should be viewable without login.
+ */
+export const allowGuest = (req: Request, _res: Response, next: NextFunction): void => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // No token - treat as guest
+    req.user = createGuestUser();
+    return next();
+  }
+
+  const token = authHeader.substring(7);
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    req.user = createGuestUser();
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+    req.user = decoded;
+    next();
+  } catch {
+    // Invalid token - treat as guest
+    req.user = createGuestUser();
+    next();
+  }
+};
 
 /**
  * Middleware that requires a valid JWT token.
@@ -94,7 +138,7 @@ export const optionalAuth = (req: Request, _res: Response, next: NextFunction): 
  * Middleware factory that requires a specific role.
  * Must be used AFTER requireAuth.
  */
-export const requireRole = (...roles: Array<'admin' | 'user'>) => {
+export const requireRole = (...roles: UserRole[]) => {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
       return next(new AuthenticationError('Authentication required'));
@@ -109,3 +153,23 @@ export const requireRole = (...roles: Array<'admin' | 'user'>) => {
     next();
   };
 };
+
+/**
+ * Middleware that requires at least manager role.
+ * Blocks guests and regular users.
+ */
+export const requireManager = (req: Request, _res: Response, next: NextFunction): void => {
+  if (!req.user) {
+    return next(new AuthenticationError('Authentication required'));
+  }
+
+  const allowedRoles: UserRole[] = ['superadmin', 'admin', 'manager'];
+  if (!allowedRoles.includes(req.user.role)) {
+    return next(new AuthorizationError('Manager role required'));
+  }
+
+  next();
+};
+
+// Alias for requireAuth
+export const authenticateToken = requireAuth;

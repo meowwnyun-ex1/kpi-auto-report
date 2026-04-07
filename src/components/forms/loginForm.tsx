@@ -54,7 +54,7 @@ function LoginForm() {
   return (
     <div className="w-full">
       <div className="mb-8 text-center">
-        <img src="/DENSO_LOGO.png" alt="DENSO App Store" className="mx-auto h-12 sm:h-14" />
+        <img src="/DENSO_LOGO.png" alt="KPI Auto Report" className="mx-auto h-12 sm:h-14" />
         <p className="mt-3 text-sm text-muted-foreground">Admin sign-in</p>
       </div>
 

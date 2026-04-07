@@ -4,7 +4,7 @@ import BaseLayout, { BaseLayoutProps } from '@/components/layout/BaseLayout';
 
 interface MinimalLayoutProps extends Omit<
   BaseLayoutProps,
-  'variant' | 'showSidebar' | 'sidebarContent' | 'showHeader' | 'showContactWidget' | 'showStats'
+  'variant' | 'showSidebar' | 'sidebarContent' | 'showHeader' | 'showStats'
 > {
   breadcrumbExtra?: string;
 }
@@ -14,9 +14,9 @@ const MinimalLayout: React.FC<MinimalLayoutProps> = ({ children, breadcrumbExtra
     <BaseLayout
       variant="minimal"
       showSidebar={false}
-      showContactWidget={false}
       showStats={false}
       showHeader={false}
+      showFooter={false}
       breadcrumbExtra={breadcrumbExtra}
       className="min-h-screen"
       {...props}>

@@ -1,5 +1,5 @@
 @echo off
-echo Starting SDM&SKD App Store Development Server...
+echo Starting KPI : Auto Report Development Server...
 echo.
 
 REM Change to project directory
@@ -158,12 +158,12 @@ echo.
 
 REM Start the application
 echo.
-echo Starting SDM&SKD App Store...
+echo Starting KPI : Auto Report...
 if exist ".env.development" (
     echo Environment: Development
-    echo Frontend: http://localhost:3006
-    echo API: http://localhost:4006/api
-    echo Health: http://localhost:4006/health
+    echo Frontend: http://localhost:3007
+    echo API: http://localhost:4007/api
+    echo Health: http://localhost:4007/health
 ) else (
     echo Environment: Production
     echo Frontend: http://10.73.148.75/app-store

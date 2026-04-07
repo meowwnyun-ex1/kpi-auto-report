@@ -1,7 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import ContactWidget from '@/components/features/ContactWidget';
 import { AppHeader } from '@/features/shell/header/AppHeader';
 import { AppSidebar } from '@/features/shell/sidebar/AppSidebar';
 import type { LayoutVariant } from '@/features/shell/shell-types';
@@ -17,9 +16,9 @@ export interface ShellLayoutProps {
   variant?: LayoutVariant;
   breadcrumbExtra?: string;
   showSidebar?: boolean;
-  showContactWidget?: boolean;
   showStats?: boolean;
   showHeader?: boolean;
+  showFooter?: boolean;
   headerContent?: React.ReactNode;
   className?: string;
 }
@@ -52,9 +51,9 @@ export const ShellLayout: React.FC<ShellLayoutProps> = ({
   variant = 'user',
   breadcrumbExtra,
   showSidebar,
-  showContactWidget,
   showStats,
   showHeader,
+  showFooter = true,
   headerContent,
   className = '',
 }) => {
@@ -62,14 +61,14 @@ export const ShellLayout: React.FC<ShellLayoutProps> = ({
   const isMinimal = variant === 'minimal';
 
   const effectiveShowSidebar = showSidebar ?? !isMinimal;
-  const effectiveShowContactWidget = showContactWidget ?? !isMinimal;
   const effectiveShowStats = showStats ?? !isMinimal;
   const effectiveShowHeader = showHeader ?? !isMinimal;
+  const effectiveShowFooter = showFooter && !isMinimal;
 
   const showNavToggle = Boolean(effectiveShowSidebar);
   const mainPaddingClass = isMinimal
     ? 'min-h-0 flex-1 p-0'
-    : 'min-h-0 flex-1 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-5 sm:pb-6 sm:pt-5 md:px-6';
+    : 'min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 md:px-6';
 
   return (
     <div
@@ -89,11 +88,16 @@ export const ShellLayout: React.FC<ShellLayoutProps> = ({
               />
             )}
 
-            <div className={`${mainPaddingClass}`}>{children || <Outlet />}</div>
+            <main className={`${mainPaddingClass}`}>{children || <Outlet />}</main>
+
+            {effectiveShowFooter && (
+              <footer className="flex-shrink-0 border-t border-gray-100 bg-white/80 backdrop-blur-sm px-4 py-2 text-center text-xs text-gray-500">
+                © 2026 App Design & Development by Thammaphon Chittasuwanna (SDM)
+              </footer>
+            )}
           </SidebarInset>
         </div>
       </SidebarProvider>
-      {effectiveShowContactWidget && <ContactWidget />}
     </div>
   );
 };

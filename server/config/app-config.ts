@@ -29,14 +29,21 @@ const config: ServerConfig = {
   database: {
     host: process.env.DB_HOST!,
     port: parseInt(process.env.DB_PORT!),
-    database: process.env.DB_NAME!,
+    database: process.env.DB_NAME || process.env.KPI_DB_NAME || 'kpi-db', // Use KPI DB if DB_NAME not set
     username: process.env.DB_USER!,
     password: process.env.DB_PASSWORD!,
+  },
+  kpiDatabase: {
+    host: process.env.KPI_DB_HOST || process.env.DB_HOST!,
+    port: parseInt(process.env.KPI_DB_PORT || process.env.DB_PORT!),
+    database: process.env.KPI_DB_NAME || 'kpi-db',
+    username: process.env.KPI_DB_USER || process.env.DB_USER!,
+    password: process.env.KPI_DB_PASSWORD || process.env.DB_PASSWORD!,
   },
 };
 
 export const getCorsOrigins = () => config.cors.origin;
-export const getAppStoreDbConfig = () => config.database;
+export const getKpiDbConfig = () => config.kpiDatabase;
 export const getRateLimitConfig = () => ({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'development' ? 1000 : 100,

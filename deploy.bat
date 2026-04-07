@@ -18,7 +18,7 @@ goto :start_deploy
 
 :show_help
 echo.
-echo SDM&SKD App Store Deployment Script
+echo KPI : Auto Report Deployment Script
 echo ==================================
 echo.
 echo Usage: deploy.bat [mode]
@@ -36,7 +36,7 @@ pause
 exit /b 0
 
 :start_deploy
-echo Deploying SDM&SKD App Store to Production...
+echo Deploying KPI : Auto Report to Production...
 echo Mode: %DEPLOY_MODE%
 echo.
 
@@ -279,7 +279,7 @@ timeout /t 5 /nobreak >nul
 
 REM Health check
 echo Performing health check...
-powershell -Command "try { $response = curl -UseBasicParsing -Uri 'http://localhost:4006/health' -StatusCode; Write-Output $response.StatusCode } catch { Write-Output '000' }" >temp_health.txt
+powershell -Command "try { $response = curl -UseBasicParsing -Uri 'http://localhost:4007/health' -StatusCode; Write-Output $response.StatusCode } catch { Write-Output '000' }" >temp_health.txt
 set /p health_response=<temp_health.txt
 del temp_health.txt
 
@@ -342,8 +342,8 @@ echo ========================================
 echo DEPLOYMENT COMPLETED SUCCESSFULLY!
 echo ========================================
 echo.
-echo App Store is now running at: http://10.73.148.75/app-store/
-echo API Server: http://localhost:4006
+echo KPI is now running at: http://10.73.148.75/app-store/
+echo API Server: http://localhost:4007
 echo.
 echo PM2 processes will auto-restart on system reboot
 echo.

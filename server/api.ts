@@ -15,8 +15,18 @@ import { AppError, ValidationError as AppValidationError, NotFoundError } from '
 import authRoutes from './routes/auth';
 import statsRoutes from './routes/stats';
 // import visitorTrackingRoutes from './routes/visitor-tracking'; // Temporarily disabled
-// KPI routes will be added here
-// import kpiRoutes from './routes/kpi';
+import kpiRoutes from './routes/kpi';
+import deliveryRoutes from './routes/delivery';
+import complianceRoutes from './routes/compliance';
+import hrRoutes from './routes/hr';
+import attractiveRoutes from './routes/attractive';
+import environmentRoutes from './routes/environment';
+import costRoutes from './routes/cost';
+import safetyRoutes from './routes/safety';
+import qualityRoutes from './routes/quality';
+import departmentsRoutes from './routes/departments';
+import kpiFormsRoutes from './routes/kpi-forms';
+import adminUsersRoutes from './routes/admin-users';
 
 const app = express();
 const PORT = parseInt(process.env.API_PORT!);
@@ -159,6 +169,7 @@ app.get('/api/health', async (_req, res) => {
           environment: process.env.NODE_ENV,
           databases: {
             appStore: 'skipped_development',
+            kpi: 'skipped_development',
           },
           message: 'Development mode - database connection skipped',
         },
@@ -166,7 +177,7 @@ app.get('/api/health', async (_req, res) => {
     }
 
     const dbStatus = await testConnections();
-    const isHealthy = dbStatus.appStore; // Only require appStore DB in production
+    const isHealthy = dbStatus.appStore || dbStatus.kpi; // Require at least one DB
 
     res.status(isHealthy ? 200 : 503).json({
       success: isHealthy,
@@ -177,6 +188,7 @@ app.get('/api/health', async (_req, res) => {
         environment: process.env.NODE_ENV,
         databases: {
           appStore: dbStatus.appStore ? 'connected' : 'disconnected',
+          kpi: dbStatus.kpi ? 'connected' : 'disconnected',
         },
         ...(dbStatus.errors.length > 0 && process.env.NODE_ENV === 'development'
           ? { errors: dbStatus.errors }
@@ -202,8 +214,18 @@ app.get('/api/health', async (_req, res) => {
 // ============================================
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
-// KPI routes will be added here
-// app.use('/api/kpi', kpiRoutes);
+app.use('/api/kpi', kpiRoutes);
+app.use('/api/delivery', deliveryRoutes);
+app.use('/api/compliance', complianceRoutes);
+app.use('/api/hr', hrRoutes);
+app.use('/api/attractive', attractiveRoutes);
+app.use('/api/environment', environmentRoutes);
+app.use('/api/cost', costRoutes);
+app.use('/api/safety', safetyRoutes);
+app.use('/api/quality', qualityRoutes);
+app.use('/api/departments', departmentsRoutes);
+app.use('/api/kpi-forms', kpiFormsRoutes);
+app.use('/api/admin', adminUsersRoutes);
 // app.use('/api/visitor-tracking', visitorTrackingRoutes); // Temporarily disabled
 
 // ============================================

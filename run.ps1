@@ -1,7 +1,7 @@
-# Start SDM&SKD App Store Development Server (PowerShell Script)
+# Start KPI : Auto Report Development Server (PowerShell Script)
 # Usage: .\run.ps1
 
-Write-Host "Starting SDM&SKD App Store Development Server..." -ForegroundColor Green
+Write-Host "Starting KPI : Auto Report Development Server..." -ForegroundColor Green
 Write-Host ""
 
 # Change to project directory
@@ -152,7 +152,7 @@ Write-Host ""
 
 # Start the application
 Write-Host ""
-Write-Host "Starting SDM&SKD App Store..." -ForegroundColor Cyan
+Write-Host "Starting KPI : Auto Report..." -ForegroundColor Cyan
 if ($envFile -eq ".env.development") {
     Write-Host "Environment: Development" -ForegroundColor Gray
     Write-Host "Frontend: http://localhost:5173" -ForegroundColor White
@@ -160,9 +160,9 @@ if ($envFile -eq ".env.development") {
     Write-Host "Health: http://localhost:5173/health" -ForegroundColor White
 } else {
     Write-Host "Environment: Production" -ForegroundColor Gray
-    Write-Host "Frontend: http://10.73.148.75:3006" -ForegroundColor White
-    Write-Host "API: http://10.73.148.75:3006/api" -ForegroundColor White
-    Write-Host "Health: http://10.73.148.75:3006/health" -ForegroundColor White
+    Write-Host "Frontend: http://10.73.148.75:3007" -ForegroundColor White
+    Write-Host "API: http://10.73.148.75:3007/api" -ForegroundColor White
+    Write-Host "Health: http://10.73.148.75:3007/health" -ForegroundColor White
 }
 Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Gray
 Write-Host ""

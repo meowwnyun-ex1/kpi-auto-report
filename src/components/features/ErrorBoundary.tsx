@@ -5,6 +5,7 @@ interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   errorType?: ErrorType;
+  useShellLayout?: boolean;
 }
 
 interface State {
@@ -127,6 +128,7 @@ export class ErrorBoundary extends Component<Props, State> {
           onRetry={() => window.location.reload()}
           showRetry={true}
           showHome={true}
+          useShellLayout={this.props.useShellLayout !== false}
         />
       );
     }

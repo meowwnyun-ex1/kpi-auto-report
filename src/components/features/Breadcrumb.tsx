@@ -703,7 +703,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
         home: 'Home',
         apps: 'Apps',
         applications: 'Applications',
-        store: 'App Store',
+        store: 'KPI Report',
         shop: 'Shop',
         categories: 'Categories',
         search: 'Search',

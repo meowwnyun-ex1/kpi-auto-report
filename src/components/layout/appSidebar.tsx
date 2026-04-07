@@ -152,7 +152,7 @@ export function AppSidebar() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">DENSO</h2>
-            <p className="text-xs text-gray-600">App Store</p>
+            <p className="text-xs text-gray-600">KPI Report</p>
           </div>
         </div>
       </div>

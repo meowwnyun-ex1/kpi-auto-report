@@ -116,4 +116,5 @@ export interface ServerConfig {
     destination: string;
   };
   database: DatabaseConfig;
+  kpiDatabase: DatabaseConfig;
 }

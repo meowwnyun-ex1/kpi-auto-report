@@ -8,6 +8,7 @@ import {
   Truck,
   FileCheck,
   Users,
+  UserPlus,
   Star,
   Leaf,
   DollarSign,
@@ -21,6 +22,12 @@ import {
   Building2,
   LayoutDashboard,
   Lock,
+  Settings,
+  FileText,
+  Eye,
+  Calendar,
+  GanttChart,
+  FormInput,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -53,81 +60,48 @@ type NavItem = {
   children?: NavItem[];
 };
 
-// KPI Categories - Data Entry only (Manager/Admin access)
-const KPI_DATA_ENTRY: NavItem[] = [
-  {
-    title: 'Safety',
-    url: '/safety',
-    icon: Shield,
-    children: [
-      { title: 'Data Entry', url: '/safety/entry', icon: ClipboardList },
-      { title: 'By Department', url: '/safety/dept', icon: Building2 },
-    ],
-  },
-  {
-    title: 'Quality',
-    url: '/quality',
-    icon: Award,
-    children: [
-      { title: 'Data Entry', url: '/quality/entry', icon: ClipboardList },
-      { title: 'By Department', url: '/quality/dept', icon: Building2 },
-    ],
-  },
-  {
-    title: 'Delivery',
-    url: '/delivery',
-    icon: Truck,
-    children: [
-      { title: 'Data Entry', url: '/delivery/entry', icon: ClipboardList },
-      { title: 'By Department', url: '/delivery/dept', icon: Building2 },
-    ],
-  },
-  {
-    title: 'Compliance',
-    url: '/compliance',
-    icon: FileCheck,
-    children: [
-      { title: 'Data Entry', url: '/compliance/entry', icon: ClipboardList },
-      { title: 'By Department', url: '/compliance/dept', icon: Building2 },
-    ],
-  },
-  {
-    title: 'HR',
-    url: '/hr',
-    icon: Users,
-    children: [
-      { title: 'Data Entry', url: '/hr/entry', icon: ClipboardList },
-      { title: 'By Department', url: '/hr/dept', icon: Building2 },
-    ],
-  },
-  {
-    title: 'Attractive',
-    url: '/attractive',
-    icon: Star,
-    children: [
-      { title: 'Data Entry', url: '/attractive/entry', icon: ClipboardList },
-      { title: 'By Department', url: '/attractive/dept', icon: Building2 },
-    ],
-  },
-  {
-    title: 'Environment',
-    url: '/environment',
-    icon: Leaf,
-    children: [
-      { title: 'Data Entry', url: '/environment/entry', icon: ClipboardList },
-      { title: 'By Department', url: '/environment/dept', icon: Building2 },
-    ],
-  },
-  {
-    title: 'Cost',
-    url: '/cost',
-    icon: DollarSign,
-    children: [
-      { title: 'Data Entry', url: '/cost/entry', icon: ClipboardList },
-      { title: 'By Department', url: '/cost/dept', icon: Building2 },
-    ],
-  },
-];
+// Dashboard - Single entry for all dashboards
+const DASHBOARD_MENU: NavItem = {
+  title: 'Dashboard',
+  url: '/dashboard',
+  icon: LayoutDashboard,
+  children: [
+    { title: 'Overview', url: '/dashboard', icon: LayoutDashboard },
+    { title: 'Safety', url: '/dashboard/safety', icon: Shield },
+    { title: 'Quality', url: '/dashboard/quality', icon: Award },
+    { title: 'Delivery', url: '/dashboard/delivery', icon: Truck },
+    { title: 'Compliance', url: '/dashboard/compliance', icon: FileCheck },
+    { title: 'HR', url: '/dashboard/hr', icon: Users },
+    { title: 'Attractive', url: '/dashboard/attractive', icon: Star },
+    { title: 'Environment', url: '/dashboard/environment', icon: Leaf },
+    { title: 'Cost', url: '/dashboard/cost', icon: DollarSign },
+  ],
+};
+
+// KPI Management - Manager/Admin access
+const KPI_MANAGEMENT_MENU: NavItem = {
+  title: 'KPI Management',
+  url: '/kpi-management',
+  icon: ClipboardList,
+  children: [
+    { title: 'Overview', url: '/overview', icon: BarChart3 },
+    { title: 'Yearly Targets', url: '/yearly-targets', icon: Calendar },
+    { title: 'Monthly Entry', url: '/monthly-entry', icon: ClipboardList },
+    { title: 'Action Plans', url: '/action-plans', icon: GanttChart },
+  ],
+};
+
+// Admin - Admin/SuperAdmin access
+const ADMIN_MENU: NavItem = {
+  title: 'Admin',
+  url: '/admin',
+  icon: Settings,
+  children: [
+    { title: 'Users', url: '/admin?tab=users', icon: Users },
+    { title: 'Add New User', url: '/admin?tab=employees', icon: UserPlus },
+    { title: 'Settings', url: '/admin?tab=settings', icon: Settings },
+  ],
+};
 
 function normalizePath(p: string) {
   if (p.length > 1 && p.endsWith('/')) return p.slice(0, -1);
@@ -231,128 +205,120 @@ export function AppSidebar() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={location.pathname === '/dashboard'}
-                className={cn(
-                  'w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                  location.pathname === '/dashboard'
-                    ? 'bg-sky-50 text-sky-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                )}>
-                <Link to="/dashboard" className="flex items-center gap-3">
-                  <LayoutDashboard
+
+            {/* Dashboard with sub-menus */}
+            <Collapsible
+              open={openCategories.includes(DASHBOARD_MENU.url)}
+              onOpenChange={() => toggleCategory(DASHBOARD_MENU.url)}
+              className="group/collapsible">
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
                     className={cn(
-                      'h-5 w-5',
-                      location.pathname === '/dashboard' ? 'text-sky-600' : 'text-gray-400'
+                      'w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                      isPathActive(location.pathname, DASHBOARD_MENU.url)
+                        ? 'bg-sky-50 text-sky-700'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    )}>
+                    <DASHBOARD_MENU.icon
+                      className={cn(
+                        'h-5 w-5',
+                        isPathActive(location.pathname, DASHBOARD_MENU.url)
+                          ? 'text-sky-600'
+                          : 'text-gray-400'
+                      )}
+                    />
+                    <span className="flex-1">{DASHBOARD_MENU.title}</span>
+                    {openCategories.includes(DASHBOARD_MENU.url) ? (
+                      <ChevronDown className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
                     )}
-                  />
-                  <span>KPI Dashboard</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub className="ml-4 mt-1 space-y-1">
+                    {DASHBOARD_MENU.children?.map((child) => {
+                      const childActive = location.pathname === child.url;
+                      return (
+                        <SidebarMenuSubItem key={child.url}>
+                          <SidebarMenuSubButton
+                            asChild
+                            className={cn(
+                              'w-full rounded-lg px-3 py-2 text-sm transition-colors',
+                              childActive
+                                ? 'bg-sky-100 text-sky-700'
+                                : 'text-gray-600 hover:bg-gray-50'
+                            )}>
+                            <Link to={child.url} className="flex items-center gap-2">
+                              <child.icon className="h-4 w-4" />
+                              <span>{child.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
           </SidebarMenu>
         </SidebarGroup>
 
-        {/* KPI Categories - Data Entry (Manager/Admin only) */}
+        {/* KPI Management - Manager/Admin only */}
         {isManagerOrAdmin && (
           <SidebarGroup className="mt-2">
             <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase flex items-center gap-1">
               <Lock className="h-3 w-3" />
-              KPI Data Entry
+              KPI Management
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-1">
-              {KPI_DATA_ENTRY.map((category) => {
-                const isActive = isPathActive(location.pathname, category.url);
-                const isOpen = openCategories.includes(category.url);
-
-                return (
-                  <Collapsible
-                    key={category.url}
-                    open={isOpen}
-                    onOpenChange={() => toggleCategory(category.url)}
-                    className="group/collapsible">
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                          className={cn(
-                            'w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                            isActive
-                              ? 'bg-blue-50 text-blue-700'
-                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                          )}>
-                          <category.icon
-                            className={cn('h-5 w-5', isActive ? 'text-blue-600' : 'text-gray-400')}
-                          />
-                          <span className="flex-1">{category.title}</span>
-                          {isOpen ? (
-                            <ChevronDown className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
-                          )}
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub className="ml-4 mt-1 space-y-1">
-                          {category.children?.map((child) => {
-                            const childActive = location.pathname === child.url;
-                            return (
-                              <SidebarMenuSubItem key={child.url}>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  className={cn(
-                                    'w-full rounded-lg px-3 py-2 text-sm transition-colors',
-                                    childActive
-                                      ? 'bg-blue-100 text-blue-700'
-                                      : 'text-gray-600 hover:bg-gray-50'
-                                  )}>
-                                  <Link to={child.url} className="flex items-center gap-2">
-                                    <child.icon className="h-4 w-4" />
-                                    <span>{child.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            );
-                          })}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                );
-              })}
+              {KPI_MANAGEMENT_MENU.children?.map((child) => (
+                <SidebarMenuItem key={child.url}>
+                  <SidebarMenuButton
+                    asChild
+                    className={cn(
+                      'w-full rounded-lg px-3 py-2 text-sm transition-colors',
+                      location.pathname === child.url
+                        ? 'bg-green-100 text-green-700'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    )}>
+                    <Link to={child.url} className="flex items-center gap-2">
+                      <child.icon className="h-4 w-4" />
+                      <span>{child.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroup>
         )}
 
-        {/* Admin Menu - Only for admins */}
+        {/* Admin - Only for admins */}
         {isAdminRole && (
           <SidebarGroup className="mt-2">
             <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase">
-              Administration
+              Admin
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-1">
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location.pathname === '/admin'}
-                  className={cn(
-                    'w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                    location.pathname === '/admin'
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  )}>
-                  <Link to="/admin" className="flex items-center gap-3">
-                    <BarChart3
-                      className={cn(
-                        'h-5 w-5',
-                        location.pathname === '/admin' ? 'text-blue-600' : 'text-gray-400'
-                      )}
-                    />
-                    <span>Admin Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {ADMIN_MENU.children?.map((child) => (
+                <SidebarMenuItem key={child.url}>
+                  <SidebarMenuButton
+                    asChild
+                    className={cn(
+                      'w-full rounded-lg px-3 py-2 text-sm transition-colors',
+                      location.pathname === '/admin' &&
+                        location.search.includes(child.url.split('tab=')[1] || '')
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-50'
+                    )}>
+                    <Link to={child.url} className="flex items-center gap-2">
+                      <child.icon className="h-4 w-4" />
+                      <span>{child.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroup>
         )}
