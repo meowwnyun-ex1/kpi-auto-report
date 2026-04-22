@@ -1,7 +1,7 @@
 # Zero-Downtime Deploy Script for KPI : Auto Report
 # Usage: .\deploy-zero-downtime.ps1 [-SkipBuild] [-FrontendOnly] [-BackendOnly]
 #
-# IMPORTANT: This script ONLY manages app-store-api PM2 process
+# IMPORTANT: This script ONLY manages kpi-auto-report-api PM2 process
 # It will NOT affect other PM2 processes or other nginx configs
 
 param(
@@ -18,7 +18,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Zero-Downtime Deployment" -ForegroundColor Cyan
 Write-Host "  KPI : Auto Report" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  (Only affects app-store-api)" -ForegroundColor Gray
+Write-Host "  (Only affects kpi-auto-report-api)" -ForegroundColor Gray
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -39,9 +39,9 @@ try {
     exit 1
 }
 
-# Check if app-store-api is running (only check this specific app)
+# Check if kpi-auto-report-api is running (only check this specific app)
 $pm2List = pm2 jlist 2>$null | ConvertFrom-Json
-$appRunning = $pm2List | Where-Object { $_.name -eq 'app-store-api' }
+$appRunning = $pm2List | Where-Object { $_.name -eq 'kpi-auto-report-api' }
 
 if (-not $appRunning) {
     Write-Host "  App not running. Use .\deploy.ps1 for initial deployment." -ForegroundColor Yellow
@@ -52,7 +52,7 @@ if (-not $appRunning) {
 Write-Host "  App Status: Running ($($appRunning.instances) instances)" -ForegroundColor Green
 
 # Show other running apps (but don't touch them)
-$otherApps = $pm2List | Where-Object { $_.name -ne 'app-store-api' }
+$otherApps = $pm2List | Where-Object { $_.name -ne 'kpi-auto-report-api' }
 if ($otherApps) {
     Write-Host "  Other apps running (will NOT be affected):" -ForegroundColor Gray
     foreach ($app in $otherApps) {
@@ -102,29 +102,29 @@ Write-Host "  Zero-Downtime Reload" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-Write-Host "Current app-store-api instances:" -ForegroundColor Blue
-pm2 show app-store-api 2>$null | Select-String -Pattern "status|instances|restarts"
+Write-Host "Current kpi-auto-report-api instances:" -ForegroundColor Blue
+pm2 show kpi-auto-report-api 2>$null | Select-String -Pattern "status|instances|restarts"
 
 Write-Host ""
-Write-Host "Reloading app-store-api with zero downtime..." -ForegroundColor Blue
+Write-Host "Reloading kpi-auto-report-api with zero downtime..." -ForegroundColor Blue
 Write-Host "  - New instances will start first" -ForegroundColor Gray
 Write-Host "  - Old instances will drain connections" -ForegroundColor Gray
 Write-Host "  - No requests will be dropped" -ForegroundColor Gray
 Write-Host "  - Other PM2 apps will NOT be affected" -ForegroundColor Gray
 Write-Host ""
 
-# PM2 reload ONLY app-store-api (not other apps)
-& pm2 reload app-store-api
+# PM2 reload ONLY kpi-auto-report-api (not other apps)
+& pm2 reload kpi-auto-report-api
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  WARNING: Reload failed, falling back to restart" -ForegroundColor Yellow
-    & pm2 restart app-store-api
+    & pm2 restart kpi-auto-report-api
 }
 
 Start-Sleep -Seconds 3
 
 Write-Host ""
-Write-Host "New app-store-api instances:" -ForegroundColor Blue
-pm2 show app-store-api 2>$null | Select-String -Pattern "status|instances|restarts"
+Write-Host "New kpi-auto-report-api instances:" -ForegroundColor Blue
+pm2 show kpi-auto-report-api 2>$null | Select-String -Pattern "status|instances|restarts"
 
 # ============================================
 # Nginx Instructions (Don't auto-modify)
@@ -139,7 +139,7 @@ Write-Host "Nginx config is NOT auto-updated to avoid affecting other systems." 
 Write-Host ""
 Write-Host "To update nginx manually:" -ForegroundColor Blue
 Write-Host "  1. Add to main nginx.conf http{} block:" -ForegroundColor Gray
-Write-Host "     include D:/GitHub/Project/app-store/nginx.conf;" -ForegroundColor White
+Write-Host "     include D:/GitHub/Project/kpi-auto-report/nginx.conf;" -ForegroundColor White
 Write-Host ""
 Write-Host "  2. Test: nginx -t" -ForegroundColor Gray
 Write-Host "  3. Reload: nginx -s reload" -ForegroundColor Gray
@@ -184,7 +184,7 @@ try {
     }
 } catch {
     Write-Host "  Health check: FAILED" -ForegroundColor Red
-    Write-Host "  Check logs: pm2 logs app-store-api" -ForegroundColor Yellow
+    Write-Host "  Check logs: pm2 logs kpi-auto-report-api" -ForegroundColor Yellow
 }
 
 # ============================================
@@ -195,12 +195,12 @@ Write-Host "========================================" -ForegroundColor Green
 Write-Host "  DEPLOYMENT COMPLETE" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  URL: http://10.73.148.75/app-store/" -ForegroundColor Cyan
+Write-Host "  URL: http://10.73.148.75/kpi-auto-report/" -ForegroundColor Cyan
 Write-Host "  API: http://localhost:4007" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Zero downtime achieved!" -ForegroundColor Green
 Write-Host "  Other systems were NOT affected." -ForegroundColor Gray
 Write-Host ""
 
-# Save PM2 config (only app-store-api)
+# Save PM2 config (only kpi-auto-report-api)
 & pm2 save

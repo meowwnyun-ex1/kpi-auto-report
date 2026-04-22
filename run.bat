@@ -166,9 +166,9 @@ if exist ".env.development" (
     echo Health: http://localhost:4007/health
 ) else (
     echo Environment: Production
-    echo Frontend: http://10.73.148.75/app-store
-    echo API: http://10.73.148.75/app-store/api
-    echo Health: http://10.73.148.75/app-store/health
+    echo Frontend: http://10.73.148.75/kpi-auto-report
+    echo API: http://10.73.148.75/kpi-auto-report/api
+    echo Health: http://10.73.148.75/kpi-auto-report/health
 )
 echo Press Ctrl+C to stop the server
 echo.

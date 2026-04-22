@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
-import { KPIDashboard } from '@/pages/kpi';
+import MainDashboard from './MainDashboard';
 
 interface CategoryDashboardProps {
   category?: string;
@@ -26,8 +26,8 @@ export function CategoryDashboard({ category: propCategory }: CategoryDashboardP
     return <Navigate to="/dashboard" replace />;
   }
 
-  // KPIDashboard already includes ShellLayout, so we don't wrap it again
-  return <KPIDashboard />;
+  // Render MainDashboard with category filter
+  return <MainDashboard initialCategory={category} />;
 }
 
 export default CategoryDashboard;

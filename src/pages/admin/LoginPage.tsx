@@ -1,6 +1,6 @@
 import LoginForm from '@/components/forms/loginForm';
 import { ShellLayout } from '@/features/shell';
-import { Target, TrendingUp, BarChart3, PieChart } from 'lucide-react';
+import { Shield, Award, Truck, FileCheck, Users, Star, Leaf, DollarSign } from 'lucide-react';
 
 export default function LoginPage() {
   return (
@@ -24,36 +24,60 @@ export default function LoginPage() {
             <div className="flex flex-col items-center justify-center space-y-8">
               <div className="text-center">
                 <h1 className="text-5xl font-bold bg-gradient-to-r from-sky-600 to-pink-600 bg-clip-text text-transparent">
-                  KPI Auto Report
+                  KPI Management Tool
                 </h1>
-                <p className="mt-4 text-xl text-sky-700/80">ระบบรายงานตัวชี้วัดอัตโนมัติ</p>
+                <p className="mt-4 text-xl text-sky-700/80">Auto KPI Reporting System</p>
               </div>
 
-              {/* KPI Icons */}
-              <div className="flex items-center justify-center gap-8">
+              {/* KPI Icons - All 8 Categories */}
+              <div className="grid grid-cols-4 gap-6">
                 <div className="flex flex-col items-center">
-                  <div className="rounded-full bg-sky-500/20 p-4">
-                    <Target className="h-8 w-8 text-sky-600" />
+                  <div className="rounded-full bg-red-500/20 p-4">
+                    <Shield className="h-8 w-8 text-red-600" />
                   </div>
-                  <span className="mt-2 text-sm text-sky-700">Safety</span>
+                  <span className="mt-2 text-sm text-red-700">Safety</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <div className="rounded-full bg-green-500/20 p-4">
-                    <TrendingUp className="h-8 w-8 text-green-600" />
+                    <Award className="h-8 w-8 text-green-600" />
                   </div>
                   <span className="mt-2 text-sm text-green-700">Quality</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="rounded-full bg-pink-500/20 p-4">
-                    <BarChart3 className="h-8 w-8 text-pink-600" />
+                  <div className="rounded-full bg-blue-500/20 p-4">
+                    <Truck className="h-8 w-8 text-blue-600" />
                   </div>
-                  <span className="mt-2 text-sm text-pink-700">Delivery</span>
+                  <span className="mt-2 text-sm text-blue-700">Delivery</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <div className="rounded-full bg-purple-500/20 p-4">
-                    <PieChart className="h-8 w-8 text-purple-600" />
+                    <FileCheck className="h-8 w-8 text-purple-600" />
                   </div>
-                  <span className="mt-2 text-sm text-purple-700">Cost</span>
+                  <span className="mt-2 text-sm text-purple-700">Compliance</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="rounded-full bg-orange-500/20 p-4">
+                    <Users className="h-8 w-8 text-orange-600" />
+                  </div>
+                  <span className="mt-2 text-sm text-orange-700">HR</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="rounded-full bg-pink-500/20 p-4">
+                    <Star className="h-8 w-8 text-pink-600" />
+                  </div>
+                  <span className="mt-2 text-sm text-pink-700">Attractive</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="rounded-full bg-teal-500/20 p-4">
+                    <Leaf className="h-8 w-8 text-teal-600" />
+                  </div>
+                  <span className="mt-2 text-sm text-teal-700">Environment</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="rounded-full bg-indigo-500/20 p-4">
+                    <DollarSign className="h-8 w-8 text-indigo-600" />
+                  </div>
+                  <span className="mt-2 text-sm text-indigo-700">Cost</span>
                 </div>
               </div>
             </div>

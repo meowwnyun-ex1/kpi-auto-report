@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoadingProvider, useInitialLoading } from './contexts/LoadingContext';
 import { RefreshProvider } from './contexts/RefreshContext';
+import { FiscalYearProvider } from './contexts/FiscalYearContext';
 import { ErrorBoundary } from './components/features/ErrorBoundary';
 import { Toaster } from './components/ui/toaster';
 import { UnifiedError } from './components/ui/unified-error';
@@ -10,12 +11,19 @@ import { HomePage, LoginPage } from './pages';
 import { MainDashboard, CategoryDashboard } from './pages/dashboard';
 import OverviewPage from './pages/kpi/OverviewPage';
 import YearlyTargetsPage from './pages/kpi/YearlyTargetsPage';
-import MonthlyEntryPage from './pages/kpi/MonthlyEntryPage';
+import MonthlyTargetsPage from './pages/kpi/MonthlyTargetsPage';
+import MonthlyResultPage from './pages/kpi/MonthlyResultPage';
 import ActionPlansPage from './pages/kpi/ActionPlansPage';
-import AdminPage from './pages/admin/AdminPage';
+import {
+  AdminDashboardPage,
+  AdminUsersPage,
+  AdminEmployeesPage,
+  AdminSettingsPage,
+  AdminKPICategoriesPage,
+} from './pages/admin';
+import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 import InitialLoading from './components/ui/initial-loading';
 import { ShellLayout } from '@/features/shell';
-import { useVisitorTracking } from './hooks/useVisitorTracking';
 
 // KPI Categories
 const KPI_CATEGORIES = [
@@ -60,8 +68,6 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppContent: React.FC = () => {
   const { isLoading: isInitialLoading } = useInitialLoading();
 
-  useVisitorTracking();
-
   return (
     <RefreshProvider>
       {isInitialLoading && <InitialLoading />}
@@ -82,7 +88,7 @@ const AppContent: React.FC = () => {
             />
           ))}
 
-          {/* KPI Management - Separate pages */}
+          {/* KPI Management - 3 main forms + Overview */}
           <Route
             path="/overview"
             element={
@@ -100,10 +106,18 @@ const AppContent: React.FC = () => {
             }
           />
           <Route
-            path="/monthly-entry"
+            path="/monthly-targets"
             element={
               <ProtectedRoute>
-                <MonthlyEntryPage />
+                <MonthlyTargetsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/monthly-result"
+            element={
+              <ProtectedRoute>
+                <MonthlyResultPage />
               </ProtectedRoute>
             }
           />
@@ -116,18 +130,60 @@ const AppContent: React.FC = () => {
             }
           />
 
-          {/* Admin - Consolidated settings page */}
+          {/* Admin Routes */}
           <Route
             path="/admin"
             element={
               <AdminRoute>
-                <AdminPage />
+                <AdminDashboardPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsersPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/employees"
+            element={
+              <AdminRoute>
+                <AdminEmployeesPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/categories"
+            element={
+              <AdminRoute>
+                <AdminKPICategoriesPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <AdminRoute>
+                <AdminSettingsPage />
               </AdminRoute>
             }
           />
 
           {/* Login */}
           <Route path="/login" element={<LoginPage />} />
+
+          {/* Change Password */}
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute>
+                <ChangePasswordPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* 404 - Full page error with consistent layout */}
           <Route path="*" element={<UnifiedError type="404" useShellLayout={true} />} />
@@ -139,14 +195,16 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <LoadingProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-        <Toaster />
-      </LoadingProvider>
-    </ErrorBoundary>
+    <LoadingProvider>
+      <AuthProvider>
+        <FiscalYearProvider>
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
+          <Toaster />
+        </FiscalYearProvider>
+      </AuthProvider>
+    </LoadingProvider>
   );
 }
 

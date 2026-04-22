@@ -1,127 +1,89 @@
 import express from 'express';
 import sql from 'mssql';
-import { getKpiDb } from '../config/database';
+import { getSpoDb, getKpiDb } from '../config/database';
 import { logger } from '../utils/logger';
 
 const router = express.Router();
 
-// SPO Database configuration
-const getSpoDbConfig = (): sql.config => ({
-  server: process.env.DB_HOST!,
-  database: process.env.DB_SPO_NAME || 'SPO_Dev',
-  user: process.env.DB_USER!,
-  password: process.env.DB_PASSWORD!,
-  port: parseInt(process.env.DB_PORT!),
-  options: {
-    encrypt: false,
-    trustServerCertificate: true,
-    enableArithAbort: true,
-    connectionTimeout: 30000,
-    requestTimeout: 30000,
-  },
-});
-
-let spoPool: sql.ConnectionPool | null = null;
-
-const getSpoDb = async (): Promise<sql.ConnectionPool> => {
-  if (spoPool && spoPool.connected) {
-    return spoPool;
-  }
-
-  try {
-    spoPool = await new sql.ConnectionPool(getSpoDbConfig()).connect();
-    logger.info('SPO database connected successfully');
-    return spoPool;
-  } catch (error) {
-    logger.error('Failed to connect to SPO database', error);
-    throw error;
-  }
-};
-
 /**
  * GET /api/departments
- * Get all departments from SPO_Dev and sync with local departments table
+ * Get all departments from SPO_Dev.dept_master table with KPI mapping
  */
 router.get('/', async (req, res) => {
   try {
     const kpiDb = await getKpiDb();
 
-    // First, try to get from local departments table
-    const localResult = await kpiDb.request().query(`
-      SELECT id, dept_code, dept_id, name_en, name_th, [type], company, status, sort_order
-      FROM departments
-      WHERE status = 'Active'
-      ORDER BY sort_order, name_en
+    // Get KPI department mapping first
+    const mappingResult = await kpiDb.request().query(`
+      SELECT kpi_code, spo_dept_id, spo_dept_name, description
+      FROM kpi_department_mapping
+      ORDER BY kpi_code
     `);
 
-    if (localResult.recordset.length > 0) {
-      return res.json({
-        success: true,
-        data: localResult.recordset,
-        source: 'local',
-      });
-    }
+    const kpiMapping = mappingResult.recordset;
 
-    // If no local data, fetch from SPO_Dev
+    // Try to get SPO_Dev departments for enrichment (optional)
+    let spoDepts: any[] = [];
     try {
       const spoDb = await getSpoDb();
-      const spoResult = await spoDb.request().query(`
-        SELECT 
-          SKDCode as dept_code,
-          DepartmentID as dept_id,
-          DepartmentName as name_en,
-          '' as name_th,
-          Type as [type],
-          Company as company,
-          'Active' as status,
-          ROW_NUMBER() OVER (ORDER BY DepartmentName) as sort_order
-        FROM Department
-        WHERE Status = 'Active'
-        ORDER BY DepartmentName
+      const result = await spoDb.request().query(`
+        SELECT TOP (1000) [dept_id]
+              ,[company]
+              ,[section_code]
+              ,[section_name]
+              ,[dept_group]
+              ,[div_type]
+              ,[div_group]
+              ,[pa_id]
+              ,[is_active]
+              ,[updated_at]
+        FROM [SPO_Dev].[dbo].[dept_master]
+        WHERE is_active = 1
+        ORDER BY section_name
       `);
+      spoDepts = result.recordset;
+    } catch (spoError: unknown) {
+      logger.warn(
+        'SPO_Dev database unavailable, returning departments without SPO enrichment',
+        spoError as Record<string, unknown>
+      );
+    }
 
-      // Sync to local table
-      for (const dept of spoResult.recordset) {
-        await kpiDb
-          .request()
-          .input('dept_code', sql.NVarChar, dept.dept_code)
-          .input('dept_id', sql.NVarChar, dept.dept_id)
-          .input('name_en', sql.NVarChar, dept.name_en)
-          .input('name_th', sql.NVarChar, dept.name_th)
-          .input('type', sql.NVarChar, dept.type)
-          .input('company', sql.NVarChar, dept.company)
-          .input('status', sql.NVarChar, 'Active')
-          .input('sort_order', sql.Int, dept.sort_order).query(`
-            IF NOT EXISTS (SELECT 1 FROM departments WHERE dept_id = @dept_id)
-            BEGIN
-              INSERT INTO departments (dept_code, dept_id, name_en, name_th, [type], company, status, sort_order, created_at, updated_at)
-              VALUES (@dept_code, @dept_id, @name_en, @name_th, @type, @company, @status, @sort_order, GETDATE(), GETDATE())
-            END
-          `);
-      }
+    // Create a combined list with KPI codes
+    const combinedDepts: any[] = [];
 
-      // Return the synced data
-      const syncedResult = await kpiDb.request().query(`
-        SELECT id, dept_code, dept_id, name_en, name_th, [type], company, status, sort_order
-        FROM departments
-        WHERE status = 'Active'
-        ORDER BY sort_order, name_en
-      `);
+    // Add KPI departments first (these are the main ones used in measurements)
+    for (const mapping of kpiMapping) {
+      // Find matching SPO department if exists
+      const spoDept = spoDepts.find((d: any) => d.dept_id === mapping.spo_dept_id);
 
-      return res.json({
-        success: true,
-        data: syncedResult.recordset,
-        source: 'spo_synced',
-      });
-    } catch (spoError) {
-      logger.error('Failed to fetch from SPO database', spoError);
-      // Return empty array if SPO connection fails
-      return res.json({
-        success: true,
-        data: [],
-        source: 'spo_failed',
+      combinedDepts.push({
+        dept_id: mapping.kpi_code, // Use KPI code as the ID (matches main/main_relate in metrics)
+        name_en: `${mapping.kpi_code}: ${mapping.description || mapping.kpi_code}`,
+        name_th: mapping.spo_dept_name || mapping.description,
+        kpi_code: mapping.kpi_code,
+        spo_dept_id: mapping.spo_dept_id,
+        company: spoDept?.company || null,
+        section_code: spoDept?.section_code || null,
+        dept_group: spoDept?.dept_group || null,
+        div_type: spoDept?.div_type || null,
+        div_group: spoDept?.div_group || null,
+        pa_id: spoDept?.pa_id || null,
+        is_active: spoDept?.is_active || 1,
+        updated_at: spoDept?.updated_at || null,
+        is_kpi_dept: true,
       });
     }
+
+    // Note: Only return KPI departments, not all SPO departments
+    // This keeps the dropdown focused on departments with KPI targets
+
+    return res.json({
+      success: true,
+      data: combinedDepts,
+      kpi_departments: kpiMapping,
+      source: spoDepts.length > 0 ? 'kpi_only' : 'kpi_only_no_spo',
+    });
   } catch (error) {
     logger.error('Error fetching departments', error);
     res.status(500).json({
@@ -141,26 +103,88 @@ router.get('/with-metrics/:category', async (req, res) => {
     const { category } = req.params;
     const kpiDb = await getKpiDb();
 
-    // Get departments with metrics for this category from category-specific tables
-    const result = await kpiDb.request().input('category', sql.NVarChar, category).query(`
-      SELECT 
-        d.dept_id,
-        d.name_en,
-        1 as has_metrics,
-        COUNT(DISTINCT m.id) as metric_count,
-        COUNT(DISTINCT CASE WHEN de.id IS NOT NULL THEN m.id END) as filled_count
-      FROM departments d
-      INNER JOIN ${category}_metrics m ON m.department_id = d.dept_id
-      LEFT JOIN ${category}_data_entries de ON de.metric_id = m.id
-        AND de.year = YEAR(GETDATE())
-      WHERE d.status = 'Active'
-      GROUP BY d.dept_id, d.name_en
-      ORDER BY d.name_en
+    // Get KPI department mapping as primary source
+    const mappingResult = await kpiDb.request().query(`
+      SELECT kpi_code, spo_dept_id, spo_dept_name, description
+      FROM kpi_department_mapping
+      ORDER BY kpi_code
     `);
+
+    // Try to get SPO_Dev departments for enrichment (optional)
+    let spoDepts: any[] = [];
+    try {
+      const spoDb = await getSpoDb();
+      const result = await spoDb.request().query(`
+        SELECT dept_id, section_name as name_en, company, section_code, dept_group, div_type, div_group, pa_id, is_active, updated_at
+        FROM dept_master
+        WHERE is_active = 1
+        ORDER BY section_name
+      `);
+      spoDepts = result.recordset;
+    } catch (spoError: unknown) {
+      logger.warn(
+        'SPO_Dev database unavailable for with-metrics, using KPI mapping only',
+        spoError as Record<string, unknown>
+      );
+    }
+
+    // Get category ID
+    const catResult = await kpiDb
+      .request()
+      .input('category', sql.NVarChar, category)
+      .query(`SELECT id FROM kpi_categories WHERE [key] = @category`);
+
+    if (catResult.recordset.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const categoryId = catResult.recordset[0].id;
+    const currentYear = new Date().getFullYear();
+
+    // For each KPI department, get metric count
+    const departmentsWithMetrics = await Promise.all(
+      mappingResult.recordset.map(async (mapping: any) => {
+        const spoDept = spoDepts.find((d: any) => d.dept_id === mapping.spo_dept_id);
+        const deptId = mapping.kpi_code;
+
+        const metricResult = await kpiDb
+          .request()
+          .input('dept_id', sql.NVarChar, deptId)
+          .input('category_id', sql.Int, categoryId)
+          .input('year', sql.Int, currentYear).query(`
+            SELECT 
+              COUNT(DISTINCT yt.id) as metric_count,
+              COUNT(DISTINCT CASE WHEN me.id IS NOT NULL THEN yt.id END) as filled_count
+            FROM kpi_yearly_targets yt
+            LEFT JOIN kpi_monthly_targets me 
+              ON me.yearly_target_id = yt.id 
+              AND me.fiscal_year = @year
+              AND me.month = MONTH(GETDATE())
+            WHERE yt.category_id = @category_id
+              AND (yt.main = @dept_id OR yt.main_relate LIKE '%' + @dept_id + '%')
+          `);
+
+        return {
+          dept_id: deptId,
+          name_en: `${mapping.kpi_code}: ${mapping.description || mapping.kpi_code}`,
+          company: spoDept?.company || null,
+          section_code: spoDept?.section_code || null,
+          dept_group: spoDept?.dept_group || null,
+          div_type: spoDept?.div_type || null,
+          div_group: spoDept?.div_group || null,
+          pa_id: spoDept?.pa_id || null,
+          is_active: spoDept?.is_active || 1,
+          updated_at: spoDept?.updated_at || null,
+          has_metrics: true,
+          metric_count: metricResult.recordset[0]?.metric_count || 0,
+          filled_count: metricResult.recordset[0]?.filled_count || 0,
+        };
+      })
+    );
 
     res.json({
       success: true,
-      data: result.recordset,
+      data: departmentsWithMetrics.filter((d) => d.metric_count > 0),
     });
   } catch (error) {
     logger.error('Error fetching departments with metrics', error);
@@ -181,13 +205,12 @@ router.get('/:dept_id/categories', async (req, res) => {
     const { dept_id } = req.params;
     const kpiDb = await getKpiDb();
 
-    // Get categories that have metrics for this department
+    // Get categories that have metrics for this department (using main field)
     const result = await kpiDb.request().input('dept_id', sql.NVarChar, dept_id).query(`
       SELECT DISTINCT
-        kc.id, kc.name_en, kc.name_th, kc.[key], kc.color, kc.icon, kc.sort_order
+        kc.id, kc.name, kc.[key], kc.sort_order
       FROM kpi_categories kc
-      INNER JOIN kpi_metrics km ON km.category_id = kc.id
-      WHERE km.department_id = @dept_id OR km.department_id IS NULL
+      WHERE kc.is_active = 1
       ORDER BY kc.sort_order
     `);
 
@@ -214,14 +237,12 @@ router.get('/:dept_id/sub-categories/:category', async (req, res) => {
     const { dept_id, category } = req.params;
     const kpiDb = await getKpiDb();
 
-    // Get sub-categories with metrics for this department from category-specific tables
-    const result = await kpiDb.request().input('dept_id', sql.NVarChar, dept_id).query(`
-      SELECT DISTINCT
-        sc.id, sc.name_en, sc.name_th, sc.[key], sc.sort_order
-      FROM ${category}_sub_categories sc
-      INNER JOIN ${category}_metrics m ON m.sub_category_id = sc.id
-      WHERE m.department_id = @dept_id
-      ORDER BY sc.sort_order
+    // Get sub-categories with metrics for this department (using main field)
+    // Sub-categories are no longer used - return empty array
+    const result = await kpiDb.request().query(`
+      SELECT TOP 0 id, name_en, name_th, [key], sort_order
+      FROM kpi_measurement_sub_categories
+      WHERE 1 = 0
     `);
 
     res.json({
@@ -244,37 +265,95 @@ router.get('/:dept_id/sub-categories/:category', async (req, res) => {
  */
 router.get('/:dept_id/metrics/:category/:sub_category?', async (req, res) => {
   try {
-    const { dept_id, category, sub_category } = req.params;
+    const { dept_id, category } = req.params;
+    const sub_category = (req.params as any).sub_category;
     const kpiDb = await getKpiDb();
+
+    // Try to get department name from SPO_Dev (optional), fallback to KPI mapping
+    let deptName = dept_id;
+    try {
+      const spoDb = await getSpoDb();
+      const deptResult = await spoDb
+        .request()
+        .input('dept_id', sql.NVarChar, dept_id)
+        .query(`SELECT section_name as name_en FROM dept_master WHERE dept_id = @dept_id`);
+      deptName = deptResult.recordset[0]?.name_en || dept_id;
+    } catch (spoError: unknown) {
+      logger.warn(
+        'SPO_Dev database unavailable for metrics, using KPI mapping for dept name',
+        spoError as Record<string, unknown>
+      );
+      // Fallback: get name from kpi_department_mapping
+      const mappingResult = await kpiDb
+        .request()
+        .input('kpi_code', sql.NVarChar, dept_id)
+        .query(
+          `SELECT description, spo_dept_name FROM kpi_department_mapping WHERE kpi_code = @kpi_code`
+        );
+      if (mappingResult.recordset.length > 0) {
+        deptName =
+          mappingResult.recordset[0].spo_dept_name ||
+          mappingResult.recordset[0].description ||
+          dept_id;
+      }
+    }
+
+    // Metrics are now in kpi_yearly_targets, not category-specific tables
+    // Get category ID first
+    const catResult = await kpiDb.request().input('category', sql.NVarChar, category).query(`
+      SELECT id FROM kpi_categories WHERE [key] = @category
+    `);
+
+    if (catResult.recordset.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+        department_name: deptName,
+      });
+    }
+
+    const categoryId = catResult.recordset[0].id;
 
     let query = `
       SELECT 
-        m.id, m.no, m.measurement, m.unit, m.fy25_target, m.main, m.main_relate,
-        m.description_of_target, m.sub_category_id, sc.name_en as sub_category_name,
-        sc.[key] as sub_category_key, m.department_id, d.name_en as department_name
-      FROM ${category}_metrics m
-      INNER JOIN ${category}_sub_categories sc ON m.sub_category_id = sc.id
-      LEFT JOIN departments d ON m.department_id = d.dept_id
-      WHERE m.department_id = @dept_id
+        yt.id, yt.metric_no, yt.measurement, yt.unit, yt.fy_target as fy25_target, 
+        yt.main, yt.main_relate,
+        yt.description_of_target,
+        NULL as sub_category_id,
+        NULL as sub_category_name,
+        NULL as sub_category_key
+      FROM kpi_yearly_targets yt
+      WHERE yt.category_id = @category_id
+        AND (yt.main = @dept_id OR yt.main_relate LIKE '%' + @dept_id + '%')
     `;
 
-    if (sub_category) {
-      query += ` AND sc.[key] = @sub_category`;
-    }
-
-    query += ` ORDER BY sc.sort_order, m.no`;
-
-    const request = kpiDb.request().input('dept_id', sql.NVarChar, dept_id);
+    const request = kpiDb
+      .request()
+      .input('dept_id', sql.NVarChar, dept_id)
+      .input('category_id', sql.Int, categoryId);
 
     if (sub_category) {
-      request.input('sub_category', sql.NVarChar, sub_category);
+      // Sub-category filtering is no longer supported
+      return res.json({
+        success: true,
+        data: [],
+        department_name: deptName,
+      });
     }
+
+    query += ` ORDER BY yt.metric_no`;
 
     const result = await request.query(query);
 
+    // Add department name to results
+    const dataWithDeptName = result.recordset.map((m: any) => ({
+      ...m,
+      department_name: deptName,
+    }));
+
     res.json({
       success: true,
-      data: result.recordset,
+      data: dataWithDeptName,
     });
   } catch (error) {
     logger.error('Error fetching department metrics', error);

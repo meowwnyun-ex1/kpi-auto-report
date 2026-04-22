@@ -1,73 +1,119 @@
+// ============================================
+// KPI Management Tool - Type Definitions
+// ============================================
+
 export interface User {
   id: number;
   username: string;
   email: string;
   password_hash?: string;
   full_name?: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'manager' | 'superadmin';
   is_active: boolean;
+  department_id?: string;
+  department_name?: string;
   last_login?: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface Application {
+// KPI Category
+export interface KPICategory {
   id: number;
   name: string;
-  url: string;
-  category_id: number | null;
-  status: 'pending' | 'approved' | 'rejected';
-  icon_thumbnail: string | null;
-  view_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Category {
-  id: number;
-  name: string;
-  icon: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Banner {
-  id: number;
-  title: string;
-  link_url: string | null;
-  image_thumbnail: string | null;
+  key: string;
+  icon?: string;
+  description?: string;
   is_active: boolean;
-  sort_order: number;
   created_at: string;
   updated_at: string;
 }
 
-export interface Trip {
-  id: number;
-  title: string;
-  start_date: string | null;
-  end_date: string | null;
-  image_thumbnail: string | null;
-  is_active: boolean;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
+// KPI Yearly Target
+export interface YearlyTarget {
+  id?: number;
+  category_id: number;
+  metric_id?: number;
+  metric_no: string;
+  measurement: string;
+  unit?: string;
+  main?: string;
+  main_relate?: string;
+  description_of_target?: string;
+  fy_target?: number;
+  fy_target_text?: string;
+  key_actions?: string;
+  main_pic?: string;
+  fiscal_year: number;
+  is_custom?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface Stats {
-  totalApps: number;
-  pendingApps: number;
-  approvedApps: number;
-  rejectedApps: number;
-  totalViews: number;
+// KPI Monthly Entry
+export interface MonthlyEntry {
+  id?: number;
+  yearly_target_id?: number;
+  category_id: number;
+  metric_id?: number;
+  metric_no: string;
+  measurement: string;
+  unit?: string;
+  main?: string;
+  main_relate?: string;
+  fy_target?: number;
+  fy_target_text?: string;
+  month: number;
+  target?: number;
+  result?: number;
+  ev?: number;
+  accu_target?: number;
+  accu_result?: number;
+  forecast?: number;
+  remark?: string;
+  is_custom?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// KPI Action Plan
+export interface ActionPlan {
+  id?: number;
+  department_id: string;
+  category_id: number;
+  metric_id?: number;
+  metric_no: string;
+  measurement: string;
+  fiscal_year: number;
+  action_plan?: string;
+  pic?: string;
+  target_date?: string;
+  status?: 'pending' | 'in_progress' | 'completed' | 'delayed';
+  progress?: number;
+  remark?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Department Mapping
+export interface DepartmentMapping {
+  kpi_code: string;
+  spo_dept_id: string;
+  spo_dept_name?: string;
+  description?: string;
+}
+
+// KPI Stats
+export interface KPIStats {
+  totalYearlyTargets: number;
+  totalMonthlyEntries: number;
+  totalActionPlans: number;
   totalUsers: number;
   totalCategories: number;
-  activeBanners: number;
-  totalBanners: number;
-  activeTrips: number;
-  totalTrips: number;
+  totalDepartments: number;
 }
 
+// Generic API Response
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -75,6 +121,7 @@ export interface ApiResponse<T = unknown> {
   message?: string;
 }
 
+// Pagination
 export interface PaginationInfo {
   page: number;
   limit: number;
@@ -84,17 +131,7 @@ export interface PaginationInfo {
   hasPrev: boolean;
 }
 
-export interface AppsResponse {
-  applications: Application[];
-  pagination: PaginationInfo;
-  filters: {
-    search?: string;
-    category_id?: number;
-    sortBy: string;
-    sortOrder: string;
-  };
-}
-
+// Database Config
 export interface DatabaseConfig {
   host: string;
   port: number;
@@ -103,6 +140,7 @@ export interface DatabaseConfig {
   password: string;
 }
 
+// Server Config
 export interface ServerConfig {
   port: number;
   host: string;

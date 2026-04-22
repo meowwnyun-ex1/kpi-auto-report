@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Image } from '@/components/ui/Image';
 import { getApiUrl } from '@/config/api';
 import { useLoading } from '@/contexts/LoadingContext';
@@ -21,20 +21,33 @@ export const InitialLoading: React.FC = () => {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const { completeInitialLoading, setInitialError } = useLoading();
+  const mountedRef = useRef(true);
 
-  // Faster progress animation (300ms instead of 600ms)
+  // Smooth progress animation with easing
   useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Smooth progress animation
+  useEffect(() => {
+    if (hasError || isFadingOut) return;
+
     const progressInterval = setInterval(() => {
+      if (!mountedRef.current) return;
       setProgress((prev) => {
-        if (hasError) return prev;
-        if (prev >= 100) return 100;
-        return prev + Math.random() * 3 + 2; // Faster increment
+        if (prev >= 90) return prev; // Pause at 90% until server responds
+        const increment = Math.max(1, (90 - prev) / 10); // Slower as it approaches 90
+        return Math.min(prev + increment, 90);
       });
-    }, 300);
+    }, 200);
 
     return () => clearInterval(progressInterval);
-  }, [hasError]);
+  }, [hasError, isFadingOut]);
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -51,12 +64,17 @@ export const InitialLoading: React.FC = () => {
         setInitialError(false);
         setHasError(false);
         setProgress(100);
-        setIsFadingOut(true);
 
-        // Faster fade out (300ms instead of 500ms)
+        // Smooth fade out sequence
         setTimeout(() => {
-          completeInitialLoading();
-        }, 300);
+          if (!mountedRef.current) return;
+          setIsFadingOut(true);
+          setTimeout(() => {
+            if (!mountedRef.current) return;
+            setIsVisible(false);
+            completeInitialLoading();
+          }, 400);
+        }, 200);
       } catch (error) {
         if (import.meta.env.DEV) console.error('Initialization failed:', error);
         setInitialError(true);
@@ -112,18 +130,21 @@ export const InitialLoading: React.FC = () => {
     }, 200);
   };
 
+  if (!isVisible) return null;
+
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-teal-50/90 via-background to-sky-50/70 transition-all duration-300',
-        isFadingOut && 'scale-95 opacity-0'
+        'fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-teal-50/95 via-background to-sky-50/80',
+        'transition-all duration-500 ease-out',
+        isFadingOut && 'opacity-0 scale-[1.02]'
       )}>
       <div className="mx-auto max-w-sm space-y-6 px-6 text-center">
         <div className="relative">
           <div
             className={cn(
-              'absolute inset-0 rounded-full bg-primary/15 blur-3xl',
-              hasError ? 'animate-pulse bg-destructive/20' : 'animate-pulse'
+              'absolute inset-0 rounded-full blur-3xl transition-colors duration-500',
+              hasError ? 'bg-destructive/20' : 'bg-primary/15'
             )}
           />
           <div className="relative">
@@ -132,7 +153,7 @@ export const InitialLoading: React.FC = () => {
               alt="Loading"
               className={cn(
                 'w-16 h-16 mx-auto drop-shadow-lg transition-all duration-300',
-                hasError ? 'grayscale opacity-50' : 'animate-pulse'
+                hasError && 'grayscale opacity-50'
               )}
               width={64}
               height={64}
@@ -147,31 +168,20 @@ export const InitialLoading: React.FC = () => {
               'text-xl font-bold tracking-tight transition-colors duration-300',
               hasError ? 'text-destructive' : 'text-foreground'
             )}>
-            {hasError ? 'Connection Failed' : progress < 100 ? 'Loading' : 'Ready'}
+            {hasError ? 'Connection Failed' : 'Loading'}
           </h1>
-          <p
-            className={cn(
-              'text-sm transition-colors duration-300',
-              hasError ? 'text-destructive/90' : 'text-muted-foreground'
-            )}>
-            {hasError ? ERROR_MESSAGES.NETWORK_ERROR : getLoadingMessage(progress)}
-          </p>
         </div>
 
         {!hasError ? (
-          <div className="space-y-2">
-            <div className="relative">
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-teal-400 transition-all duration-300 ease-out"
-                  style={{ width: `${Math.min(progress, 100)}%` }}
-                />
-              </div>
+          <div className="space-y-3 w-48">
+            <div className="relative h-1.5 overflow-hidden rounded-full bg-muted/50">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-primary via-teal-400 to-primary transition-all duration-500 ease-out"
+                style={{ width: `${Math.min(progress, 100)}%` }}
+              />
             </div>
-            <div className="flex items-center justify-center text-xs">
-              <span className="font-medium text-primary">
-                {Math.round(Math.min(progress, 100))}%
-              </span>
+            <div className="flex items-center justify-center text-xs text-muted-foreground">
+              <span>{Math.round(Math.min(progress, 100))}%</span>
             </div>
           </div>
         ) : (

@@ -85,15 +85,6 @@ export function handleSessionValidation(
 export function getAuthHeaders(): Record<string, string> | null {
   const token = storage.getAuthToken();
 
-  // In development, if no token, provide a default one for testing
-  if (!token && import.meta.env.DEV) {
-    // Silent in dev mode - this is expected behavior when not logged in
-    return {
-      Authorization: 'Bearer dev-token-for-testing',
-      'Content-Type': 'application/json',
-    };
-  }
-
   // If no token at all, return null
   if (!token) {
     return null;

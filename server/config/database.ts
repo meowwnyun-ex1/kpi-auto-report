@@ -11,12 +11,12 @@ import { logger } from '../utils/logger';
  * - CAS_Dev: Employee data (READ-ONLY)
  */
 
-// KPI database (Server 76) - Main application database
+// KPI database - Main application database
 const kpiConfig: sql.config = {
-  server: process.env.KPI_DB_HOST || '10.73.148.76',
-  database: process.env.KPI_DB_NAME || 'kpi-db',
-  user: process.env.KPI_DB_USER || 'inn@admin',
-  password: process.env.KPI_DB_PASSWORD || 'i@NN636195',
+  server: process.env.KPI_DB_HOST || '',
+  database: process.env.KPI_DB_NAME || '',
+  user: process.env.KPI_DB_USER || '',
+  password: process.env.KPI_DB_PASSWORD || '',
   port: parseInt(process.env.KPI_DB_PORT || '1433'),
   options: {
     encrypt: false,
@@ -38,12 +38,12 @@ const kpiConfig: sql.config = {
   },
 };
 
-// CAS_Dev database (Server 76) - Employee data
+// CAS_Dev database - Employee data
 const casConfig: sql.config = {
-  server: process.env.CAS_DB_HOST || '10.73.148.76',
-  database: process.env.CAS_DB_NAME || 'CAS_Dev',
-  user: process.env.CAS_DB_USER || 'inn@admin',
-  password: process.env.CAS_DB_PASSWORD || 'i@NN636195',
+  server: process.env.CAS_DB_HOST || '',
+  database: process.env.CAS_DB_NAME || '',
+  user: process.env.CAS_DB_USER || '',
+  password: process.env.CAS_DB_PASSWORD || '',
   port: parseInt(process.env.CAS_DB_PORT || '1433'),
   options: {
     encrypt: false,
@@ -60,12 +60,12 @@ const casConfig: sql.config = {
   },
 };
 
-// SPO_Dev database (Server 76) - Department names
+// SPO_Dev database - Department names
 const spoConfig: sql.config = {
-  server: process.env.SPO_DB_HOST || '10.73.148.76',
-  database: process.env.SPO_DB_NAME || 'SPO_Dev',
-  user: process.env.SPO_DB_USER || 'inn@admin',
-  password: process.env.SPO_DB_PASSWORD || 'i@NN636195',
+  server: process.env.SPO_DB_HOST || '',
+  database: process.env.SPO_DB_NAME || '',
+  user: process.env.SPO_DB_USER || '',
+  password: process.env.SPO_DB_PASSWORD || '',
   port: parseInt(process.env.SPO_DB_PORT || '1433'),
   options: {
     encrypt: false,
@@ -92,13 +92,20 @@ const initializeDatabasePools = async (): Promise<void> => {
   if (dbInitialized) return;
 
   try {
-    logger.info('Initializing KPI Auto Report database connection...');
+    logger.info('Initializing KPI Management Tool database connection...');
 
     const kpiDbConfig = getKpiDbConfig();
+    logger.info('KPI DB Config loaded', {
+      host: kpiDbConfig.host,
+      database: kpiDbConfig.database,
+      port: kpiDbConfig.port,
+    });
+
     if (!kpiDbConfig.host || !kpiDbConfig.database) {
       if (process.env.NODE_ENV === 'development') {
         logger.warn(
-          'KPI database configuration incomplete. Running in development mode without database.'
+          'KPI database configuration incomplete. Running in development mode without database.',
+          { host: kpiDbConfig.host, database: kpiDbConfig.database }
         );
         dbInitialized = true;
         return;
@@ -152,7 +159,7 @@ const initializeDatabasePools = async (): Promise<void> => {
 
     dbInitialized = true;
     if (kpiPool) {
-      logger.info('KPI Auto Report database initialized successfully');
+      logger.info('KPI Management Tool database initialized successfully');
     } else {
       logger.info('Database initialization skipped - running without database in development mode');
     }
@@ -165,40 +172,59 @@ const initializeDatabasePools = async (): Promise<void> => {
 const ensureSchema = async (db: sql.ConnectionPool): Promise<void> => {
   logger.info('Verifying database schema...');
 
-  // KPI tables instead of app-store tables
-  const tables = [
-    'departments',
-    'kpi_categories',
-    'kpi_sub_categories',
-    'kpi_metrics',
-    'kpi_data_entries',
-    'quality_sub_categories',
-    'quality_metrics',
+  // Auto-migrate missing columns (only columns actually used by route queries)
+  const migrations: { table: string; column: string; type: string; default?: string }[] = [
+    // ── kpi_categories ──
+    { table: 'kpi_categories', column: 'color', type: 'NVARCHAR(20)' },
+    // ── kpi_yearly_targets ──
+    { table: 'kpi_yearly_targets', column: 'total_quota', type: 'DECIMAL(18,4)', default: '0' },
+    { table: 'kpi_yearly_targets', column: 'used_quota', type: 'DECIMAL(18,4)', default: '0' },
+    { table: 'kpi_yearly_targets', column: 'dept_quota', type: 'DECIMAL(18,4)', default: '0' },
+    { table: 'kpi_yearly_targets', column: 'target_type', type: 'NVARCHAR(50)' },
+    { table: 'kpi_yearly_targets', column: 'main_relate', type: 'NVARCHAR(255)' },
+    { table: 'kpi_yearly_targets', column: 'metric_no', type: 'NVARCHAR(20)' },
+    { table: 'kpi_yearly_targets', column: 'measurement', type: 'NVARCHAR(500)' },
+    { table: 'kpi_yearly_targets', column: 'unit', type: 'NVARCHAR(50)' },
+    { table: 'kpi_yearly_targets', column: 'main', type: 'NVARCHAR(50)' },
+    { table: 'kpi_yearly_targets', column: 'fy_target_text', type: 'NVARCHAR(500)' },
+    { table: 'kpi_yearly_targets', column: 'description_of_target', type: 'NVARCHAR(MAX)' },
+    { table: 'kpi_yearly_targets', column: 'sort_order', type: 'INT', default: '0' },
+    // ── kpi_monthly_targets ──
+    { table: 'kpi_monthly_targets', column: 'ev', type: 'NVARCHAR(10)' },
+    { table: 'kpi_monthly_targets', column: 'accu_target', type: 'DECIMAL(18,4)' },
+    { table: 'kpi_monthly_targets', column: 'accu_result', type: 'DECIMAL(18,4)' },
+    { table: 'kpi_monthly_targets', column: 'forecast', type: 'DECIMAL(18,4)' },
+    { table: 'kpi_monthly_targets', column: 'reason', type: 'NVARCHAR(1000)' },
+    { table: 'kpi_monthly_targets', column: 'recover_activity', type: 'NVARCHAR(1000)' },
+    { table: 'kpi_monthly_targets', column: 'recovery_month', type: 'INT' },
+    { table: 'kpi_monthly_targets', column: 'comment', type: 'NVARCHAR(MAX)' },
+    { table: 'kpi_monthly_targets', column: 'image_url', type: 'NVARCHAR(500)' },
+    { table: 'kpi_monthly_targets', column: 'image_caption', type: 'NVARCHAR(500)' },
+    { table: 'kpi_monthly_targets', column: 'approved_by', type: 'INT' },
   ];
 
   try {
-    for (const table of tables) {
+    for (const m of migrations) {
       try {
-        const result = await db
+        const colCheck = await db
           .request()
-          .input('tableName', sql.NVarChar, table)
           .query(
-            `SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @tableName`
+            `SELECT COUNT(*) as cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='${m.table}' AND COLUMN_NAME='${m.column}'`
           );
-
-        if (result.recordset[0].count === 0) {
-          logger.warn(`Table '${table}' does not exist`);
-        } else {
-          logger.info(`Table '${table}' verified`);
+        if (colCheck.recordset[0].cnt === 0) {
+          const defClause = m.default ? ` DEFAULT ${m.default}` : '';
+          await db.request().query(`ALTER TABLE ${m.table} ADD ${m.column} ${m.type}${defClause}`);
+          logger.info(`Added column ${m.table}.${m.column}`);
         }
-      } catch (tableError: unknown) {
-        logger.warn(`Could not verify table '${table}':`, tableError as Record<string, unknown>);
-        // Continue with other tables instead of crashing
+      } catch (colErr: unknown) {
+        logger.warn(
+          `Could not add column ${m.table}.${m.column}:`,
+          colErr as Record<string, unknown>
+        );
       }
     }
   } catch (error) {
-    logger.error('Schema verification failed, but continuing...', error);
-    // Don't throw error, just log and continue
+    logger.error('Schema migration failed, but continuing...', error);
   }
 };
 
@@ -210,22 +236,20 @@ export const initializeDatabase = async (): Promise<void> => {
   return initializeDatabasePools();
 };
 
-// Alias for backward compatibility - returns the KPI database
-export const getAppStoreDb = async (): Promise<sql.ConnectionPool> => {
-  return getKpiDb();
-};
-
 export const getKpiDb = async (): Promise<sql.ConnectionPool> => {
   if (!dbInitialized) {
     await initializeDatabasePools();
   }
   if (!kpiPool) {
-    if (process.env.NODE_ENV === 'development') {
-      throw new Error(
-        'KPI database not available in development mode - configure database connection'
-      );
+    // Try to connect if not already
+    try {
+      logger.info('Attempting to connect to KPI database...');
+      kpiPool = await new sql.ConnectionPool(kpiConfig).connect();
+      logger.info('KPI database connected successfully');
+    } catch (error) {
+      logger.error('Failed to connect to KPI database', error);
+      throw new Error('KPI database not available');
     }
-    throw new Error('KPI database not available');
   }
   return kpiPool;
 };
@@ -248,7 +272,7 @@ export const getCasDb = async (): Promise<sql.ConnectionPool> => {
   return casPool;
 };
 
-// Get SPO_Dev database (for departments)
+// Get SPO_Dev database (for dept_master - department master data)
 export const getSpoDb = async (): Promise<sql.ConnectionPool> => {
   if (!dbInitialized) {
     await initializeDatabasePools();
@@ -331,7 +355,6 @@ export const testConnections = async (): Promise<{
 
 export default {
   initializeDatabase,
-  getAppStoreDb,
   getKpiDb,
   getCasDb,
   getSpoDb,

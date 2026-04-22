@@ -11,6 +11,9 @@ interface User {
   name: string;
   role: string;
   avatar?: string;
+  department_id?: string;
+  department_name?: string;
+  company_name?: string;
 }
 
 interface AuthContextType {

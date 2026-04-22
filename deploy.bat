@@ -41,7 +41,7 @@ echo Mode: %DEPLOY_MODE%
 echo.
 
 REM Change to project directory
-cd /d D:\GitHub\Project\app-store
+cd /d D:\GitHub\Project\kpi-auto-report
 
 REM Check if pnpm is installed
 where pnpm >nul 2>nul
@@ -331,7 +331,7 @@ if %ERRORLEVEL% EQU 0 (
     sc query nginx
 )
 
-cd /d D:\GitHub\Project\app-store
+cd /d D:\GitHub\Project\kpi-auto-report
 
 REM Setup PM2 auto-restart
 echo Setting up PM2 auto-restart...
@@ -342,7 +342,7 @@ echo ========================================
 echo DEPLOYMENT COMPLETED SUCCESSFULLY!
 echo ========================================
 echo.
-echo KPI is now running at: http://10.73.148.75/app-store/
+echo KPI is now running at: http://10.73.148.75/kpi-auto-report/
 echo API Server: http://localhost:4007
 echo.
 echo PM2 processes will auto-restart on system reboot

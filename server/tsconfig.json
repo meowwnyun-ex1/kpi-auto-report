@@ -17,8 +17,14 @@
     "emitDecoratorMetadata": true,
     "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
     "baseUrl": ".",
-    "paths": { "@/*": ["../src/*"] }
+    "paths": {
+      "@/*": ["../src/*"],
+      "@/types/*": ["../src/types/*"],
+      "@/utils/*": ["../src/lib/*"]
+    },
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
-  "include": ["**/*.ts", "**/*.js"],
-  "exclude": ["node_modules", "dist", "../dist"]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist", "../dist", "**/*.js"]
 }

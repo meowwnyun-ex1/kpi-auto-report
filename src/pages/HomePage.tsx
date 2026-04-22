@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ShellLayout } from '@/features/shell';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/loading-overlay';
 import { Badge } from '@/components/ui/badge';
 import { UnifiedError } from '@/components/ui/unified-error';
 import {
@@ -44,10 +44,10 @@ const generateMockStats = (): KPIDashboardStats[] => {
     const achievement = Math.floor(Math.random() * 30) + 70; // 70-100
     return {
       category: config.key as any,
-      total_metrics: Math.floor(Math.random() * 5) + 8,
-      achieved_metrics: Math.floor(Math.random() * 5) + 4,
-      warning_metrics: Math.floor(Math.random() * 2) + 1,
-      critical_metrics: Math.floor(Math.random() * 2),
+      total_items: Math.floor(Math.random() * 5) + 8,
+      achieved_items: Math.floor(Math.random() * 5) + 4,
+      warning_items: Math.floor(Math.random() * 2) + 1,
+      critical_items: Math.floor(Math.random() * 2),
       overall_achievement: achievement,
       trend: achievement > 85 ? 'up' : achievement > 75 ? 'stable' : 'down',
       last_period_comparison: Math.random() * 10 - 3, // -3 to +7
@@ -117,7 +117,7 @@ export default function HomePage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">KPI Auto Report</h1>
+            <h1 className="text-2xl font-bold text-gray-900">KPI Management Tool</h1>
             <p className="text-sm text-gray-500 mt-1">ระบบรายงานผลการดำเนินงานอัตโนมัติ</p>
           </div>
 
@@ -165,7 +165,7 @@ export default function HomePage() {
                 <CardContent className="p-4">
                   <div className="text-sm font-medium text-gray-600">ตัวชี้วัดทั้งหมด</div>
                   <div className="text-2xl font-bold text-blue-600 mt-1">
-                    {stats.reduce((sum, s) => sum + s.total_metrics, 0)}
+                    {stats.reduce((sum, s) => sum + s.total_items, 0)}
                   </div>
                 </CardContent>
               </Card>
@@ -174,7 +174,7 @@ export default function HomePage() {
                 <CardContent className="p-4">
                   <div className="text-sm font-medium text-gray-600">บรรลุเป้าหมาย</div>
                   <div className="text-2xl font-bold text-green-600 mt-1">
-                    {stats.reduce((sum, s) => sum + s.achieved_metrics, 0)}
+                    {stats.reduce((sum, s) => sum + s.achieved_items, 0)}
                   </div>
                 </CardContent>
               </Card>
@@ -183,7 +183,7 @@ export default function HomePage() {
                 <CardContent className="p-4">
                   <div className="text-sm font-medium text-gray-600">ต้องระวัง</div>
                   <div className="text-2xl font-bold text-yellow-600 mt-1">
-                    {stats.reduce((sum, s) => sum + s.warning_metrics, 0)}
+                    {stats.reduce((sum, s) => sum + s.warning_items, 0)}
                   </div>
                 </CardContent>
               </Card>
@@ -192,7 +192,7 @@ export default function HomePage() {
                 <CardContent className="p-4">
                   <div className="text-sm font-medium text-gray-600">วิกฤต</div>
                   <div className="text-2xl font-bold text-red-600 mt-1">
-                    {stats.reduce((sum, s) => sum + s.critical_metrics, 0)}
+                    {stats.reduce((sum, s) => sum + s.critical_items, 0)}
                   </div>
                 </CardContent>
               </Card>
@@ -214,7 +214,9 @@ export default function HomePage() {
                         <div
                           className="p-2 rounded-lg"
                           style={{ backgroundColor: `${config.color}20` }}>
-                          <IconComponent className="h-5 w-5" style={{ color: config.color }} />
+                          <span style={{ color: config.color }}>
+                            <IconComponent className="h-5 w-5" />
+                          </span>
                         </div>
                         {categoryStats && renderTrendIcon(categoryStats.trend)}
                       </div>
@@ -235,8 +237,7 @@ export default function HomePage() {
                               </div>
                             </div>
                             <Badge variant="outline" className="text-xs">
-                              {categoryStats.achieved_metrics}/{categoryStats.total_metrics}{' '}
-                              ตัวชี้วัด
+                              {categoryStats.achieved_items}/{categoryStats.total_items} ตัวชี้วัด
                             </Badge>
                           </div>
 

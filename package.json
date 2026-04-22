@@ -1,7 +1,7 @@
 {
   "name": "kpi-auto-report",
   "version": "1.0.0",
-  "description": "KPI Auto Report System for DENSO",
+  "description": "KPI Management Tool System for DENSO",
   "scripts": {
     "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:frontend\"",
     "dev:api": "cross-env NODE_ENV=development nodemon server/api.ts",
@@ -24,6 +24,8 @@
     "db:reset": "tsx server/scripts/reset-kpi-db.ts",
     "db:seed-users": "tsx server/scripts/seed-admin-users.ts",
     "db:seed-departments": "tsx server/scripts/seed-spo-departments.ts",
+    "db:migrate:dept-master": "tsx server/scripts/migrate-to-dept-master.ts",
+    "db:seed-dept-mapping": "tsx server/scripts/seed-department-mapping.ts",
     "api-docs": "echo \"📄 API Documentation available at: http://localhost:3007/redoc\" && echo \"📃 Alternative routes: /docs, /api-docs, /swagger, /status\" && pnpm dev:frontend"
   },
   "dependencies": {
@@ -40,6 +42,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-toast": "^1.2.15",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@types/multer": "^2.1.0",
     "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.23",
     "bcryptjs": "^2.4.3",
@@ -54,6 +57,7 @@
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.563.0",
     "mssql": "^10.0.4",
+    "multer": "^2.1.1",
     "postcss": "^8.5.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ShellLayout } from '@/features/shell';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
+import { storage } from '@/shared/utils';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -12,32 +13,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-} from 'recharts';
-import {
   Target,
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
   CheckCircle,
-  Clock,
   Users,
   Shield,
   Award,
@@ -46,198 +24,201 @@ import {
   Heart,
   Leaf,
   DollarSign,
+  Building2,
   Calendar,
-  MessageSquare,
-  Eye,
+  CalendarDays,
+  RefreshCw,
 } from 'lucide-react';
+import { StandardPageLayout } from '@/components/shared/StandardPageLayout';
 
 // KPI Categories Configuration
 const KPI_CATEGORIES = [
   {
     id: 'safety',
     name: 'Safety',
-    nameTh: 'ความปลอดภัย',
+    nameTh: 'Safety',
     description: 'Workplace Safety Performance',
     icon: Shield,
-    color: '#ef4444',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
-    textColor: 'text-red-700',
+    color: '#DC2626',
   },
   {
     id: 'quality',
     name: 'Quality',
-    nameTh: 'คุณภาพ',
-    description: 'Product Quality Metrics',
+    nameTh: 'Quality',
+    description: 'Product Quality Standards',
     icon: Award,
-    color: '#22c55e',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
-    textColor: 'text-green-700',
+    color: '#16A34A',
   },
   {
     id: 'delivery',
     name: 'Delivery',
-    nameTh: 'การส่งมอบ',
-    description: 'On-Time Delivery Rate',
+    nameTh: 'Delivery',
+    description: 'On-time Delivery Performance',
     icon: Truck,
-    color: '#3b82f6',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    textColor: 'text-blue-700',
+    color: '#2563EB',
   },
   {
     id: 'compliance',
     name: 'Compliance',
-    nameTh: 'การปฏิบัติตาม',
-    description: 'Regulatory Compliance',
+    nameTh: 'Compliance',
+    description: 'Regulatory Compliance Status',
     icon: Scale,
-    color: '#8b5cf6',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
-    textColor: 'text-purple-700',
+    color: '#9333EA',
   },
   {
     id: 'hr',
     name: 'HR',
-    nameTh: 'ทรัพยากรบุคคล',
-    description: 'Human Resources',
+    nameTh: 'HR',
+    description: 'Human Resources Metrics',
     icon: Users,
-    color: '#f59e0b',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
-    textColor: 'text-amber-700',
+    color: '#EA580C',
   },
   {
     id: 'attractive',
     name: 'Attractive',
-    nameTh: 'ความน่าสนใจ',
+    nameTh: 'Attractive',
     description: 'Workplace Attractiveness',
     icon: Heart,
-    color: '#ec4899',
-    bgColor: 'bg-pink-50',
-    borderColor: 'border-pink-200',
-    textColor: 'text-pink-700',
+    color: '#DB2777',
   },
   {
     id: 'environment',
     name: 'Environment',
-    nameTh: 'สิ่งแวดล้อม',
-    description: 'Environmental Performance',
+    nameTh: 'Environment',
+    description: 'Environmental Impact',
     icon: Leaf,
-    color: '#14b8a6',
-    bgColor: 'bg-teal-50',
-    borderColor: 'border-teal-200',
-    textColor: 'text-teal-700',
+    color: '#0D9488',
   },
   {
     id: 'cost',
     name: 'Cost',
-    nameTh: 'ต้นทุน',
-    description: 'Cost Performance',
+    nameTh: 'Cost',
+    description: 'Cost Management',
     icon: DollarSign,
-    color: '#6366f1',
-    bgColor: 'bg-indigo-50',
-    borderColor: 'border-indigo-200',
-    textColor: 'text-indigo-700',
+    color: '#4F46E5',
   },
 ];
 
-export default function MainDashboard() {
-  const [loading, setLoading] = useState(true);
-  const [departments, setDepartments] = useState<{ dept_id: string; name_en: string }[]>([]);
-  const [selectedDept, setSelectedDept] = useState<string>('all');
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+function MainDashboard({ initialCategory }: { initialCategory?: string } = {}) {
+  const { user } = useAuth();
+  const [selectedYear, setSelectedYear] = useState(2025);
+  const [selectedMonth, setSelectedMonth] = useState(1);
+  const [selectedDept, setSelectedDept] = useState('all');
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [kpiData, setKpiData] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [stats, setStats] = useState<Record<string, any>>({});
 
+  // Available years for fiscal year selector
+  const availableYears = [2025, 2026, 2027];
+
+  // Calculate overall score from real data
+  const overallScore = React.useMemo(() => {
+    if (kpiData.length === 0) return 0;
+    const totalTarget = kpiData.reduce((sum, item) => sum + (item.total_target || 0), 0);
+    const totalUsed = kpiData.reduce((sum, item) => sum + (item.used_quota || 0), 0);
+    return totalTarget > 0 ? (totalUsed / totalTarget) * 100 : 0;
+  }, [kpiData]);
+
+  // Load departments
   useEffect(() => {
-    fetchDepartments();
-    fetchKPIData();
-  }, [selectedYear, selectedMonth, selectedDept]);
-
-  const fetchDepartments = async () => {
-    try {
-      const res = await fetch('/api/departments');
-      const data = await res.json();
-      if (data.success) setDepartments(data.data);
-    } catch (error) {
-      console.error('Failed to fetch departments:', error);
-    }
-  };
-
-  const fetchKPIData = async () => {
-    setLoading(true);
-    try {
-      // Fetch yearly targets
-      const yearlyRes = await fetch(`/api/kpi-forms/yearly/all/${selectedYear}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      const yearlyData = await yearlyRes.json();
-
-      // Fetch monthly entries
-      const monthlyRes = await fetch(
-        `/api/kpi-forms/monthly/all/${selectedYear}/${selectedMonth}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    const loadDepartments = async () => {
+      try {
+        const r = await fetch('/api/departments');
+        const d = await r.json();
+        if (d.success) {
+          setDepartments(d.data);
         }
-      );
-      const monthlyData = await monthlyRes.json();
+      } catch {
+        /* silent */
+      }
+    };
+    loadDepartments();
+  }, []);
 
-      if (yearlyData.success) setKpiData(yearlyData.data || []);
-      if (monthlyData.success) setMonthlyData(monthlyData.data || []);
-    } catch (error) {
-      console.error('Failed to fetch KPI data:', error);
-    } finally {
-      setLoading(false);
+  // Load KPI data
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Load yearly targets
+        const yearlyResponse = await fetch(
+          `/api/kpi-forms/yearly/${selectedDept === 'all' ? 'all' : selectedDept}/${selectedYear}`,
+          { headers: { Authorization: `Bearer ${storage.getAuthToken()}` } }
+        );
+        const yearlyData = await yearlyResponse.json();
+
+        if (yearlyData.success) {
+          setKpiData(yearlyData.data || []);
+        }
+
+        // Load stats
+        const statsResponse = await fetch(
+          `/api/kpi-forms/stats/${selectedDept === 'all' ? 'all' : selectedDept}/${selectedYear}`,
+          { headers: { Authorization: `Bearer ${storage.getAuthToken()}` } }
+        );
+        const statsData = await statsResponse.json();
+
+        if (statsData.success) {
+          setStats(statsData.data || {});
+        }
+
+        // Load monthly data for current month
+        const monthlyResponse = await fetch(
+          `/api/kpi-forms/monthly/${selectedDept === 'all' ? 'all' : selectedDept}/${selectedYear}`,
+          { headers: { Authorization: `Bearer ${storage.getAuthToken()}` } }
+        );
+        const monthlyResult = await monthlyResponse.json();
+
+        if (monthlyResult.success) {
+          // Filter for current month
+          const currentMonthData = (monthlyResult.data || []).filter(
+            (item: any) => item.month === selectedMonth
+          );
+          setMonthlyData(currentMonthData);
+        }
+      } catch {
+        /* silent */
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (selectedYear && selectedDept) {
+      loadData();
     }
-  };
+  }, [selectedYear, selectedDept, selectedMonth]);
 
-  // Calculate stats from real data
+  // Calculate category stats from real data
   const calculateCategoryStats = (categoryId: string) => {
-    const categoryTargets = kpiData.filter((t: any) => t.category_key === categoryId);
-    const categoryMonthly = monthlyData.filter((m: any) => m.category_key === categoryId);
+    const categoryData = kpiData.filter((item) => {
+      // Map category_id to category key
+      const categoryMap: Record<number, string> = {
+        1: 'safety',
+        2: 'quality',
+        3: 'delivery',
+        4: 'compliance',
+        5: 'hr',
+        6: 'attractive',
+        7: 'environment',
+        8: 'cost',
+      };
+      return categoryMap[item.category_id] === categoryId;
+    });
 
-    if (categoryTargets.length === 0) {
-      return { target: 100, actual: 0, count: 0, comments: [] };
-    }
-
-    const totalTarget = categoryTargets.reduce(
-      (sum: number, t: any) => sum + (parseFloat(t.fy_target) || 0),
-      0
-    );
-    const totalActual = categoryMonthly.reduce(
-      (sum: number, m: any) => sum + (parseFloat(m.result) || 0),
-      0
-    );
-    const avgTarget = totalTarget / categoryTargets.length || 100;
-    const avgActual = categoryMonthly.length > 0 ? totalActual / categoryMonthly.length : 0;
+    const target = categoryData.reduce((sum, item) => sum + (item.total_target || 0), 0);
+    const used = categoryData.reduce((sum, item) => sum + (item.used_quota || 0), 0);
 
     return {
-      target: avgTarget,
-      actual: avgActual || Math.random() * 20 + 80, // Fallback mock
-      count: categoryTargets.length,
-      comments: categoryMonthly
-        .filter((m: any) => m.comment)
-        .map((m: any) => ({
-          text: m.comment,
-          user: m.updated_by_name,
-          date: m.updated_at,
-        })),
+      target,
+      actual: used,
+      count: categoryData.length,
+      comments: [],
     };
   };
 
-  const overallScore =
-    KPI_CATEGORIES.reduce((sum, cat) => {
-      const stats = calculateCategoryStats(cat.id);
-      return sum + (stats.actual / stats.target) * 100;
-    }, 0) / KPI_CATEGORIES.length;
-
   const months = [
-    { value: '1', label: 'Jan' },
-    { value: '2', label: 'Feb' },
-    { value: '3', label: 'Mar' },
     { value: '4', label: 'Apr' },
     { value: '5', label: 'May' },
     { value: '6', label: 'Jun' },
@@ -247,439 +228,234 @@ export default function MainDashboard() {
     { value: '10', label: 'Oct' },
     { value: '11', label: 'Nov' },
     { value: '12', label: 'Dec' },
+    { value: '1', label: 'Jan' },
+    { value: '2', label: 'Feb' },
+    { value: '3', label: 'Mar' },
   ];
 
   return (
-    <ShellLayout variant="sidebar">
-      <div className="container mx-auto py-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">KPI Dashboard</h1>
-            <p className="text-muted-foreground">
-              Organization Performance Overview - FY{selectedYear}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Select
-              value={selectedYear.toString()}
-              onValueChange={(v) => setSelectedYear(parseInt(v))}>
-              <SelectTrigger className="w-28">
-                <Calendar className="h-4 w-4 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2025">2025</SelectItem>
-                <SelectItem value="2026">2026</SelectItem>
-                <SelectItem value="2027">2027</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedMonth.toString()}
-              onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedDept} onValueChange={setSelectedDept}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Departments" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.dept_id} value={d.dept_id}>
-                    {d.name_en}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Overall Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {/* Overall Score */}
-          <Card className="bg-gradient-to-br from-sky-500 to-blue-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-sky-100">Overall Score</CardTitle>
-              <Target className="h-5 w-5 text-sky-200" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">{overallScore.toFixed(1)}%</div>
-              <p className="text-xs text-sky-100 mt-1">Average Target 97.4%</p>
-              <Progress value={overallScore} className="mt-2 h-2 bg-sky-400/30" />
-            </CardContent>
-          </Card>
-
-          {/* Data Entries */}
-          <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-100">Data Entries</CardTitle>
-              <CheckCircle className="h-5 w-5 text-green-200" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">{kpiData.length}</div>
-              <p className="text-xs text-green-100 mt-1">Yearly targets recorded</p>
-            </CardContent>
-          </Card>
-
-          {/* Monthly Updates */}
-          <Card className="bg-gradient-to-br from-amber-500 to-orange-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-amber-100">Monthly Updates</CardTitle>
-              <AlertTriangle className="h-5 w-5 text-amber-200" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">{monthlyData.length}</div>
-              <p className="text-xs text-amber-100 mt-1">Entries this month</p>
-            </CardContent>
-          </Card>
-
-          {/* Departments */}
-          <Card className="bg-gradient-to-br from-purple-500 to-violet-600 text-white border-0 shadow-lg">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-purple-100">Departments</CardTitle>
-              <Users className="h-5 w-5 text-purple-200" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">{departments.length}</div>
-              <p className="text-xs text-purple-100 mt-1">Active departments</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* KPI Category Cards */}
-        {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <Card key={i}>
-                <CardContent className="pt-6">
-                  <Skeleton className="h-24 w-full" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {KPI_CATEGORIES.map((category) => {
-              const Icon = category.icon;
-              const stats = calculateCategoryStats(category.id);
-              const achievement = stats.target > 0 ? (stats.actual / stats.target) * 100 : 0;
-              const isGood = achievement >= 95;
-              const isWarning = achievement >= 80 && achievement < 95;
-
-              return (
-                <Card
-                  key={category.id}
-                  className={`${category.bgColor} ${category.borderColor} border-2 hover:shadow-lg transition-all cursor-pointer`}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className={`text-sm font-medium ${category.textColor}`}>
-                      {category.name}
-                    </CardTitle>
-                    <Icon className={`h-5 w-5 ${category.textColor}`} />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-baseline gap-2">
-                      <span className={`text-3xl font-bold ${category.textColor}`}>
-                        {stats.actual.toFixed(1)}%
-                      </span>
-                      <span className="text-sm text-gray-500">/ {stats.target.toFixed(1)}%</span>
+    <ShellLayout>
+      <StandardPageLayout
+        title="KPI Executive Dashboard"
+        subtitle="Real-time KPI monitoring for management decisions"
+        icon={Target}
+        iconColor="text-blue-600"
+        badge="Overview"
+        department={selectedDept === 'all' ? '' : selectedDept}
+        fiscalYear={selectedYear}
+        availableYears={availableYears}
+        onDepartmentChange={(value) => setSelectedDept(value === '' ? 'all' : value)}
+        onFiscalYearChange={(value) => setSelectedYear(value)}
+        onRefresh={() => {
+          // Refresh data
+        }}
+        loading={loading}
+        theme="blue"
+        rightActions={
+          <Select
+            value={selectedMonth.toString()}
+            onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+            <SelectTrigger className="w-[120px] h-8 bg-blue-50 border-blue-200 text-blue-700 text-xs font-medium">
+              <CalendarDays className="w-3.5 h-3.5 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }>
+        <div className="space-y-6">
+          {/* Overall Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+            {/* Overall Score */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-4 bg-gradient-to-r from-sky-50 to-blue-50 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                      <Target className="w-3 h-3 text-blue-600" />
                     </div>
-                    <Progress
-                      value={Math.min(achievement, 100)}
-                      className="mt-2 h-2"
-                      style={{ backgroundColor: `${category.color}20` }}
-                    />
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-gray-500">{stats.count} metrics</span>
-                      <Badge
-                        variant="outline"
-                        className={
-                          isGood
-                            ? 'bg-green-100 text-green-700'
-                            : isWarning
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-700'
-                        }>
-                        {isGood ? 'On Track' : isWarning ? 'Monitor' : 'At Risk'}
-                      </Badge>
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900">Overall Score</h3>
+                      <p className="text-xs text-gray-500">Based on {kpiData.length} KPIs</p>
                     </div>
-                    {stats.comments.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-200">
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <MessageSquare className="h-3 w-3" />
-                          <span>{stats.comments.length} comments</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-blue-600">
+                      {overallScore.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-blue-500 mt-0.5">Performance</div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-3">
+                <Progress value={overallScore} className="h-2 bg-blue-100" />
+              </div>
+            </div>
+
+            {/* Data Entries */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                      <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900">Yearly Targets</h3>
+                      <p className="text-xs text-gray-500">FY {selectedYear}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-emerald-600">{kpiData.length}</div>
+                    <div className="text-xs text-emerald-500 mt-0.5">Recorded</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Monthly Updates */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                      <AlertTriangle className="w-3 h-3 text-orange-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900">Monthly Updates</h3>
+                      <p className="text-xs text-gray-500">
+                        {months.find((m) => m.value === selectedMonth.toString())?.label || 'Month'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-orange-600">{monthlyData.length}</div>
+                    <div className="text-xs text-orange-500 mt-0.5">Entries</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Departments */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                      <Users className="w-3 h-3 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900">Departments</h3>
+                      <p className="text-xs text-gray-500">
+                        {selectedDept === 'all' ? 'All Departments' : selectedDept}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-purple-600">{departments.length}</div>
+                    <div className="text-xs text-purple-500 mt-0.5">Teams</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* KPI Category Cards */}
+          {loading ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="p-4">
+                    <div className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {KPI_CATEGORIES.map((category) => {
+                const Icon = category.icon;
+                const stats = calculateCategoryStats(category.id);
+                const achievement = stats.target > 0 ? (stats.actual / stats.target) * 100 : 0;
+                const isGood = achievement >= 95;
+                const isWarning = achievement >= 80 && achievement < 95;
+
+                return (
+                  <div
+                    key={category.id}
+                    className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer"
+                    style={{ borderLeftColor: category.color, borderLeftWidth: 4 }}>
+                    <div className="p-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-6 h-6 rounded-lg flex items-center justify-center shadow-sm"
+                            style={{ background: `${category.color}18` }}>
+                            <Icon className="w-3 h-3" style={{ color: category.color }} />
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-bold text-gray-900">{category.name}</h3>
+                            <p className="text-xs text-gray-500">{category.nameTh}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-black" style={{ color: category.color }}>
+                            {achievement.toFixed(1)}%
+                          </div>
+                          <div
+                            className={`text-xs mt-0.5 ${
+                              isGood
+                                ? 'text-emerald-500'
+                                : isWarning
+                                  ? 'text-amber-500'
+                                  : 'text-red-500'
+                            }`}>
+                            {isGood ? 'Excellent' : isWarning ? 'Good' : 'Needs Work'}
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-        {/* Charts Section */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Monthly Trend Chart */}
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-sky-600" />
-                Monthly Trend
-              </CardTitle>
-              <CardDescription>Key indicator performance over the last 6 months</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
-                  <YAxis domain={[90, 100]} stroke="#6b7280" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="safety"
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    dot={{ fill: '#ef4444' }}
-                    name="Safety"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="quality"
-                    stroke="#22c55e"
-                    strokeWidth={2}
-                    dot={{ fill: '#22c55e' }}
-                    name="Quality"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="delivery"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={{ fill: '#3b82f6' }}
-                    name="Delivery"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="cost"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    dot={{ fill: '#6366f1' }}
-                    name="Cost"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Category Comparison Bar Chart */}
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart className="h-5 w-5 text-sky-600" />
-                Category Comparison
-              </CardTitle>
-              <CardDescription>Performance vs target by category</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={categoryBarData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis type="number" domain={[0, 100]} stroke="#6b7280" fontSize={12} />
-                  <YAxis dataKey="name" type="category" stroke="#6b7280" fontSize={12} width={80} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="target" fill="#e5e7eb" name="Target" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="actual" fill="#3b82f6" name="Actual" radius={[0, 4, 4, 0]}>
-                    {categoryBarData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Department Radar Chart */}
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-sky-600" />
-                Department Performance
-              </CardTitle>
-              <CardDescription>Overall score by department</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <RadarChart data={departmentComparisonData}>
-                  <PolarGrid stroke="#e5e7eb" />
-                  <PolarAngleAxis dataKey="department" stroke="#6b7280" fontSize={12} />
-                  <PolarRadiusAxis domain={[0, 100]} stroke="#6b7280" fontSize={12} />
-                  <Radar
-                    name="Score"
-                    dataKey="score"
-                    stroke="#3b82f6"
-                    fill="#3b82f6"
-                    fillOpacity={0.5}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                    }}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Status Distribution Pie Chart */}
-          <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-sky-600" />
-                Indicator Status
-              </CardTitle>
-              <CardDescription>Distribution by performance status</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={statusDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}>
-                    {statusDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Summary Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-sky-600" />
-              All Indicators Summary
-            </CardTitle>
-            <CardDescription>Detailed performance of all indicators</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Description</th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Target</th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Actual</th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                      % Achieved
-                    </th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
-                    <th className="text-center py-3 px-4 font-semibold text-gray-700">Trend</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {KPI_CATEGORIES.map((category) => {
-                    const achievement = ((category.actual / category.target) * 100).toFixed(1);
-                    const TrendIcon =
-                      category.trend === 'up'
-                        ? TrendingUp
-                        : category.trend === 'down'
-                          ? TrendingDown
-                          : null;
-
-                    return (
-                      <tr key={category.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <category.icon className="h-4 w-4" style={{ color: category.color }} />
-                            <span className="font-medium">{category.name}</span>
+                    </div>
+                    <div className="p-3">
+                      <div className="flex justify-between items-end text-xs">
+                        <div>
+                          <div className="text-gray-500">Target</div>
+                          <div className="font-mono font-bold text-gray-700">
+                            {stats.target.toLocaleString()}
                           </div>
-                        </td>
-                        <td className="py-3 px-4 text-gray-600">{category.description}</td>
-                        <td className="py-3 px-4 text-center font-medium">{category.target}%</td>
-                        <td
-                          className="py-3 px-4 text-center font-bold"
-                          style={{ color: category.color }}>
-                          {category.actual}%
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <Badge
-                            variant={parseFloat(achievement) >= 95 ? 'default' : 'destructive'}>
-                            {achievement}%
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <Badge
-                            variant={category.status === 'good' ? 'default' : 'secondary'}
-                            className={
-                              category.status === 'good'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-amber-100 text-amber-700'
-                            }>
-                            {category.status === 'good' ? 'Pass' : 'Improve'}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          {TrendIcon && (
-                            <TrendIcon
-                              className={`h-4 w-4 mx-auto ${
-                                category.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                              }`}
-                            />
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-gray-500">Actual</div>
+                          <div className="font-mono font-bold text-gray-700">
+                            {stats.actual.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <Progress
+                          value={Math.min(100, achievement)}
+                          className="h-1.5"
+                          style={{
+                            backgroundColor: '#E5E7EB',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </div>
+      </StandardPageLayout>
     </ShellLayout>
   );
 }
+
+export default MainDashboard;

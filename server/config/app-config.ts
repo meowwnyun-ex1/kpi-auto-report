@@ -1,12 +1,12 @@
 import dotenv from 'dotenv';
-import path from 'path';
 import { ServerConfig } from '../types/index';
 
-const projectRoot = process.cwd().includes('server')
-  ? path.resolve(process.cwd(), '..')
-  : process.cwd();
-const envFile = process.env.NODE_ENV === 'production' ? '.env' : '.env.development';
-dotenv.config({ path: path.resolve(projectRoot, envFile) });
+// Load environment variables based on NODE_ENV
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: '.env' });
+} else {
+  dotenv.config({ path: '.env.development' });
+}
 
 const config: ServerConfig = {
   port: parseInt(process.env.API_PORT!),
@@ -29,16 +29,16 @@ const config: ServerConfig = {
   database: {
     host: process.env.DB_HOST!,
     port: parseInt(process.env.DB_PORT!),
-    database: process.env.DB_NAME || process.env.KPI_DB_NAME || 'kpi-db', // Use KPI DB if DB_NAME not set
+    database: process.env.DB_NAME!,
     username: process.env.DB_USER!,
     password: process.env.DB_PASSWORD!,
   },
   kpiDatabase: {
-    host: process.env.KPI_DB_HOST || process.env.DB_HOST!,
-    port: parseInt(process.env.KPI_DB_PORT || process.env.DB_PORT!),
-    database: process.env.KPI_DB_NAME || 'kpi-db',
-    username: process.env.KPI_DB_USER || process.env.DB_USER!,
-    password: process.env.KPI_DB_PASSWORD || process.env.DB_PASSWORD!,
+    host: process.env.KPI_DB_HOST!,
+    port: parseInt(process.env.KPI_DB_PORT!),
+    database: process.env.KPI_DB_NAME!,
+    username: process.env.KPI_DB_USER!,
+    password: process.env.KPI_DB_PASSWORD!,
   },
 };
 
@@ -52,8 +52,8 @@ export const getRateLimitConfig = () => ({
   },
 });
 export const getSecurityConfig = () => ({
-  jwtSecret: process.env.JWT_SECRET,
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN,
+  jwtSecret: process.env.JWT_SECRET!,
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN!,
   bcryptRounds: 12,
   maxFileSize: 10 * 1024 * 1024,
   allowedFileTypes: ['jpg', 'jpeg', 'png', 'gif', 'svg', 'pdf', 'doc', 'docx'],

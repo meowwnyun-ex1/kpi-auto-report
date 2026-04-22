@@ -341,7 +341,7 @@ Write-Host "========================================" -ForegroundColor Green
 Write-Host "DEPLOYMENT COMPLETED SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "KPI is now running at: http://10.73.148.75/app-store/" -ForegroundColor Cyan
+Write-Host "KPI is now running at: http://10.73.148.75/kpi-auto-report/" -ForegroundColor Cyan
 Write-Host "API Server: http://localhost:4007" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "PM2 processes will auto-restart on system reboot" -ForegroundColor Gray

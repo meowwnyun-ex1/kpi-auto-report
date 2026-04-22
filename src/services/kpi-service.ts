@@ -4,7 +4,7 @@ import { ApiService } from './api-service';
 export interface KPISummaryResponse {
   success: boolean;
   data: {
-    total_metrics: number;
+    total_items: number;
     total_sub_categories: number;
     total_entries: number;
     completed_entries?: number;
@@ -74,7 +74,7 @@ export interface KPIDashboardResponse {
       sub_category_id: number;
       sub_category_name: string;
       sub_category_key: string;
-      total_metrics: number;
+      total_items: number;
       total_entries: number;
       completed_entries: number;
     }>;
@@ -82,7 +82,7 @@ export interface KPIDashboardResponse {
       department_id: number;
       department_name: string;
       department_key: string;
-      total_metrics: number;
+      total_items: number;
       total_entries: number;
       completed_entries: number;
     }>;

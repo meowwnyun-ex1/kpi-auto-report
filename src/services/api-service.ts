@@ -72,14 +72,6 @@ export class ApiService {
 
     const headers = this.getAuthHeaders();
 
-    // In development, if no headers available, try to continue without auth for public endpoints
-    if (!headers && import.meta.env.DEV) {
-      console.warn(
-        'No authentication token available - attempting request without auth for development'
-      );
-      return this.requestWithoutAuth<T>(endpoint, options);
-    }
-
     if (!headers) {
       throw new Error('No authentication token available');
     }
@@ -181,34 +173,6 @@ export class ApiService {
     const url = `${apiBase}${endpoint}`;
 
     const headers = this.getAuthHeaders();
-
-    // In development, if no headers available, try to continue without auth
-    if (!headers && import.meta.env.DEV) {
-      console.warn(
-        'No authentication token available - attempting upload without auth for development'
-      );
-      // For uploads, we need minimal headers
-      const response = await fetch(url, {
-        method,
-        headers: {
-          // Don't set Content-Type for FormData
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        let errorMessage: string;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || response.statusText;
-        } catch {
-          errorMessage = response.statusText;
-        }
-        throw new Error(`Upload Error: ${response.status} - ${errorMessage}`);
-      }
-
-      return response.json();
-    }
 
     if (!headers) {
       throw new Error('No authentication token available');

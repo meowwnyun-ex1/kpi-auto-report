@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ShellLayout } from '@/features/shell';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -12,687 +11,414 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  BarChart3,
-  Calendar,
-  ClipboardList,
-  GanttChart,
+  X,
   TrendingUp,
-  TrendingDown,
-  ChevronRight,
-  AlertCircle,
+  Target,
   CheckCircle2,
-  Users,
+  AlertCircle,
+  RefreshCw,
+  Activity,
+  CalendarDays,
 } from 'lucide-react';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { StandardPageLayout } from '@/components/shared/StandardPageLayout';
+import { KPIDetailTable } from './overview/KPIDetailTable';
+import { ChartsTab } from './overview/ChartsTab';
+import { DepartmentTab } from './overview/DepartmentTab';
+import { MissingTab } from './overview/MissingTab';
+import type {
+  Category,
+  KPIStatus,
+  KPIDetail,
+  Summary,
+  DepartmentData,
+  ColumnFilters,
+} from './overview/types';
 
-interface Department {
-  dept_id: string;
-  name_en: string;
-}
-
-interface YearlyTarget {
-  id?: number;
-  department_id?: string;
-  department_name?: string;
-  category_id: number;
-  category_name: string;
-  category_key: string;
-  metric_no: string;
-  metric_name: string;
-  unit: string;
-  fy_target: number | null;
-  fy_target_text: string | null;
-  key_actions: string | null;
-  main_pic: string | null;
-}
-
-interface MonthlyEntry {
-  id?: number;
-  department_id?: string;
-  department_name?: string;
-  category_name: string;
-  metric_no: string;
-  metric_name: string;
-  frequency: string;
-  unit: string;
-  month: number;
-  fy_target: number | null;
-  target: number | null;
-  result: number | null;
-  judge: string | null;
-  accu_target: number | null;
-  accu_result: number | null;
-  accu_judge: string | null;
-  ev: string | null;
-  forecast: number | null;
-}
-
-interface ActionPlan {
-  id?: number;
-  key_action: string;
-  action_plan: string;
-  person_in_charge: string | null;
-  start_month: number;
-  end_month: number;
-  status: string;
-  progress_percent: number;
-}
-
-interface DepartmentStatus {
-  dept_id: string;
-  dept_name: string;
-  has_yearly_targets: boolean;
-  has_monthly_results: boolean;
-  target_count: number;
-  result_count: number;
-  missing_data: boolean;
-}
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const CATEGORIES = [
-  'Safety',
-  'Quality',
-  'Delivery',
-  'Compliance',
-  'HR',
-  'Attractive',
-  'Environment',
-  'Cost',
+// Constants
+const MONTHS = [
+  { value: 1, label: 'Jan' },
+  { value: 2, label: 'Feb' },
+  { value: 3, label: 'Mar' },
+  { value: 4, label: 'Apr' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'Jun' },
+  { value: 7, label: 'Jul' },
+  { value: 8, label: 'Aug' },
+  { value: 9, label: 'Sep' },
+  { value: 10, label: 'Oct' },
+  { value: 11, label: 'Nov' },
+  { value: 12, label: 'Dec' },
 ];
 
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  Safety: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
-  Quality: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
-  Delivery: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-  Compliance: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-  HR: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
-  Attractive: { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200' },
-  Environment: { bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-200' },
-  Cost: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
-};
-
 export default function OverviewPage() {
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [selectedDept, setSelectedDept] = useState<string>('all');
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  // Get fiscal year from context
+  const { fiscalYear, setFiscalYear, availableYears } = useFiscalYear();
+
+  // Filters
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const [yearlyTargets, setYearlyTargets] = useState<YearlyTarget[]>([]);
-  const [monthlyEntries, setMonthlyEntries] = useState<MonthlyEntry[]>([]);
-  const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
+  // Data
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [kpiStatus, setKpiStatus] = useState<KPIStatus[]>([]);
+  const [kpiDetails, setKpiDetails] = useState<KPIDetail[]>([]);
+  const [loading, setLoading] = useState(false);
 
+  // Table controls
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(100);
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({
+    department: '',
+    measurement: '',
+    unit: '',
+    judge: '',
+    accu_judge: '',
+  });
+
+  // Fetch on mount
   useEffect(() => {
-    fetchDepartments();
+    fetchCategories();
   }, []);
 
+  // Auto-refresh every 30 seconds
   useEffect(() => {
-    fetchAllData();
-  }, [selectedYear, selectedMonth, selectedDept]);
+    const interval = setInterval(() => {
+      fetchKPIStatus(true);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fiscalYear, selectedMonth, selectedCategory]);
 
-  const fetchDepartments = async () => {
+  useEffect(() => {
+    fetchKPIStatus();
+  }, [fiscalYear, selectedMonth, selectedCategory]);
+
+  const fetchCategories = async () => {
     try {
-      const res = await fetch('/api/departments');
+      const res = await fetch('/api/kpi-forms/categories');
       const data = await res.json();
-      if (data.success) setDepartments(data.data);
+      // Backend returns { success: true, data: [...] }
+      setCategories(data.data || []);
     } catch (error) {
-      console.error('Failed to fetch departments:', error);
+      console.error('Failed to fetch categories:', error);
     }
   };
 
-  const fetchAllData = async () => {
-    setLoading(true);
+  const fetchKPIStatus = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
-
-      // Fetch yearly targets
-      const yearlyUrl =
-        selectedDept === 'all'
-          ? `/api/kpi-forms/yearly/all/${selectedYear}`
-          : `/api/kpi-forms/yearly/${selectedDept}/${selectedYear}`;
-      const yearlyRes = await fetch(yearlyUrl, { headers });
-      const yearlyData = await yearlyRes.json();
-      if (yearlyData.success) setYearlyTargets(yearlyData.data || []);
-
-      // Fetch monthly entries
-      const monthlyUrl =
-        selectedDept === 'all'
-          ? `/api/kpi-forms/monthly/all/${selectedYear}/${selectedMonth}`
-          : `/api/kpi-forms/monthly/${selectedDept}/${selectedYear}`;
-      const monthlyRes = await fetch(monthlyUrl, { headers });
-      const monthlyData = await monthlyRes.json();
-      if (monthlyData.success) setMonthlyEntries(monthlyData.data || []);
-
-      // Fetch action plans
-      const actionUrl =
-        selectedDept === 'all'
-          ? `/api/kpi-forms/action-plans/all/${selectedYear}`
-          : `/api/kpi-forms/action-plans/${selectedDept}/${selectedYear}`;
-      const actionRes = await fetch(actionUrl, { headers });
-      const actionData = await actionRes.json();
-      if (actionData.success) setActionPlans(actionData.data || []);
+      const res = await fetch(`/api/kpi-forms/overview/${fiscalYear}/${selectedMonth}`);
+      const data = await res.json();
+      // Backend returns { success: true, data: { status: [...], details: [...] } }
+      setKpiStatus(data.data?.status || []);
+      setKpiDetails(data.data?.details || []);
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      console.error('Failed to fetch KPI status:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  // Calculate category stats
-  const categoryStats = CATEGORIES.map((cat) => {
-    const targets = yearlyTargets.filter((t) => t.category_name === cat);
-    const entries = monthlyEntries.filter((m) => m.category_name === cat);
+  // Summary calculations
+  const summary: Summary = useMemo(() => {
+    const targetCount = kpiDetails.length;
+    const resultCount = kpiDetails.filter(
+      (d) => d.result !== null && d.result !== undefined
+    ).length;
+    const passedItems = kpiDetails.filter((d) => d.ev === 'O').length; // Items that passed (O)
+    const overallRate = targetCount > 0 ? (resultCount / targetCount) * 100 : 0;
+    const passRate = resultCount > 0 ? (passedItems / resultCount) * 100 : 0; // Pass rate among results
 
-    const totalTarget = targets.reduce((sum, t) => sum + (t.fy_target || 0), 0);
-    const totalResult = entries.reduce((sum, e) => sum + (e.result || 0), 0);
-    const avgAchievement = totalTarget > 0 ? totalResult / targets.length : 0;
-
-    return {
-      category: cat,
-      targetCount: targets.length,
-      entryCount: entries.length,
-      totalTarget,
-      totalResult,
-      avgAchievement,
-      colors: CATEGORY_COLORS[cat],
-    };
-  });
-
-  // Action plan stats
-  const validPlans = actionPlans.filter((p) => p.key_action);
-  const completedPlans = validPlans.filter((p) => p.status === 'Completed').length;
-  const avgProgress =
-    validPlans.length > 0
-      ? Math.round(validPlans.reduce((sum, p) => sum + p.progress_percent, 0) / validPlans.length)
-      : 0;
-
-  // Department status tracking - which departments have KPI data
-  const departmentStatus: DepartmentStatus[] = departments.map((dept) => {
-    const deptTargets = yearlyTargets.filter(
-      (t) => t.department_id === dept.dept_id || t.department_name === dept.name_en
-    );
-    const deptResults = monthlyEntries.filter(
-      (m) => m.department_id === dept.dept_id || m.department_name === dept.name_en
-    );
+    const completeDepartments = kpiStatus.filter((s) => s.status === 'complete').length;
+    const partialDepartments = kpiStatus.filter((s) => s.status === 'partial').length;
+    const missingDepartments = kpiStatus.filter((s) => s.status === 'missing').length;
 
     return {
-      dept_id: dept.dept_id,
-      dept_name: dept.name_en,
-      has_yearly_targets: deptTargets.length > 0,
-      has_monthly_results: deptResults.length > 0,
-      target_count: deptTargets.length,
-      result_count: deptResults.length,
-      missing_data: deptTargets.length === 0 || deptResults.length === 0,
+      targetCount,
+      resultCount,
+      passedItems,
+      overallRate,
+      passRate,
+      completeDepartments,
+      partialDepartments,
+      missingDepartments,
     };
-  });
+  }, [kpiDetails, kpiStatus]);
 
-  const departmentsWithMissingData = departmentStatus.filter((d) => d.missing_data);
+  // Department data
+  const departmentData: DepartmentData[] = useMemo(() => {
+    const deptMap = new Map<string, { target: number; result: number }>();
+    kpiStatus.forEach((s) => {
+      const existing = deptMap.get(s.department_name) || { target: 0, result: 0 };
+      deptMap.set(s.department_name, {
+        target: existing.target + s.total_metrics,
+        result: existing.result + s.filled_metrics,
+      });
+    });
+    return Array.from(deptMap.entries()).map(([name, data]) => ({
+      name,
+      target: data.target,
+      result: data.result,
+      rate: data.target > 0 ? (data.result / data.target) * 100 : 0,
+    }));
+  }, [kpiStatus]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed':
-        return 'bg-green-500';
-      case 'In Progress':
-        return 'bg-blue-500';
-      case 'Delayed':
-        return 'bg-red-500';
-      case 'Cancelled':
-        return 'bg-gray-400';
-      default:
-        return 'bg-gray-300';
-    }
+  // Filtered details
+  const filteredDetails = useMemo(() => {
+    return kpiDetails.filter((row) => {
+      const deptMatch =
+        !columnFilters.department || row.department_name === columnFilters.department;
+      const measureMatch =
+        !columnFilters.measurement || row.measurement === columnFilters.measurement;
+      const unitMatch = !columnFilters.unit || (row.unit || 'Other') === columnFilters.unit;
+      const judgeMatch = !columnFilters.judge || row.ev === columnFilters.judge;
+      const accuJudge = (row.accu_result ?? 0) >= (row.accu_target ?? 0) ? 'O' : 'X';
+      const accuJudgeMatch = !columnFilters.accu_judge || accuJudge === columnFilters.accu_judge;
+      return deptMatch && measureMatch && unitMatch && judgeMatch && accuJudgeMatch;
+    });
+  }, [kpiDetails, columnFilters]);
+
+  // Paginated details
+  const totalPages = Math.ceil(filteredDetails.length / pageSize);
+  const paginatedDetails = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredDetails.slice(start, start + pageSize);
+  }, [filteredDetails, currentPage, pageSize]);
+
+  // Chart data
+  const categoryChartData = useMemo(() => {
+    const categoryMap = new Map<string, { target: number; result: number; passed: number }>();
+    kpiDetails.forEach((d) => {
+      const cat = d.category_name || 'Other';
+      const existing = categoryMap.get(cat) || { target: 0, result: 0, passed: 0 };
+      categoryMap.set(cat, {
+        target: existing.target + (d.target ?? 0),
+        result: existing.result + (d.result ?? 0),
+        passed: existing.passed + (d.ev === 'O' ? 1 : 0),
+      });
+    });
+    return Array.from(categoryMap.entries()).map(([name, data]) => ({
+      name,
+      Target: data.target,
+      Result: data.result,
+      Passed: data.passed,
+    }));
+  }, [kpiDetails]);
+
+  const statusPieData = [
+    { name: 'Complete', value: summary.completeDepartments, color: '#16A34A' },
+    { name: 'In Progress', value: summary.partialDepartments, color: '#EA580C' },
+    { name: 'Not Started', value: summary.missingDepartments, color: '#DC2626' },
+  ];
+
+  const judgePieData =
+    summary.resultCount > 0
+      ? [
+          { name: 'O (Pass)', value: summary.passedItems, color: '#16A34A' },
+          {
+            name: 'X (Fail)',
+            value: Math.max(0, summary.resultCount - summary.passedItems),
+            color: '#DC2626',
+          },
+        ]
+      : [
+          { name: 'O', value: 12, color: '#16A34A' },
+          { name: 'X', value: 5, color: '#DC2626' },
+        ];
+
+  const radarData = useMemo(() => {
+    const categoryMap = new Map<string, { target: number; result: number; count: number }>();
+    kpiDetails.forEach((d) => {
+      const cat = d.category_name || 'Other';
+      const existing = categoryMap.get(cat) || { target: 0, result: 0, count: 0 };
+      categoryMap.set(cat, {
+        target: existing.target + (d.target ?? 0),
+        result: existing.result + (d.result ?? 0),
+        count: existing.count + 1,
+      });
+    });
+    return Array.from(categoryMap.entries()).map(([category, data]) => ({
+      category,
+      target: data.count > 0 ? data.target / data.count : 0,
+      result: data.count > 0 ? data.result / data.count : 0,
+      fullMark: 100,
+    }));
+  }, [kpiDetails]);
+
+  // Target breakdown by unit
+  const targetByUnit = useMemo(() => {
+    const unitMap = new Map<string, { count: number; targetSum: number; resultSum: number }>();
+    kpiDetails.forEach((d) => {
+      const unit = d.unit || 'Other';
+      const existing = unitMap.get(unit) || { count: 0, targetSum: 0, resultSum: 0 };
+      unitMap.set(unit, {
+        count: existing.count + 1,
+        targetSum: existing.targetSum + (d.target ?? 0),
+        resultSum: existing.resultSum + (d.result ?? 0),
+      });
+    });
+
+    // Get unit descriptions
+    const getUnitDescription = (unit: string): string => {
+      const descriptions: Record<string, string> = {
+        person: 'Number of people',
+        people: 'Number of people',
+        'person/time': 'Person-times',
+        times: 'Number of times',
+        case: 'Number of cases',
+        cases: 'Number of cases',
+        project: 'Number of projects',
+        projects: 'Number of projects',
+        baht: 'Amount in Thai Baht',
+        '%': 'Percentage value',
+        percent: 'Percentage value',
+        percentage: 'Percentage value',
+        day: 'Number of days',
+        days: 'Number of days',
+        hour: 'Number of hours',
+        hours: 'Number of hours',
+        unit: 'Generic units',
+        units: 'Generic units',
+      };
+      return descriptions[unit.toLowerCase()] || `${unit} based metrics`;
+    };
+
+    return Array.from(unitMap.entries())
+      .map(([unit, data]) => ({
+        unit,
+        count: data.count,
+        targetSum: data.targetSum,
+        resultSum: data.resultSum,
+        description: getUnitDescription(unit),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [kpiDetails]);
+
+  // Filter actions
+  const hasActiveFilters = Object.values(columnFilters).some((v) => v !== '');
+  const clearFilters = () => {
+    setColumnFilters({ department: '', measurement: '', unit: '', judge: '', accu_judge: '' });
+    setCurrentPage(1);
   };
 
   return (
-    <ShellLayout variant="sidebar">
-      <div className="container mx-auto py-4 space-y-4">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Overview</h1>
-            <p className="text-sm text-muted-foreground">KPI Results Dashboard</p>
-          </div>
-          <div className="flex gap-2">
-            <Select value={selectedDept} onValueChange={setSelectedDept}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Departments" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.dept_id} value={d.dept_id}>
-                    {d.name_en}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedYear.toString()}
-              onValueChange={(v) => setSelectedYear(parseInt(v))}>
-              <SelectTrigger className="w-24">
-                <Calendar className="h-4 w-4 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2025">2025</SelectItem>
-                <SelectItem value="2026">2026</SelectItem>
-                <SelectItem value="2027">2027</SelectItem>
-              </SelectContent>
-            </Select>
+    <ShellLayout>
+      <StandardPageLayout
+        title="KPI Executive Dashboard"
+        subtitle="Real-time KPI monitoring for management decisions"
+        icon={Activity}
+        iconColor="text-blue-600"
+        fiscalYear={fiscalYear}
+        availableYears={availableYears}
+        onFiscalYearChange={(value) => setFiscalYear(value)}
+        onRefresh={() => fetchKPIStatus()}
+        loading={loading}
+        theme="blue"
+        rightActions={
+          <>
             <Select
               value={selectedMonth.toString()}
               onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-              <SelectTrigger className="w-20">
+              <SelectTrigger className="w-[120px] h-8 bg-blue-50 border-blue-200 text-blue-700 text-xs font-medium">
+                <CalendarDays className="w-3.5 h-3.5 mr-1" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {MONTHS.map((m, idx) => (
-                  <SelectItem key={idx} value={(idx + 1).toString()}>
-                    {m}
+                {MONTHS.map((m) => (
+                  <SelectItem key={m.value} value={m.value.toString()}>
+                    {m.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
+
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[140px] h-8 bg-gray-50 text-xs border-gray-200">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.key}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        }>
+        <div className="space-y-6">
+          {/* Tabs */}
+          <Tabs defaultValue="detail" className="space-y-4">
+            <TabsList className="bg-muted/50 p-1">
+              <TabsTrigger value="detail" className="data-[state=active]:bg-white">
+                KPI Detail
+              </TabsTrigger>
+              <TabsTrigger value="charts" className="data-[state=active]:bg-white">
+                Charts
+              </TabsTrigger>
+              <TabsTrigger value="department" className="data-[state=active]:bg-white">
+                By Department
+              </TabsTrigger>
+              <TabsTrigger value="missing" className="data-[state=active]:bg-white">
+                Missing Data
+              </TabsTrigger>
+            </TabsList>
+
+            {/* KPI Detail Tab */}
+            <TabsContent value="detail" className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm font-medium">KPI Performance Detail</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {filteredDetails.length} of {kpiDetails.length} items
+                  </span>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFilters}>
+                      <X className="h-3 w-3 mr-1" />
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <KPIDetailTable
+                loading={loading}
+                kpiDetails={kpiDetails}
+                filteredDetails={filteredDetails}
+                paginatedDetails={paginatedDetails}
+                columnFilters={columnFilters}
+                setColumnFilters={setColumnFilters}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                setCurrentPage={setCurrentPage}
+                hasActiveFilters={hasActiveFilters}
+                clearFilters={clearFilters}
+              />
+            </TabsContent>
+
+            {/* Charts Tab */}
+            <TabsContent value="charts">
+              <ChartsTab
+                categoryChartData={categoryChartData}
+                statusPieData={statusPieData}
+                judgePieData={judgePieData}
+                radarData={radarData}
+                targetByUnit={targetByUnit}
+              />
+            </TabsContent>
+
+            {/* Department Tab */}
+            <TabsContent value="department">
+              <DepartmentTab loading={loading} departmentData={departmentData} />
+            </TabsContent>
+
+            {/* Missing Tab */}
+            <TabsContent value="missing">
+              <MissingTab loading={loading} kpiDetails={kpiDetails} />
+            </TabsContent>
+          </Tabs>
         </div>
-
-        {/* Summary Cards */}
-        <div className="grid gap-3 md:grid-cols-5">
-          <Card className="p-3">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Targets</p>
-                <p className="text-lg font-bold">
-                  {yearlyTargets.filter((t) => t.metric_name).length}
-                </p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Results</p>
-                <p className="text-lg font-bold">
-                  {monthlyEntries.filter((m) => m.metric_name).length}
-                </p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center gap-2">
-              <GanttChart className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Actions</p>
-                <p className="text-lg font-bold">{validPlans.length}</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Progress</p>
-                <p className="text-lg font-bold">{avgProgress}%</p>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">Missing Data</p>
-                <p className="text-lg font-bold text-amber-600">
-                  {departmentsWithMissingData.length}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Main Content with Tabs */}
-        <Tabs defaultValue="results" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="results">Target & Result</TabsTrigger>
-            <TabsTrigger value="targets">Yearly Targets</TabsTrigger>
-            <TabsTrigger value="actions">Action Plans</TabsTrigger>
-            <TabsTrigger value="status">
-              Department Status
-              {departmentsWithMissingData.length > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                  {departmentsWithMissingData.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Target & Result Tab */}
-          <TabsContent value="results" className="mt-4">
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-base">
-                  Company KPI Summary Result - {MONTHS[selectedMonth - 1]} {selectedYear}
-                </CardTitle>
-                <CardDescription>
-                  FY{selectedYear} Target vs Result with Achievement Status
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-auto max-h-[calc(100vh-320px)]">
-                  <Table className="text-xs">
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="w-16">No.</TableHead>
-                        <TableHead>Metric Name</TableHead>
-                        <TableHead className="w-12">Freq</TableHead>
-                        <TableHead className="w-16">Unit</TableHead>
-                        <TableHead className="text-center">FY Target</TableHead>
-                        <TableHead className="text-center">Target</TableHead>
-                        <TableHead className="text-center">Result</TableHead>
-                        <TableHead className="text-center w-12">Judge</TableHead>
-                        <TableHead className="text-center">Accu. Target</TableHead>
-                        <TableHead className="text-center">Accu. Result</TableHead>
-                        <TableHead className="text-center w-12">Accu. Judge</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {monthlyEntries.filter((m) => m.metric_name).length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={11}
-                            className="text-center py-8 text-muted-foreground">
-                            No data for {MONTHS[selectedMonth - 1]}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        monthlyEntries
-                          .filter((m) => m.metric_name)
-                          .map((row, i) => (
-                            <TableRow key={i} className="hover:bg-muted/30">
-                              <TableCell className="font-mono">{row.metric_no}</TableCell>
-                              <TableCell className="font-medium">{row.metric_name}</TableCell>
-                              <TableCell>{row.frequency || '-'}</TableCell>
-                              <TableCell>{row.unit}</TableCell>
-                              <TableCell className="text-center font-medium text-blue-600">
-                                {row.fy_target ?? '-'}
-                              </TableCell>
-                              <TableCell className="text-center font-medium text-blue-600">
-                                {row.target ?? '-'}
-                              </TableCell>
-                              <TableCell className="text-center font-medium text-green-600">
-                                {row.result ?? '-'}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge
-                                  variant={row.judge === 'O' ? 'default' : 'destructive'}
-                                  className={`h-5 w-5 p-0 flex items-center justify-center text-xs ${
-                                    row.judge === 'O' ? 'bg-green-500' : ''
-                                  }`}>
-                                  {row.judge || '-'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center text-blue-600">
-                                {row.accu_target ?? '-'}
-                              </TableCell>
-                              <TableCell className="text-center text-green-600">
-                                {row.accu_result ?? '-'}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge
-                                  variant={row.accu_judge === 'O' ? 'default' : 'destructive'}
-                                  className={`h-5 w-5 p-0 flex items-center justify-center text-xs ${
-                                    row.accu_judge === 'O' ? 'bg-green-500' : ''
-                                  }`}>
-                                  {row.accu_judge || '-'}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Yearly Targets Tab */}
-          <TabsContent value="targets" className="mt-4">
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-base">Yearly Targets - FY{selectedYear}</CardTitle>
-                <CardDescription>All defined metrics and FY targets</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-auto max-h-[calc(100vh-320px)]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Department</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Metric No</TableHead>
-                        <TableHead>Metric Name</TableHead>
-                        <TableHead>Unit</TableHead>
-                        <TableHead className="text-center">FY Target</TableHead>
-                        <TableHead>PIC</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {yearlyTargets.filter((t) => t.metric_name).length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                            No yearly targets defined
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        yearlyTargets
-                          .filter((t) => t.metric_name)
-                          .map((row, i) => (
-                            <TableRow key={i}>
-                              <TableCell className="text-sm">
-                                {row.department_name || '-'}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={CATEGORY_COLORS[row.category_name]?.text}>
-                                  {row.category_name}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-sm">{row.metric_no}</TableCell>
-                              <TableCell className="text-sm">{row.metric_name}</TableCell>
-                              <TableCell className="text-sm">{row.unit}</TableCell>
-                              <TableCell className="text-center font-medium text-blue-600">
-                                {row.fy_target ?? '-'}
-                              </TableCell>
-                              <TableCell className="text-sm">{row.main_pic || '-'}</TableCell>
-                            </TableRow>
-                          ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Action Plans Tab */}
-          <TabsContent value="actions" className="mt-4">
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <GanttChart className="h-4 w-4" />
-                  Action Plans Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-auto max-h-[calc(100vh-320px)]">
-                  {/* Legend */}
-                  <div className="flex flex-wrap gap-3 text-xs mb-3">
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded bg-green-500"></div>
-                      <span>Completed</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded bg-blue-500"></div>
-                      <span>In Progress</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded bg-amber-500"></div>
-                      <span>Planned</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded bg-red-500"></div>
-                      <span>Delayed</span>
-                    </div>
-                  </div>
-
-                  {/* Gantt Chart */}
-                  <div className="min-w-[800px]">
-                    <div className="grid grid-cols-[1fr_repeat(12,50px)] gap-1 mb-2">
-                      <div className="font-medium text-xs p-1">Action Plan</div>
-                      {MONTHS.map((m) => (
-                        <div key={m} className="text-center text-xs font-medium p-1 border-b">
-                          {m}
-                        </div>
-                      ))}
-                    </div>
-
-                    {validPlans.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground text-sm">
-                        No action plans to display
-                      </div>
-                    ) : (
-                      validPlans.map((plan, idx) => (
-                        <div
-                          key={idx}
-                          className="grid grid-cols-[1fr_repeat(12,50px)] gap-1 border-b py-1">
-                          <div className="p-1">
-                            <div className="text-xs font-medium truncate">{plan.key_action}</div>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <Badge
-                                variant="outline"
-                                className={`text-xs ${getStatusColor(plan.status)} text-white border-0 h-4`}>
-                                {plan.status}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                {plan.progress_percent}%
-                              </span>
-                            </div>
-                          </div>
-                          {Array.from({ length: 12 }, (_, monthIdx) => {
-                            const month = monthIdx + 1;
-                            const isActive = month >= plan.start_month && month <= plan.end_month;
-                            const isCurrentMonth = month === new Date().getMonth() + 1;
-
-                            return (
-                              <div
-                                key={month}
-                                className={`h-8 border-l relative ${isCurrentMonth ? 'bg-blue-50' : ''}`}>
-                                {isActive && (
-                                  <div
-                                    className={`absolute top-0.5 bottom-0.5 left-0.5 right-0.5 rounded ${
-                                      plan.status === 'Completed'
-                                        ? 'bg-green-200'
-                                        : plan.status === 'Delayed'
-                                          ? 'bg-red-200'
-                                          : 'bg-gray-200'
-                                    }`}
-                                  />
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Department Status Tab */}
-          <TabsContent value="status" className="mt-4">
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Department KPI Data Status
-                </CardTitle>
-                <CardDescription>Track which departments have entered KPI data</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-auto max-h-[calc(100vh-320px)]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Department</TableHead>
-                        <TableHead className="text-center">Yearly Targets</TableHead>
-                        <TableHead className="text-center">Monthly Results</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {departmentStatus.map((dept) => (
-                        <TableRow key={dept.dept_id}>
-                          <TableCell className="font-medium">{dept.dept_name}</TableCell>
-                          <TableCell className="text-center">
-                            {dept.has_yearly_targets ? (
-                              <div className="flex items-center justify-center gap-1">
-                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                <span>{dept.target_count}</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center gap-1">
-                                <AlertCircle className="h-4 w-4 text-amber-500" />
-                                <span className="text-amber-600">None</span>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {dept.has_monthly_results ? (
-                              <div className="flex items-center justify-center gap-1">
-                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                <span>{dept.result_count}</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center gap-1">
-                                <AlertCircle className="h-4 w-4 text-amber-500" />
-                                <span className="text-amber-600">None</span>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {dept.missing_data ? (
-                              <Badge variant="destructive">Incomplete</Badge>
-                            ) : (
-                              <Badge variant="default" className="bg-green-500">
-                                Complete
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+      </StandardPageLayout>
     </ShellLayout>
   );
 }

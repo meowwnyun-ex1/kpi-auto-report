@@ -101,6 +101,29 @@ export interface ActionPlan {
   dec_status: string | null;
   sort_order: number;
   department_name: string;
+  company?: string;
+}
+
+export interface TimelineEntry {
+  id: number;
+  department_id: string;
+  department_name: string;
+  company: string;
+  category_id: number;
+  category_name: string;
+  category_key: string;
+  metric_id: number | null;
+  metric_no: string;
+  measurement: string;
+  unit: string;
+  fy_target: number | null;
+  month: number;
+  target: number | null;
+  result: number | null;
+  accu_target: number | null;
+  accu_result: number | null;
+  judge: string | null;
+  status: 'achieved' | 'not_achieved' | 'pending';
 }
 
 // ============================================
@@ -121,10 +144,9 @@ export const KpiFormsService = {
     ),
 
   approveYearlyTarget: (id: number, approvalType: 'president' | 'vp' | 'dept_head') =>
-    ApiService.post<{ success: boolean; message: string }>(
-      `/kpi-forms/yearly/${id}/approve`,
-      { approval_type: approvalType }
-    ),
+    ApiService.post<{ success: boolean; message: string }>(`/kpi-forms/yearly/${id}/approve`, {
+      approval_type: approvalType,
+    }),
 
   // Monthly Entries
   getMonthlyEntries: (departmentId: string, fiscalYear: number) =>
@@ -139,9 +161,7 @@ export const KpiFormsService = {
     ),
 
   approveMonthlyEntry: (id: number) =>
-    ApiService.post<{ success: boolean; message: string }>(
-      `/kpi-forms/monthly/${id}/approve`
-    ),
+    ApiService.post<{ success: boolean; message: string }>(`/kpi-forms/monthly/${id}/approve`),
 
   // Action Plans
   getActionPlans: (departmentId: string, fiscalYear: number) =>
@@ -156,9 +176,52 @@ export const KpiFormsService = {
     ),
 
   deleteActionPlan: (id: number) =>
-    ApiService.delete<{ success: boolean; message: string }>(
-      `/kpi-forms/action-plans/${id}`
+    ApiService.delete<{ success: boolean; message: string }>(`/kpi-forms/action-plans/${id}`),
+
+  // Timeline
+  getTimeline: (fiscalYear: number, month: number, company?: string) => {
+    const params = new URLSearchParams();
+    if (company && company !== 'all') {
+      params.append('company', company);
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return ApiService.get<{ success: boolean; data: TimelineEntry[] }>(
+      `/kpi-forms/timeline/${fiscalYear}/${month}${query}`
+    );
+  },
+
+  // All yearly targets for overview
+  getAllYearlyTargets: (fiscalYear: number) =>
+    ApiService.get<{ success: boolean; data: YearlyTarget[] }>(
+      `/kpi-forms/yearly/all/${fiscalYear}`
     ),
+
+  // All monthly entries for overview
+  getAllMonthlyEntries: (fiscalYear: number, company?: string, month?: number) => {
+    const params = new URLSearchParams();
+    if (company && company !== 'all') {
+      params.append('company', company);
+    }
+    if (month) {
+      params.append('month', month.toString());
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return ApiService.get<{ success: boolean; data: MonthlyEntry[] }>(
+      `/kpi-forms/monthly/all/${fiscalYear}${query}`
+    );
+  },
+
+  // All action plans for overview
+  getAllActionPlans: (fiscalYear: number, company?: string) => {
+    const params = new URLSearchParams();
+    if (company && company !== 'all') {
+      params.append('company', company);
+    }
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return ApiService.get<{ success: boolean; data: ActionPlan[] }>(
+      `/kpi-forms/action-plans/all/${fiscalYear}${query}`
+    );
+  },
 };
 
 export default KpiFormsService;

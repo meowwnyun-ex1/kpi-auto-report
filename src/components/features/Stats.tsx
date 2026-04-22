@@ -1,17 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
 import { getApiUrl } from '@/config/api';
-import { Target, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Target, TrendingUp, CheckCircle, Calendar } from 'lucide-react';
 
 interface StatsData {
-  totalMetrics: number;
-  achievedMetrics: number;
-  warningMetrics: number;
-  criticalMetrics: number;
+  fiscalYear: number;
+  availableYears: number[];
+  totalTargets: number;
+  targetsSet: number;
+  monthlyEntries: number;
+  resultsEntered: number;
+  achievedTargets: number;
 }
 
 export function StatsWidget() {
   const { isAuthenticated, user } = useAuth();
+  const { fiscalYear, setAvailableYears } = useFiscalYear();
   const isAdmin = isAuthenticated && user?.role === 'admin';
 
   const [stats, setStats] = useState<StatsData | null>(null);
@@ -28,7 +33,7 @@ export function StatsWidget() {
 
     try {
       const response = (await Promise.race([
-        fetch(`${getApiUrl()}/stats`, { signal: controller.signal }),
+        fetch(`${getApiUrl()}/stats?year=${fiscalYear}`, { signal: controller.signal }),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
       ])) as Response;
 
@@ -39,11 +44,18 @@ export function StatsWidget() {
 
       if (mountedRef.current) {
         setStats({
-          totalMetrics: data.totalMetrics ?? 0,
-          achievedMetrics: data.achievedMetrics ?? 0,
-          warningMetrics: data.warningMetrics ?? 0,
-          criticalMetrics: data.criticalMetrics ?? 0,
+          fiscalYear: fiscalYear,
+          availableYears: data.availableYears ?? [],
+          totalTargets: data.totalTargets ?? 0,
+          targetsSet: data.targetsSet ?? 0,
+          monthlyEntries: data.monthlyEntries ?? 0,
+          resultsEntered: data.resultsEntered ?? 0,
+          achievedTargets: data.achievedTargets ?? 0,
         });
+        // Update available years in context
+        if (data.availableYears?.length > 0) {
+          setAvailableYears(data.availableYears);
+        }
         setLoading(false);
         retryCountRef.current = 0;
       }
@@ -61,7 +73,7 @@ export function StatsWidget() {
         }
       }
     }
-  }, []);
+  }, [fiscalYear, setAvailableYears]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -90,7 +102,7 @@ export function StatsWidget() {
     );
   }
 
-  // Build items based on role
+  // Build items - show fiscal year and key stats
   const items: Array<{
     icon: typeof Target;
     value: number;
@@ -100,42 +112,30 @@ export function StatsWidget() {
     border: string;
   }> = [
     {
+      icon: Calendar,
+      value: stats?.fiscalYear ?? new Date().getFullYear(),
+      label: 'FY',
+      color: 'text-blue-800',
+      bg: 'bg-blue-50/95',
+      border: 'border-blue-300/90',
+    },
+    {
       icon: Target,
-      value: stats?.totalMetrics ?? 0,
-      label: 'Metrics',
+      value: stats?.totalTargets ?? 0,
+      label: 'Targets',
       color: 'text-sky-800',
       bg: 'bg-sky-50/95',
       border: 'border-sky-300/90',
     },
     {
-      icon: TrendingUp,
-      value: stats?.achievedMetrics ?? 0,
+      icon: CheckCircle,
+      value: stats?.achievedTargets ?? 0,
       label: 'Achieved',
       color: 'text-green-800',
       bg: 'bg-green-50/95',
       border: 'border-green-300/90',
     },
   ];
-
-  // Only show Warning and Critical for admin users
-  if (isAdmin) {
-    items.push({
-      icon: AlertTriangle,
-      value: stats?.warningMetrics ?? 0,
-      label: 'Warning',
-      color: 'text-yellow-700',
-      bg: 'bg-yellow-50/95',
-      border: 'border-yellow-300/90',
-    });
-    items.push({
-      icon: AlertTriangle,
-      value: stats?.criticalMetrics ?? 0,
-      label: 'Critical',
-      color: 'text-red-700',
-      bg: 'bg-red-50/95',
-      border: 'border-red-300/90',
-    });
-  }
 
   return (
     <div className="flex items-center gap-1.5" role="group" aria-label="Statistics">
@@ -146,7 +146,7 @@ export function StatsWidget() {
           title={`${value.toLocaleString()} ${label}`}>
           <Icon className={`w-3.5 h-3.5 ${color} flex-shrink-0`} aria-hidden="true" />
           <span className={`text-xs font-bold ${color} tabular-nums leading-none`}>
-            {value.toLocaleString()}
+            {label === 'FY' ? value : value.toLocaleString()}
           </span>
           <span className="hidden text-[11px] leading-none text-sky-600/70 sm:inline">{label}</span>
         </div>

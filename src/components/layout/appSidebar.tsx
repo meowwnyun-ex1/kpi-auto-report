@@ -2,7 +2,17 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Home, FileText, Package, BarChart3, Image, MapPin, Folder, Database } from 'lucide-react';
+import {
+  Home,
+  Target,
+  Calendar,
+  ClipboardList,
+  Users,
+  UserPlus,
+  LayoutGrid,
+  Settings,
+  BarChart3,
+} from 'lucide-react';
 import { NavUser } from './nav-user';
 
 export function AppSidebar() {
@@ -17,48 +27,19 @@ export function AppSidebar() {
   const isMenuItemActive = (url: string) => {
     const currentPath = location.pathname;
 
-    // Check if current path is a form page
-    const isFormPage =
-      currentPath === '/Form' ||
-      currentPath.includes('/admin/applications/add') ||
-      currentPath.includes('/admin/applications/edit/') ||
-      currentPath.includes('/admin/categories/add') ||
-      currentPath.includes('/admin/categories/edit/') ||
-      currentPath.includes('/admin/banners/add') ||
-      currentPath.includes('/admin/banners/edit/') ||
-      currentPath.includes('/admin/trips/add') ||
-      currentPath.includes('/admin/trips/edit/') ||
-      currentPath.includes('/user/banners/') ||
-      currentPath.includes('/user/trips/') ||
-      currentPath.includes('/user/categories/');
+    // Exact match for simple paths
+    if (currentPath === url) return true;
 
-    // If on form page, show appropriate active item
-    if (isFormPage) {
-      if (currentPath === '/Form') return url === '/Form'; // Form page is active when on /Form
-      if (currentPath.includes('/admin/applications/')) return url === '/admin/applications'; // Admin App Forms show Applications
-      if (currentPath.includes('/admin/categories/')) return url === '/admin/categories'; // Admin Category Forms show Categories
-      if (currentPath.includes('/admin/banners/')) return url === '/admin/banners'; // Admin Banner Forms show Banners
-      if (currentPath.includes('/admin/trips/')) return url === '/admin/trips'; // Admin Trip Forms show Trips
-      if (currentPath.includes('/user/banners/')) return url === '/'; // User Banner Forms show Home
-      if (currentPath.includes('/user/trips/')) return url === '/'; // User Trip Forms show Home
-      if (currentPath.includes('/user/categories/')) return url === '/'; // User Category Forms show Home
+    // For admin paths, check if current path starts with the url
+    if (url.startsWith('/admin') && currentPath.startsWith(url)) return true;
 
-      // For /Form page, only show Form as active, nothing else
-      if (currentPath === '/Form') {
-        return url === '/Form';
-      }
-
-      return false;
-    }
-
-    // Normal active check
-    return currentPath === url;
+    return false;
   };
 
   const data = {
     user: {
-      name: isAuthenticated ? user?.full_name || 'Admin' : 'Denso User',
-      email: user?.email || 'user@ap.denso.com',
+      name: isAuthenticated ? user?.full_name || 'User' : 'Denso User',
+      email: user?.email || 'user@denso.co.th',
       avatar: user?.avatar || '/Avatar.jpg',
     },
     navMain: [
@@ -69,49 +50,55 @@ export function AppSidebar() {
         isActive: isMenuItemActive('/'),
       },
       {
-        title: 'Application Form',
-        url: '/Form',
-        icon: FileText,
-        isActive: isMenuItemActive('/Form'),
+        title: 'Overview',
+        url: '/overview',
+        icon: BarChart3,
+        isActive: isMenuItemActive('/overview'),
+      },
+      {
+        title: 'Yearly Targets',
+        url: '/yearly-targets',
+        icon: Target,
+        isActive: isMenuItemActive('/yearly-targets'),
+      },
+      {
+        title: 'Monthly Entry',
+        url: '/monthly-entry',
+        icon: Calendar,
+        isActive: isMenuItemActive('/monthly-entry'),
+      },
+      {
+        title: 'Action Plans',
+        url: '/action-plans',
+        icon: ClipboardList,
+        isActive: isMenuItemActive('/action-plans'),
       },
     ],
     navAdmin: isAdmin
       ? [
           {
-            title: 'Overview',
-            url: '/admin',
-            icon: BarChart3,
-            isActive: isMenuItemActive('/admin'),
+            title: 'User Management',
+            url: '/admin/users',
+            icon: Users,
+            isActive: isMenuItemActive('/admin/users'),
           },
           {
-            title: 'Applications',
-            url: '/admin/applications',
-            icon: Package,
-            isActive: isMenuItemActive('/admin/applications'),
+            title: 'Employee Search',
+            url: '/admin/employees',
+            icon: UserPlus,
+            isActive: isMenuItemActive('/admin/employees'),
           },
           {
-            title: 'Categories',
-            url: '/admin/categories',
-            icon: Folder,
-            isActive: isMenuItemActive('/admin/categories'),
+            title: 'KPI Measurements',
+            url: '/admin/kpi-items',
+            icon: LayoutGrid,
+            isActive: isMenuItemActive('/admin/kpi-items'),
           },
           {
-            title: 'Banners',
-            url: '/admin/banners',
-            icon: Image,
-            isActive: isMenuItemActive('/admin/banners'),
-          },
-          {
-            title: 'Trips',
-            url: '/admin/trips',
-            icon: MapPin,
-            isActive: isMenuItemActive('/admin/trips'),
-          },
-          {
-            title: 'Storage',
-            url: '/admin/storage',
-            icon: Database,
-            isActive: isMenuItemActive('/admin/storage'),
+            title: 'Settings',
+            url: '/admin/settings',
+            icon: Settings,
+            isActive: isMenuItemActive('/admin/settings'),
           },
         ]
       : [],

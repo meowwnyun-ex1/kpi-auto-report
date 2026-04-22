@@ -1,5 +1,8 @@
 import crypto from 'crypto';
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -11,22 +14,50 @@ import { initializeDatabase, closeDatabase, testConnections } from './config/dat
 import { logger } from './utils/logger';
 import { AppError, ValidationError as AppValidationError, NotFoundError } from './utils/errors';
 
+// ============================================
+// File Upload (multer)
+// ============================================
+const uploadsDir = path.join(process.cwd(), 'uploads', 'kpi');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+    cb(null, unique + path.extname(file.originalname));
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv/i;
+    const ok =
+      allowed.test(path.extname(file.originalname)) &&
+      allowed.test(file.mimetype.replace('application/', '').replace('image/', ''));
+    cb(
+      null,
+      ok ||
+        file.mimetype.includes('pdf') ||
+        file.mimetype.includes('office') ||
+        file.mimetype.includes('image')
+    );
+  },
+});
+
 // Import routes
 import authRoutes from './routes/auth';
 import statsRoutes from './routes/stats';
-// import visitorTrackingRoutes from './routes/visitor-tracking'; // Temporarily disabled
-import kpiRoutes from './routes/kpi';
-import deliveryRoutes from './routes/delivery';
-import complianceRoutes from './routes/compliance';
-import hrRoutes from './routes/hr';
-import attractiveRoutes from './routes/attractive';
-import environmentRoutes from './routes/environment';
-import costRoutes from './routes/cost';
-import safetyRoutes from './routes/safety';
-import qualityRoutes from './routes/quality';
 import departmentsRoutes from './routes/departments';
-import kpiFormsRoutes from './routes/kpi-forms';
+import kpiCategoriesRoutes from './routes/kpi-categories';
+import kpiYearlyRoutes from './routes/kpi-yearly';
+import kpiMonthlyRoutes from './routes/kpi-monthly';
+import kpiActionPlansRoutes from './routes/kpi-action-plans';
+import kpiOverviewRoutes from './routes/kpi-overview';
 import adminUsersRoutes from './routes/admin-users';
+import exportRoutes from './routes/export';
+import measurementsRoutes from './routes/measurements';
+import adminCategoriesRoutes from './routes/admin-categories';
 
 const app = express();
 const PORT = parseInt(process.env.API_PORT!);
@@ -158,26 +189,8 @@ app.use(
 // ============================================
 app.get('/api/health', async (_req, res) => {
   try {
-    // In development mode, return healthy status even without database
-    if (process.env.NODE_ENV === 'development') {
-      return res.status(200).json({
-        success: true,
-        data: {
-          status: 'OK',
-          timestamp: new Date().toISOString(),
-          uptime: process.uptime(),
-          environment: process.env.NODE_ENV,
-          databases: {
-            appStore: 'skipped_development',
-            kpi: 'skipped_development',
-          },
-          message: 'Development mode - database connection skipped',
-        },
-      });
-    }
-
     const dbStatus = await testConnections();
-    const isHealthy = dbStatus.appStore || dbStatus.kpi; // Require at least one DB
+    const isHealthy = dbStatus.kpi; // Require KPI database
 
     res.status(isHealthy ? 200 : 503).json({
       success: isHealthy,
@@ -187,8 +200,9 @@ app.get('/api/health', async (_req, res) => {
         uptime: process.uptime(),
         environment: process.env.NODE_ENV,
         databases: {
-          appStore: dbStatus.appStore ? 'connected' : 'disconnected',
           kpi: dbStatus.kpi ? 'connected' : 'disconnected',
+          cas: dbStatus.cas ? 'connected' : 'disconnected',
+          spo: dbStatus.spo ? 'connected' : 'disconnected',
         },
         ...(dbStatus.errors.length > 0 && process.env.NODE_ENV === 'development'
           ? { errors: dbStatus.errors }
@@ -214,18 +228,29 @@ app.get('/api/health', async (_req, res) => {
 // ============================================
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
-app.use('/api/kpi', kpiRoutes);
-app.use('/api/delivery', deliveryRoutes);
-app.use('/api/compliance', complianceRoutes);
-app.use('/api/hr', hrRoutes);
-app.use('/api/attractive', attractiveRoutes);
-app.use('/api/environment', environmentRoutes);
-app.use('/api/cost', costRoutes);
-app.use('/api/safety', safetyRoutes);
-app.use('/api/quality', qualityRoutes);
 app.use('/api/departments', departmentsRoutes);
-app.use('/api/kpi-forms', kpiFormsRoutes);
+app.use('/api/kpi-forms', kpiCategoriesRoutes);
+app.use('/api/kpi-forms', kpiYearlyRoutes);
+app.use('/api/kpi-forms', kpiMonthlyRoutes);
+app.use('/api/kpi-forms', kpiActionPlansRoutes);
+app.use('/api/kpi-forms', kpiOverviewRoutes);
 app.use('/api/admin', adminUsersRoutes);
+
+// File upload endpoint
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+  const url = `/uploads/kpi/${req.file.filename}`;
+  res.json({
+    success: true,
+    url,
+    originalName: req.file.originalname,
+    size: req.file.size,
+    mimetype: req.file.mimetype,
+  });
+});
+app.use('/api/export', exportRoutes);
+app.use('/api/measurements', measurementsRoutes);
+app.use('/api/admin/categories', adminCategoriesRoutes);
 // app.use('/api/visitor-tracking', visitorTrackingRoutes); // Temporarily disabled
 
 // ============================================

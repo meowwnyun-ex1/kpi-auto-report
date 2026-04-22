@@ -6,5 +6,14 @@ export * from './hooks';
 // Contexts
 export * from './contexts';
 
-// Types - exclude Stats to avoid conflict with component
-export type { Application, Category, Stats } from './shared/types';
+// Types
+export type {
+  User,
+  Department,
+  KPICategory,
+  ApiResponse,
+  KPIStats,
+  YearlyTarget,
+  MonthlyEntry,
+  ActionPlan,
+} from './shared/types';

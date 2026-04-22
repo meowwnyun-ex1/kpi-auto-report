@@ -1,6 +1,6 @@
-// KPI Auto Report Types
+// KPI Management Tool Types
 
-export type KPICategory = 
+export type KPICategory =
   | 'safety'
   | 'quality'
   | 'delivery'
@@ -10,21 +10,21 @@ export type KPICategory =
   | 'environment'
   | 'cost';
 
-export type KPIMetricType = 
-  | 'count'      // จำนวน (เช่น จำนวนอุบัติเหตุ)
+export type KPIMetricType =
+  | 'count' // จำนวน (เช่น จำนวนอุบัติเหตุ)
   | 'percentage' // เปอร์เซ็นต์ (เช่น % การส่งมอบตรงเวลา)
-  | 'ratio'      // อัตราส่วน (เช่น อัตราการเกิดอุบัติเหตุต่อชั่วโมง)
-  | 'amount'     // จำนวนเงิน (เช่น ต้นทุน)
-  | 'score';     // คะแนน (เช่น คะแนนความพึงพอใจ)
+  | 'ratio' // อัตราส่วน (เช่น อัตราการเกิดอุบัติเหตุต่อชั่วโมง)
+  | 'amount' // จำนวนเงิน (เช่น ต้นทุน)
+  | 'score'; // คะแนน (เช่น คะแนนความพึงพอใจ)
 
 export type KPITrend = 'up' | 'down' | 'stable';
 
-export type KPICalculationMethod = 
-  | 'sum'        // รวม
-  | 'average'    // เฉลี่ย
-  | 'max'        // สูงสุด
-  | 'min'        // ต่ำสุด
-  | 'count';     // นับจำนวน
+export type KPICalculationMethod =
+  | 'sum' // รวม
+  | 'average' // เฉลี่ย
+  | 'max' // สูงสุด
+  | 'min' // ต่ำสุด
+  | 'count'; // นับจำนวน
 
 // Department structure
 export interface Department {
@@ -65,8 +65,8 @@ export interface KPIDataEntry {
   target_value: number;
   achievement_percentage?: number;
   period: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
-  period_date: Date;  // วันที่ของช่วงเวลา
-  entry_date: Date;   // วันที่กรอกข้อมูล
+  period_date: Date; // วันที่ของช่วงเวลา
+  entry_date: Date; // วันที่กรอกข้อมูล
   entered_by: number; // user_id
   notes?: string;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
@@ -104,10 +104,10 @@ export interface KPIChartData {
 // KPI Dashboard Stats
 export interface KPIDashboardStats {
   category: KPICategory;
-  total_metrics: number;
-  achieved_metrics: number;
-  warning_metrics: number;
-  critical_metrics: number;
+  total_items: number;
+  achieved_items: number;
+  warning_items: number;
+  critical_items: number;
   overall_achievement: number;
   trend: KPITrend;
   last_period_comparison: number; // % เปลี่ยนแปลงจากช่วงก่อน
@@ -152,8 +152,8 @@ export const KPI_CATEGORY_CONFIGS: KPICategoryConfig[] = [
     name_th: 'ความปลอดภัย',
     icon: 'Shield',
     color: '#EF4444',
-    description: 'Safety performance metrics including accidents, incidents, and safety training',
-    departments: ['Production', 'Maintenance', 'Quality', 'Logistics', 'Administration']
+    description: 'Safety performance including accidents, incidents, and safety training',
+    departments: ['Production', 'Maintenance', 'Quality', 'Logistics', 'Administration'],
   },
   {
     key: 'quality',
@@ -161,8 +161,9 @@ export const KPI_CATEGORY_CONFIGS: KPICategoryConfig[] = [
     name_th: 'คุณภาพ',
     icon: 'Award',
     color: '#3B82F6',
-    description: 'Quality metrics including defect rates, customer complaints, and quality certifications',
-    departments: ['Production', 'Quality Assurance', 'Engineering', 'Process Improvement']
+    description:
+      'Quality performance including defect rates, customer complaints, and quality certifications',
+    departments: ['Production', 'Quality Assurance', 'Engineering', 'Process Improvement'],
   },
   {
     key: 'delivery',
@@ -170,8 +171,9 @@ export const KPI_CATEGORY_CONFIGS: KPICategoryConfig[] = [
     name_th: 'การส่งมอบ',
     icon: 'Truck',
     color: '#10B981',
-    description: 'Delivery performance including on-time delivery, lead time, and logistics efficiency',
-    departments: ['Production', 'Logistics', 'Planning', 'Shipping']
+    description:
+      'Delivery performance including on-time delivery, lead time, and logistics efficiency',
+    departments: ['Production', 'Logistics', 'Planning', 'Shipping'],
   },
   {
     key: 'compliance',
@@ -179,8 +181,9 @@ export const KPI_CATEGORY_CONFIGS: KPICategoryConfig[] = [
     name_th: 'การปฏิบัติตาม',
     icon: 'FileCheck',
     color: '#8B5CF6',
-    description: 'Compliance metrics including regulatory compliance, audit findings, and policy adherence',
-    departments: ['Quality', 'Safety', 'Environment', 'HR', 'Administration']
+    description:
+      'Compliance performance including regulatory compliance, audit findings, and policy adherence',
+    departments: ['Quality', 'Safety', 'Environment', 'HR', 'Administration'],
   },
   {
     key: 'hr',
@@ -188,8 +191,9 @@ export const KPI_CATEGORY_CONFIGS: KPICategoryConfig[] = [
     name_th: 'ทรัพยากรบุคคล',
     icon: 'Users',
     color: '#F59E0B',
-    description: 'Human resources metrics including attendance, turnover, training, and employee satisfaction',
-    departments: ['HR', 'Training', 'Administration', 'All Departments']
+    description:
+      'Human resources performance including attendance, turnover, training, and employee satisfaction',
+    departments: ['HR', 'Training', 'Administration', 'All Departments'],
   },
   {
     key: 'attractive',
@@ -197,8 +201,9 @@ export const KPI_CATEGORY_CONFIGS: KPICategoryConfig[] = [
     name_th: 'ความน่าสนใจ',
     icon: 'Star',
     color: '#EC4899',
-    description: 'Attractiveness metrics including employee engagement, innovation, and workplace environment',
-    departments: ['HR', 'Administration', 'Engineering', 'Production']
+    description:
+      'Attractiveness performance including employee engagement, innovation, and workplace environment',
+    departments: ['HR', 'Administration', 'Engineering', 'Production'],
   },
   {
     key: 'environment',
@@ -206,8 +211,9 @@ export const KPI_CATEGORY_CONFIGS: KPICategoryConfig[] = [
     name_th: 'สิ่งแวดล้อม',
     icon: 'Leaf',
     color: '#22C55E',
-    description: 'Environmental metrics including waste reduction, energy consumption, and environmental compliance',
-    departments: ['Environment', 'Production', 'Maintenance', 'Administration']
+    description:
+      'Environmental performance including waste reduction, energy consumption, and environmental compliance',
+    departments: ['Environment', 'Production', 'Maintenance', 'Administration'],
   },
   {
     key: 'cost',
@@ -215,22 +221,23 @@ export const KPI_CATEGORY_CONFIGS: KPICategoryConfig[] = [
     name_th: 'ต้นทุน',
     icon: 'DollarSign',
     color: '#6366F1',
-    description: 'Cost metrics including production costs, operational expenses, and cost reduction initiatives',
-    departments: ['Finance', 'Production', 'Procurement', 'Administration']
-  }
+    description:
+      'Cost performance including production costs, operational expenses, and cost reduction initiatives',
+    departments: ['Finance', 'Production', 'Procurement', 'Administration'],
+  },
 ];
 
 // Helper functions
 export function getCategoryConfig(category: KPICategory): KPICategoryConfig {
-  return KPI_CATEGORY_CONFIGS.find(c => c.key === category) || KPI_CATEGORY_CONFIGS[0];
+  return KPI_CATEGORY_CONFIGS.find((c) => c.key === category) || KPI_CATEGORY_CONFIGS[0];
 }
 
 export function getStatusColor(status: 'excellent' | 'good' | 'warning' | 'critical'): string {
   const colors = {
     excellent: '#10B981', // green
-    good: '#3B82F6',      // blue
-    warning: '#F59E0B',   // yellow
-    critical: '#EF4444'   // red
+    good: '#3B82F6', // blue
+    warning: '#F59E0B', // yellow
+    critical: '#EF4444', // red
   };
   return colors[status];
 }

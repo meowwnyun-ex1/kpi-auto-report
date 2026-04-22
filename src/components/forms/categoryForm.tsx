@@ -7,7 +7,8 @@ import { AlertCircle, Upload, X, Loader2, Folder } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Category } from '@/shared/types';
+import type { KPICategory } from '@/shared/types';
+type Category = KPICategory & { image_thumbnail?: string };
 
 interface CategoryFormProps {
   category?: Category | null;
@@ -33,7 +34,9 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreviewUrl, setFilePreviewUrl] = useState<string>(category?.image_thumbnail || '');
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string>(
+    (category as any)?.image_thumbnail || ''
+  );
   const [dragActive, setDragActive] = useState(false);
 
   const handleChange = (field: string, value: string | boolean) => {

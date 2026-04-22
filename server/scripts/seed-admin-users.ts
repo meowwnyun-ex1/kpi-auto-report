@@ -1,25 +1,27 @@
 import sql from 'mssql';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
-import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env.development') });
+// Load environment variables based on NODE_ENV
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: '../../.env' });
+} else {
+  dotenv.config({ path: '../../.env.development' });
+}
 
 /**
- * Seed admin users to kpi-db (Server 76)
+ * Seed admin users to KPI database
  *
- * Server 76 (10.73.148.76) - ALL DATABASES
- * - kpi-db: Main KPI application database (READ-WRITE)
- * - SPO_Dev: Department names (READ-WRITE)
- * - CAS_Dev: Employee data (READ-ONLY)
+ * SECURITY WARNING: Default passwords are used for initial setup.
+ * CHANGE THESE PASSWORDS IMMEDIATELY after first login!
  */
 
 async function seedAdminUsers() {
   const config = {
-    server: process.env.KPI_DB_HOST || '10.73.148.76',
-    database: process.env.KPI_DB_NAME || 'kpi-db',
-    user: process.env.KPI_DB_USER || 'inn@admin',
-    password: process.env.KPI_DB_PASSWORD || 'i@NN636195',
+    server: process.env.KPI_DB_HOST || '',
+    database: process.env.KPI_DB_NAME || '',
+    user: process.env.KPI_DB_USER || '',
+    password: process.env.KPI_DB_PASSWORD || '',
     port: parseInt(process.env.KPI_DB_PORT || '1433'),
     options: {
       trustServerCertificate: true,

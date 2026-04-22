@@ -17,8 +17,90 @@ router.use((req: Request, _res: Response, next: NextFunction) => {
 });
 
 /**
+ * GET /api/admin/employees
+ * Get all employees from CAS database, fallback to users table in KPI database
+ */
+router.get('/employees', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    try {
+      const casDb = await getCasDb();
+
+      const result = await casDb.request().query(`
+        SELECT 
+          employee_id,
+          name,
+          name_en,
+          email,
+          is_head,
+          department_code as department_id,
+          is_active,
+          position_level_id,
+          position_id,
+          first_name_en,
+          last_name_en,
+          first_name_th,
+          last_name_th,
+          name_title_en,
+          name_title_th,
+          department_name,
+          section_name,
+          company_name,
+          division_name
+        FROM employees
+        WHERE is_active = 1
+        ORDER BY department_name, name_en
+      `);
+
+      res.json({ success: true, data: result.recordset });
+    } catch (dbError: unknown) {
+      logger.warn(
+        'CAS database not available, falling back to users table',
+        dbError as Record<string, unknown>
+      );
+
+      // Fallback to users table in KPI database
+      try {
+        const kpiDb = await getKpiDb();
+        const result = await kpiDb.request().query(`
+          SELECT
+            id as employee_id,
+            full_name as name,
+            full_name as name_en,
+            email,
+            0 as is_head,
+            department_id,
+            is_active,
+            0 as position_level_id,
+            NULL as position_id,
+            NULL as first_name_en,
+            NULL as last_name_en,
+            NULL as first_name_th,
+            NULL as last_name_th,
+            NULL as name_title_en,
+            NULL as name_title_th,
+            department_name,
+            NULL as section_name,
+            NULL as company_name,
+            NULL as division_name
+          FROM users
+          WHERE is_active = 1
+          ORDER BY department_name, full_name
+        `);
+        res.json({ success: true, data: result.recordset, source: 'users' });
+      } catch (fallbackError) {
+        logger.error('Fallback to users table also failed', fallbackError);
+        res.json({ success: true, data: [], message: 'No employee data available' });
+      }
+    }
+  } catch (error) {
+    logger.error('Failed to get employees', error);
+    next(error);
+  }
+});
+
+/**
  * GET /api/admin/employees/search
- * Search employees from CAS database
+ * Search employees from CAS database, fallback to users table in KPI database
  */
 router.get('/employees/search', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -28,59 +110,121 @@ router.get('/employees/search', async (req: Request, res: Response, next: NextFu
       return res.json({ success: true, data: [] });
     }
 
-    const casDb = await getCasDb();
-    const request = casDb.request();
+    try {
+      const casDb = await getCasDb();
+      const request = casDb.request();
 
-    let query = `
-      SELECT TOP(${parseInt(limit as string) || 20})
-        employee_id,
-        name,
-        name_en,
-        email,
-        is_head,
-        department_id,
-        is_active,
-        position_level_id,
-        position_id,
-        first_name_en,
-        last_name_en,
-        first_name_th,
-        last_name_th,
-        name_title_en,
-        name_title_th,
-        department_name,
-        section_name
-      FROM employees
-      WHERE is_active = 1
-    `;
-
-    if (q) {
-      request.input('search', sql.NVarChar, `%${q}%`);
-      query += `
-        AND (
-          employee_id LIKE @search
-          OR name LIKE @search
-          OR name_en LIKE @search
-          OR email LIKE @search
-          OR first_name_en LIKE @search
-          OR last_name_en LIKE @search
-        )
+      let query = `
+        SELECT TOP(${parseInt(limit as string) || 20})
+          employee_id,
+          name,
+          name_en,
+          email,
+          is_head,
+          department_code as department_id,
+          is_active,
+          position_level_id,
+          position_id,
+          first_name_en,
+          last_name_en,
+          first_name_th,
+          last_name_th,
+          name_title_en,
+          name_title_th,
+          department_name,
+          section_name,
+          company_name,
+          division_name
+        FROM employees
+        WHERE is_active = 1
       `;
+
+      if (q) {
+        request.input('search', sql.NVarChar, `%${q}%`);
+        query += `
+          AND (
+            employee_id LIKE @search
+            OR name LIKE @search
+            OR name_en LIKE @search
+            OR email LIKE @search
+            OR first_name_en LIKE @search
+            OR last_name_en LIKE @search
+          )
+        `;
+      }
+
+      if (department_id) {
+        request.input('department_id', sql.NVarChar, department_id);
+        query += ` AND department_code = @department_id`;
+      }
+
+      query += ` ORDER BY name_en`;
+
+      const result = await request.query(query);
+
+      res.json({
+        success: true,
+        data: result.recordset,
+      });
+    } catch (dbError: unknown) {
+      logger.warn(
+        'CAS database not available for search, falling back to users table',
+        dbError as Record<string, unknown>
+      );
+
+      // Fallback to users table in KPI database
+      try {
+        const kpiDb = await getKpiDb();
+        const request = kpiDb.request();
+
+        let query = `
+          SELECT TOP(${parseInt(limit as string) || 20})
+            id as employee_id,
+            full_name as name,
+            full_name as name_en,
+            email,
+            0 as is_head,
+            department_id,
+            is_active,
+            0 as position_level_id,
+            NULL as position_id,
+            NULL as first_name_en,
+            NULL as last_name_en,
+            NULL as first_name_th,
+            NULL as last_name_th,
+            NULL as name_title_en,
+            NULL as name_title_th,
+            department_name,
+            NULL as section_name
+          FROM users
+          WHERE is_active = 1
+        `;
+
+        if (q) {
+          request.input('search', sql.NVarChar, `%${q}%`);
+          query += `
+            AND (
+              CAST(id AS NVARCHAR) LIKE @search
+              OR full_name LIKE @search
+              OR email LIKE @search
+            )
+          `;
+        }
+
+        if (department_id) {
+          request.input('department_id', sql.NVarChar, department_id);
+          query += ` AND department_id = @department_id`;
+        }
+
+        query += ` ORDER BY full_name`;
+
+        const result = await request.query(query);
+        res.json({ success: true, data: result.recordset, source: 'users' });
+      } catch (fallbackError) {
+        logger.error('Fallback to users table also failed', fallbackError);
+        res.json({ success: true, data: [], message: 'No employee data available' });
+      }
     }
-
-    if (department_id) {
-      request.input('department_id', sql.NVarChar, department_id);
-      query += ` AND department_id = @department_id`;
-    }
-
-    query += ` ORDER BY name_en`;
-
-    const result = await request.query(query);
-
-    res.json({
-      success: true,
-      data: result.recordset,
-    });
   } catch (error) {
     logger.error('Failed to search employees', error);
     next(error);
@@ -150,24 +294,41 @@ router.get('/employees/:employee_id', async (req: Request, res: Response, next: 
  */
 router.get('/spo-departments', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const spoDb = await getSpoDb();
-
-    const result = await spoDb.request().query(`
-      SELECT 
-        dept_id,
-        dept_code,
-        name_en,
-        name_th,
-        division,
-        is_active
-      FROM departments
-      WHERE is_active = 1
-      ORDER BY name_en
-    `);
+    // Try SPO_Dev first, fallback to kpi_department_mapping
+    let departments: any[] = [];
+    try {
+      const spoDb = await getSpoDb();
+      const result = await spoDb.request().query(`
+        SELECT 
+          ID as dept_id,
+          Section_name as name_en,
+          Company as company,
+          is_active as status
+        FROM dept_master
+        WHERE is_active = 'Active'
+        ORDER BY Section_name
+      `);
+      departments = result.recordset;
+    } catch (spoError: unknown) {
+      logger.warn(
+        'SPO_Dev database unavailable for /spo-departments, using KPI mapping',
+        spoError as Record<string, unknown>
+      );
+      const kpiDb = await getKpiDb();
+      const mappingResult = await kpiDb.request().query(`
+        SELECT kpi_code as dept_id, description as name_en FROM kpi_department_mapping ORDER BY kpi_code
+      `);
+      departments = mappingResult.recordset.map((d: any) => ({
+        dept_id: d.dept_id,
+        name_en: d.name_en,
+        company: null,
+        status: 'Active',
+      }));
+    }
 
     res.json({
       success: true,
-      data: result.recordset,
+      data: departments,
     });
   } catch (error) {
     logger.error('Failed to get SPO departments', error);
@@ -267,7 +428,20 @@ router.post('/managers', async (req: Request, res: Response, next: NextFunction)
     }
 
     // Get employee from CAS
-    const casDb = await getCasDb();
+    let casDb: sql.ConnectionPool;
+    try {
+      casDb = await getCasDb();
+    } catch (casError: unknown) {
+      logger.warn(
+        'CAS database unavailable for /managers, falling back to KPI mapping',
+        casError as Record<string, unknown>
+      );
+      return res.status(500).json({
+        success: false,
+        message: 'CAS database unavailable. Please contact administrator.',
+      });
+    }
+
     const employeeResult = await casDb.request().input('employee_id', sql.NVarChar, employee_id)
       .query(`
         SELECT employee_id, name_en, email, department_id
@@ -400,30 +574,60 @@ router.get('/managers', async (req: Request, res: Response, next: NextFunction) 
         u.role,
         u.department_id,
         u.is_active,
-        u.created_at,
-        d.name_en as department_name
+        u.created_at
       FROM users u
-      LEFT JOIN departments d ON u.department_id = d.dept_id
       WHERE u.role IN ('manager', 'admin', 'superadmin', 'user')
       ORDER BY u.role, u.full_name
     `);
 
+    // Get department names from kpi_department_mapping (primary source)
+    const kpiDeptResult = await kpiDb.request().query(`
+      SELECT kpi_code, spo_dept_id, description FROM kpi_department_mapping
+    `);
+    const deptMap = new Map<string, string>();
+    for (const d of kpiDeptResult.recordset) {
+      deptMap.set(d.kpi_code, d.description);
+      if (d.spo_dept_id) deptMap.set(d.spo_dept_id, d.description);
+    }
+
+    // Try SPO_Dev for enrichment (optional)
+    try {
+      const spoDb = await getSpoDb();
+      const spoResult = await spoDb.request().query(`
+        SELECT ID as dept_id, Section_name as name_en FROM dept_master WHERE is_active = 'Active'
+      `);
+      for (const d of spoResult.recordset) {
+        if (!deptMap.has(d.dept_id)) deptMap.set(d.dept_id, d.name_en);
+      }
+    } catch (spoError: unknown) {
+      logger.warn(
+        'SPO_Dev database unavailable for /managers',
+        spoError as Record<string, unknown>
+      );
+    }
+
     // Get department access for each user
     const usersWithAccess = await Promise.all(
       result.recordset.map(async (u: any) => {
-        const accessResult = await kpiDb.request().input('user_id', sql.Int, u.id).query(`
+        const accessResult = await kpiDb.request().input('user_id', sql.NVarChar, String(u.id))
+          .query(`
             SELECT 
               uda.department_id,
-              uda.access_level,
-              d.name_en as department_name
+              uda.access_level
             FROM user_department_access uda
-            LEFT JOIN departments d ON uda.department_id = d.dept_id
             WHERE uda.user_id = @user_id
           `);
 
+        // Add department names from SPO_Dev
+        const accessWithNames = accessResult.recordset.map((a: any) => ({
+          ...a,
+          department_name: deptMap.get(a.department_id) || a.department_id,
+        }));
+
         return {
           ...u,
-          department_access: accessResult.recordset,
+          department_name: deptMap.get(u.department_id) || u.department_id,
+          department_access: accessWithNames,
         };
       })
     );
@@ -465,6 +669,364 @@ router.delete('/managers/:id', async (req: Request, res: Response, next: NextFun
     });
   } catch (error) {
     logger.error('Failed to remove manager', error);
+    next(error);
+  }
+});
+
+// ============================================
+// KPI ITEMS MANAGEMENT
+// ============================================
+
+const CATEGORIES = [
+  'safety',
+  'quality',
+  'delivery',
+  'compliance',
+  'hr',
+  'attractive',
+  'environment',
+  'cost',
+];
+
+/**
+ * GET /api/admin/kpi-items
+ * Get all KPI items across all categories
+ * Admin/SuperAdmin sees all, Manager sees only their department items
+ */
+router.get('/kpi-items', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const kpiDb = await getKpiDb();
+    const { category, department_id } = req.query;
+    const userRole = req.user!.role;
+    const userDept = (req.user as any).department_id;
+
+    // Determine department filter based on role
+    const isAdminUser = userRole === 'admin' || userRole === 'superadmin';
+    const filterDept = isAdminUser ? (department_id as string) || null : userDept;
+
+    // Get department names from kpi_department_mapping (primary source)
+    const kpiDeptResult = await kpiDb.request().query(`
+      SELECT kpi_code, spo_dept_id, description FROM kpi_department_mapping
+    `);
+    const deptMap = new Map<string, string>();
+    for (const d of kpiDeptResult.recordset) {
+      deptMap.set(d.kpi_code, d.description);
+      if (d.spo_dept_id) deptMap.set(d.spo_dept_id, d.description);
+    }
+
+    // Try SPO_Dev for enrichment (optional)
+    try {
+      const spoDb = await getSpoDb();
+      const spoResult = await spoDb.request().query(`
+        SELECT ID as dept_id, Section_name as name_en FROM dept_master WHERE is_active = 1
+      `);
+      for (const d of spoResult.recordset) {
+        if (!deptMap.has(d.dept_id)) deptMap.set(d.dept_id, d.name_en);
+      }
+    } catch (spoError: unknown) {
+      logger.warn(
+        'SPO_Dev database unavailable for /kpi-items',
+        spoError as Record<string, unknown>
+      );
+    }
+
+    const allItems: any[] = [];
+
+    // Get items from kpi_yearly_targets (unified table)
+    for (const cat of CATEGORIES) {
+      if (category && category !== cat) continue;
+
+      // Get category info
+      const catResult = await kpiDb
+        .request()
+        .input('catKey', sql.NVarChar, cat)
+        .query(`SELECT id, name FROM kpi_categories WHERE [key] = @catKey`);
+
+      if (catResult.recordset.length === 0) continue;
+
+      const categoryId = catResult.recordset[0]?.id;
+      const categoryName = catResult.recordset[0]?.name || cat;
+
+      // Build query with department filter
+      let query = `
+        SELECT 
+          yt.id,
+          yt.metric_no as no,
+          yt.measurement,
+          yt.unit,
+          yt.main,
+          yt.main_relate,
+          yt.description_of_target,
+          yt.fy_target as fy25_target,
+          NULL as sub_category_id,
+          yt.sort_order,
+          yt.created_at,
+          yt.updated_at,
+          NULL as sub_category_name,
+          @categoryId as category_id,
+          @categoryName as category_name,
+          @catKey as category_key
+        FROM kpi_yearly_targets yt
+      `;
+
+      const request = kpiDb
+        .request()
+        .input('categoryId', sql.Int, categoryId)
+        .input('categoryName', sql.NVarChar, categoryName)
+        .input('catKey', sql.NVarChar, cat);
+
+      if (filterDept) {
+        query += ` WHERE yt.main = @filterDept OR yt.main_relate LIKE '%' + @filterDept + '%'`;
+        request.input('filterDept', sql.NVarChar, filterDept);
+      }
+
+      query += ` ORDER BY yt.sort_order, yt.metric_no`;
+
+      const result = await request.query(query);
+
+      // Add department names from SPO_Dev
+      const itemsWithDeptName = result.recordset.map((item: any) => ({
+        ...item,
+        department_name: deptMap.get(item.main) || item.main,
+      }));
+
+      allItems.push(...itemsWithDeptName);
+    }
+
+    res.json({ success: true, data: allItems });
+  } catch (error) {
+    logger.error('Failed to get KPI items', error);
+    next(error);
+  }
+});
+
+/**
+ * GET /api/admin/kpi-subcategories/:category
+ * Get sub-categories for a specific category
+ */
+router.get(
+  '/kpi-subcategories/:category',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { category } = req.params;
+      const kpiDb = await getKpiDb();
+
+      // Check if table exists
+      const tableCheck = await kpiDb
+        .request()
+        .input('tableName', sql.NVarChar, `${category}_sub_categories`).query(`
+          SELECT COUNT(*) as count FROM INFORMATION_SCHEMA.TABLES 
+          WHERE TABLE_NAME = @tableName
+        `);
+
+      if (tableCheck.recordset[0].count === 0) {
+        return res.json({ success: true, data: [] });
+      }
+
+      // Sub-categories are no longer used in the new schema
+      const result = await kpiDb.request().query(`
+        SELECT TOP 0 id, name_en, name_th, [key], sort_order
+        FROM kpi_measurement_sub_categories
+        WHERE 1 = 0
+      `);
+
+      res.json({ success: true, data: result.recordset });
+    } catch (error) {
+      logger.error('Failed to get sub-categories', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/admin/kpi-subcategories/:category
+ * Create a new sub-category for a category
+ */
+router.post(
+  '/kpi-subcategories/:category',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { category } = req.params;
+      const { name_en, name_th, sort_order = 0 } = req.body;
+      const kpiDb = await getKpiDb();
+
+      if (!name_en) {
+        return res.status(400).json({
+          success: false,
+          message: 'Sub-category name is required',
+        });
+      }
+
+      // Sub-categories are no longer supported in the new schema
+      return res.status(400).json({
+        success: false,
+        message: 'Sub-categories are no longer supported. Use kpi_yearly_targets directly.',
+      });
+
+      res.json({
+        success: true,
+        message: 'Sub-category created successfully',
+        data: result.recordset[0],
+      });
+    } catch (error) {
+      logger.error('Failed to create sub-category', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * POST /api/admin/kpi-items
+ * Create a new KPI item
+ */
+router.post('/kpi-items', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const {
+      category_key,
+      sub_category_id,
+      no,
+      measurement,
+      unit,
+      main,
+      main_relate,
+      description_of_target,
+      fy25_target,
+      sort_order = 0,
+    } = req.body;
+
+    if (!category_key || !measurement) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category and measurement are required',
+      });
+    }
+
+    const kpiDb = await getKpiDb();
+
+    // Legacy table-based KPI items are no longer supported
+    // Use kpi-yearly routes to create yearly targets instead
+    return res.status(400).json({
+      success: false,
+      message:
+        'Legacy KPI items are no longer supported. Use /api/kpi-forms/yearly routes instead.',
+    });
+
+    res.json({
+      success: true,
+      message: 'KPI item created successfully',
+      data: { ...result.recordset[0], category_key },
+    });
+  } catch (error) {
+    logger.error('Failed to create KPI item', error);
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/admin/kpi-items/:category_key/:id
+ * Update a KPI item
+ */
+router.put(
+  '/kpi-items/:category_key/:id',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { category_key, id } = req.params;
+      const {
+        sub_category_id,
+        no,
+        measurement,
+        unit,
+        main,
+        main_relate,
+        description_of_target,
+        fy25_target,
+        sort_order,
+      } = req.body;
+
+      const kpiDb = await getKpiDb();
+
+      // Legacy table-based KPI items are no longer supported
+      return res.status(400).json({
+        success: false,
+        message:
+          'Legacy KPI items are no longer supported. Use /api/kpi-forms/yearly routes instead.',
+      });
+    } catch (error) {
+      logger.error('Failed to update KPI item', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/admin/kpi-items/:category_key/:id
+ * Delete a KPI item
+ */
+router.delete(
+  '/kpi-items/:category_key/:id',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { category_key, id } = req.params;
+      const kpiDb = await getKpiDb();
+
+      // Legacy table-based KPI items are no longer supported
+      return res.status(400).json({
+        success: false,
+        message:
+          'Legacy KPI items are no longer supported. Use /api/kpi-forms/yearly routes instead.',
+      });
+    } catch (error) {
+      logger.error('Failed to delete KPI item', error);
+      next(error);
+    }
+  }
+);
+
+/**
+ * GET /api/admin/kpi-templates
+ * Get KPI templates (for backward compatibility with existing AdminPage)
+ */
+router.get('/kpi-templates', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const kpiDb = await getKpiDb();
+    const allTemplates: any[] = [];
+
+    // Get items from kpi_yearly_targets (unified table)
+    for (const cat of CATEGORIES) {
+      // Get category info
+      const catResult = await kpiDb
+        .request()
+        .input('catKey', sql.NVarChar, cat)
+        .query(`SELECT id, name FROM kpi_categories WHERE [key] = @catKey`);
+
+      const categoryId = catResult.recordset[0]?.id;
+      const categoryName = catResult.recordset[0]?.name || cat;
+
+      const result = await kpiDb.request().input('categoryId', sql.Int, categoryId).query(`
+          SELECT 
+            yt.id,
+            yt.metric_no,
+            yt.measurement as metric_name,
+            yt.unit,
+            yt.is_active
+          FROM kpi_yearly_targets yt
+          WHERE yt.category_id = @categoryId
+          ORDER BY yt.sort_order, yt.metric_no
+        `);
+
+      for (const row of result.recordset) {
+        allTemplates.push({
+          ...row,
+          category_id: categoryId,
+          category_name: categoryName,
+          is_active: true,
+        });
+      }
+    }
+
+    res.json({ success: true, data: allTemplates });
+  } catch (error) {
+    logger.error('Failed to get KPI templates', error);
     next(error);
   }
 });
