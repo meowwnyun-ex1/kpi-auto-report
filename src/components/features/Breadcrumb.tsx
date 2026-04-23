@@ -158,14 +158,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
       switch (pageLower) {
         case 'dashboard':
           return BarChart3;
-        case 'applications':
-          return Package;
-        case 'pending':
-          return Clock;
-        case 'banners':
-          return ImageIcon;
-        case 'trips':
-          return MapPin;
         case 'storage':
           return HardDrive;
         case 'categories':
@@ -314,10 +306,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
       switch (pageLower) {
         case 'home':
           return Home;
-        case 'apps':
-          return Package;
-        case 'applications':
-          return Package;
         case 'store':
           return Store;
         case 'shop':
@@ -575,10 +563,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
         return Home;
       case 'dashboard':
         return BarChart3;
-      case 'apps':
-        return Package;
-      case 'applications':
-        return Package;
       case 'categories':
         return Grid;
       case 'users':
@@ -618,10 +602,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
     const pageMap: Record<string, Record<string, string>> = {
       admin: {
         admin: 'Dashboard',
-        applications: 'Applications',
-        pending: 'Pending Apps',
-        banners: 'Banners',
-        trips: 'Trips',
         storage: 'Storage',
         categories: 'Categories',
         users: 'Users',
@@ -636,13 +616,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
         forms: 'Forms',
         edit: 'Edit',
         create: 'Create',
-        'Add Application': 'Add Application',
-        'Add Banner': 'Add Banner',
-        'Add Trip': 'Add Trip',
         'Add Category': 'Add Category',
-        'Edit Application': 'Edit Application',
-        'Edit Banner': 'Edit Banner',
-        'Edit Trip': 'Edit Trip',
         'Edit Category': 'Edit Category',
         update: 'Update',
         delete: 'Delete',
@@ -708,8 +682,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
       },
       user: {
         home: 'Home',
-        apps: 'Apps',
-        applications: 'Applications',
         store: 'KPI Report',
         overview: 'KPI Overview',
         'yearly-targets': 'Yearly Targets',
@@ -725,7 +697,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
         attractive: 'Attractive',
         environment: 'Environment',
         cost: 'Cost',
-        shop: 'Shop',
         categories: 'Categories',
         search: 'Search',
         filter: 'Filter',
@@ -755,13 +726,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
         privacy: 'Privacy',
         cookies: 'Cookies',
         policy: 'Policy',
-        cart: 'Cart',
-        wishlist: 'Wishlist',
-        orders: 'Orders',
-        purchases: 'Purchases',
-        billing: 'Billing',
-        payment: 'Payment',
-        subscription: 'Subscription',
         share: 'Share',
         community: 'Community',
         reviews: 'Reviews',
@@ -775,9 +739,6 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
         location: 'Location',
         map: 'Map',
         navigation: 'Navigation',
-        travel: 'Travel',
-        trips: 'Trips',
-        destinations: 'Destinations',
         news: 'News',
         blog: 'Blog',
         articles: 'Articles',

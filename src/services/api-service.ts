@@ -204,63 +204,7 @@ export class ApiService {
   }
 }
 
-// Specific API services
-export const AppService = {
-  // Get apps with filters
-  getApps: (filters?: {
-    status?: string;
-    category_id?: number;
-    search?: string;
-    limit?: number;
-    page?: number;
-    offset?: number;
-    sortBy?: string;
-    sortOrder?: string;
-  }) => ApiService.get(API_ENDPOINTS.APPS, filters),
-
-  // Get single app
-  getApp: (id: number) => ApiService.get(`${API_ENDPOINTS.APPS}/${id}`),
-
-  // Create app
-  createApp: (data: FormData) => {
-    ApiService.clearCache(API_ENDPOINTS.APPS);
-    return ApiService.upload(API_ENDPOINTS.APPS, data);
-  },
-
-  // Update app
-  updateApp: (id: number, data: FormData) => {
-    ApiService.clearCache(API_ENDPOINTS.APPS);
-    ApiService.clearCache(`${API_ENDPOINTS.APPS}/${id}`);
-    return ApiService.upload(`${API_ENDPOINTS.APPS}/${id}`, data, 'PUT');
-  },
-
-  // Delete app
-  deleteApp: (id: number) => {
-    ApiService.clearCache(API_ENDPOINTS.APPS);
-    ApiService.clearCache(`${API_ENDPOINTS.APPS}/${id}`);
-    return ApiService.delete(`${API_ENDPOINTS.APPS}/${id}`);
-  },
-
-  // Get app stats
-  getAppStats: () => ApiService.get(`${API_ENDPOINTS.APPS}/stats`),
-};
-
-export const ApplicationCategoryService = {
-  // Get all application categories
-  getCategories: () => ApiService.get(API_ENDPOINTS.CATEGORIES),
-
-  // Create application category
-  createCategory: (data: Record<string, unknown>) =>
-    ApiService.post(API_ENDPOINTS.CATEGORIES, data),
-
-  // Update application category
-  updateCategory: (id: number, data: Record<string, unknown>) =>
-    ApiService.put(`${API_ENDPOINTS.CATEGORIES}/${id}`, data),
-
-  // Delete application category
-  deleteCategory: (id: number) => ApiService.delete(`${API_ENDPOINTS.CATEGORIES}/${id}`),
-};
-
+// KPI System Services
 export const AuthService = {
   // Login
   login: (credentials: { username: string; password: string }) =>
@@ -276,10 +220,4 @@ export const AuthService = {
 export const StatsService = {
   // Get general stats
   getGeneralStats: () => ApiService.get(API_ENDPOINTS.STATS),
-
-  // Get app views
-  getAppViews: (appId: number) => ApiService.get(`${API_ENDPOINTS.STATS}/views/${appId}`),
-
-  // Increment app views
-  incrementAppViews: (appId: number) => ApiService.post(`${API_ENDPOINTS.STATS}/views/${appId}`),
 };

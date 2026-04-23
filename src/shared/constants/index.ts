@@ -44,14 +44,11 @@ export const ERROR_MESSAGES = {
   SERVER_ERROR: 'The server is currently unavailable. Please try again in a few minutes.',
 } as const;
 
-// API endpoints for other components
+// API endpoints for KPI system
 export const API_ENDPOINTS = {
   HEALTH: '/health',
-  APPS: '/apps',
   CATEGORIES: '/categories',
   ADMIN: '/admin',
-  BANNERS: '/banners',
-  TRIPS: '/trips',
   STATS: '/stats',
   AUTH: '/auth',
 } as const;
