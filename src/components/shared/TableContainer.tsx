@@ -99,6 +99,7 @@ interface TableContainerProps {
   title: string;
   subtitle?: string;
   badge?: string | number;
+  totalCount?: number;
 
   legendItems?: LegendItem[];
 
@@ -128,6 +129,7 @@ export function TableContainer({
   title,
   subtitle,
   badge,
+  totalCount,
   legendItems,
   searchValue,
   onSearchChange,
@@ -196,6 +198,11 @@ export function TableContainer({
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {totalCount !== undefined && (
+              <div className="text-xs font-mono text-gray-500 bg-white/60 px-2 py-1 rounded">
+                Total: {totalCount.toLocaleString()}
+              </div>
+            )}
             {legendItems && legendItems.length > 0 && (
               <div className="flex items-center gap-4 text-xs text-gray-600">
                 {legendItems.map((item) => (

@@ -322,6 +322,7 @@ export function KPIOverview({
       icon={Icon}
       title={title}
       badge={`${total} items`}
+      totalCount={total}
       searchValue={searchTerm}
       onSearchChange={setSearchTerm}
       searchPlaceholder={`Search ${title.toLowerCase()}...`}
@@ -360,11 +361,6 @@ export function KPIOverview({
             ))}
           </TableBody>
         </Table>
-      </div>
-
-      {/* Footer with total items */}
-      <div className="flex items-center justify-center px-4 py-3 border-t border-gray-100">
-        <div className="text-sm text-gray-600">Total: {total} items</div>
       </div>
     </TableContainer>
   );

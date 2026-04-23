@@ -65,6 +65,7 @@ export function MissingTab({ loading, kpiDetails }: MissingTabProps) {
       icon={AlertCircle}
       title="Missing KPI Data"
       badge={`${missingKPIs.length} items`}
+      totalCount={missingKPIs.length}
       searchValue={searchQuery}
       onSearchChange={setSearchQuery}
       searchPlaceholder="Search by department, measurement, or unit..."

@@ -432,6 +432,7 @@ export default function YearlyTargetsPage() {
                 title="Annual KPI Targets"
                 subtitle="Set yearly targets and distribute to departments"
                 badge={`${filteredRows.length} targets`}
+                totalCount={filteredRows.length}
                 theme="gray"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}

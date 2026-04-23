@@ -56,6 +56,7 @@ export function DepartmentTab({ loading, departmentData }: DepartmentTabProps) {
       icon={Building2}
       title="Department Performance"
       badge={`${filteredDepartments.length} departments`}
+      totalCount={filteredDepartments.length}
       searchValue={searchQuery}
       onSearchChange={setSearchQuery}
       searchPlaceholder="Search by department name..."

@@ -445,6 +445,7 @@ export default function MonthlyTargetsPage() {
                 title="Monthly Distribution"
                 subtitle="Distribute yearly targets across 12 months"
                 badge={`${filteredYearlyTargets.length} targets`}
+                totalCount={filteredYearlyTargets.length}
                 theme="blue"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}

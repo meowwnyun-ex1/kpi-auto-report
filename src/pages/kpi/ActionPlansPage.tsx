@@ -506,6 +506,7 @@ export default function ActionPlansPage() {
             title="Enter Action Plans"
             subtitle={`${departments.find((d) => d.dept_id === selectedDept)?.name_en} - FY${selectedYear}`}
             badge={`${validPlans.length} plans`}
+            totalCount={validPlans.length}
             theme="blue"
             iconColor={categoryConfig?.color}
             actions={

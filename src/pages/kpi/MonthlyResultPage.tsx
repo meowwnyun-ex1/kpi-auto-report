@@ -555,6 +555,7 @@ export default function MonthlyResultPage() {
                 title="Monthly Results - All Months"
                 subtitle="Enter actual results against monthly targets for all 12 months"
                 badge={`${filteredRows.length} KPIs`}
+                totalCount={filteredRows.length}
                 theme="emerald"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}

@@ -140,6 +140,7 @@ export function KPIDetailTable({
       title="KPI Details"
       subtitle="Performance detail with target vs result comparison"
       badge={`${filteredDetailsWithSearch.length} items`}
+      totalCount={filteredDetailsWithSearch.length}
       searchValue={searchQuery}
       onSearchChange={setSearchQuery}
       searchPlaceholder="Search by department, measurement, unit, or judge..."
@@ -338,11 +339,6 @@ export function KPIDetailTable({
             })}
           </TableBody>
         </Table>
-      </div>
-
-      {/* Footer with total items */}
-      <div className="flex items-center justify-center px-4 py-3 border-t border-gray-100">
-        <div className="text-sm text-gray-600">Total: {filteredDetails.length} items</div>
       </div>
     </TableContainer>
   );

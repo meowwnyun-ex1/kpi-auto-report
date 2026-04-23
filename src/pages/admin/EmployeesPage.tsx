@@ -298,6 +298,7 @@ export default function AdminEmployeesPage() {
             icon={UserPlus}
             title="Associate List"
             badge={`${filteredEmployees.length} associates`}
+            totalCount={filteredEmployees.length}
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
             searchPlaceholder="Search by associate ID, name, or department..."

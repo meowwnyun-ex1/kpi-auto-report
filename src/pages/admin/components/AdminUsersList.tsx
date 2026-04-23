@@ -77,14 +77,7 @@ export function AdminUsersList({
   }, [systemUsers, searchQuery]);
 
   if (loading) {
-    return (
-      <TableContainer
-        icon={Users}
-        title="System Users"
-        theme="blue"
-        loading
-      />
-    );
+    return <TableContainer icon={Users} title="System Users" theme="blue" loading />;
   }
 
   if (systemUsers.length === 0) {
@@ -121,6 +114,7 @@ export function AdminUsersList({
       icon={Users}
       title="System Users"
       badge={`${filteredUsers.length} users`}
+      totalCount={filteredUsers.length}
       searchValue={searchQuery}
       onSearchChange={setSearchQuery}
       searchPlaceholder="Search by name, username, email, role, or department..."
@@ -135,9 +129,7 @@ export function AdminUsersList({
         <Table>
           <TableHeader className="bg-gradient-to-r from-blue-50 to-indigo-100 sticky top-0 z-10">
             <TableRow className={TABLE_STYLES.headerRow}>
-              <TableHead className={`w-12 bg-blue-50 ${TABLE_STYLES.headerCell} pl-6`}>
-                #
-              </TableHead>
+              <TableHead className={`w-12 bg-blue-50 ${TABLE_STYLES.headerCell} pl-6`}>#</TableHead>
               <TableHead className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[150px]`}>
                 Name
               </TableHead>
@@ -179,9 +171,7 @@ export function AdminUsersList({
                     <span>{u.full_name}</span>
                   </div>
                 </TableCell>
-                <TableCell className="font-mono text-sm py-4 bg-gray-50/30">
-                  {u.username}
-                </TableCell>
+                <TableCell className="font-mono text-sm py-4 bg-gray-50/30">{u.username}</TableCell>
                 <TableCell className="py-4 bg-white">
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-gray-400" />
@@ -193,8 +183,7 @@ export function AdminUsersList({
                   {(() => {
                     const hasAccess = u.department_access && u.department_access.length > 0;
                     const totalDepts = departments.length;
-                    const hasAllDepts =
-                      hasAccess && u.department_access?.length === totalDepts;
+                    const hasAllDepts = hasAccess && u.department_access?.length === totalDepts;
 
                     if (!hasAccess) {
                       return (
