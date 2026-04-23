@@ -26,10 +26,7 @@ export interface ImageStandard {
     | '404'
     | 'loading'
     | 'logo'
-    | 'login'
-    | 'hot'
-    | 'contact'
-    | 'contact2';
+    | 'login';
 }
 
 export const ImageStandards = {
@@ -38,43 +35,13 @@ export const ImageStandards = {
     width: 120,
     height: 120,
     className: 'object-contain',
-    fallbackType: 'default' as const,
+    fallbackType: 'logo' as const,
   },
   LOGIN_WIDE: {
     width: 120,
     height: 48,
     className: 'object-contain',
     fallbackType: 'login' as const,
-  },
-
-  // App Icons
-  APP_ICON_SMALL: {
-    width: 40,
-    height: 40,
-    className: 'object-contain rounded-lg',
-    fallbackType: 'default' as const,
-  },
-  APP_ICON_LARGE: {
-    width: 80,
-    height: 80,
-    className: 'object-contain rounded-xl',
-    fallbackType: 'default' as const,
-  },
-
-  // Content Images
-  BANNER_IMAGE: {
-    width: 800,
-    height: 400,
-    className: 'object-cover rounded-lg',
-    fallbackType: 'default' as const,
-  },
-
-  // UI Elements
-  HOT_BADGE: {
-    width: 32,
-    height: 32,
-    className: 'object-contain',
-    fallbackType: 'default' as const,
   },
 
   // Loading & States
@@ -103,28 +70,6 @@ export const ImageStandards = {
     height: 256,
     className: 'object-contain',
     fallbackType: 'error' as const,
-  },
-
-  // Contact Images
-  CONTACT_NORMAL: {
-    width: 48,
-    height: 48,
-    className: 'object-contain rounded-full hover:scale-110 transition-transform duration-200',
-    fallbackType: 'default' as const,
-  },
-  CONTACT_LARGE: {
-    width: 64,
-    height: 64,
-    className: 'object-contain rounded-full hover:scale-110 transition-transform duration-200',
-    fallbackType: 'default' as const,
-  },
-
-  // Form & Preview
-  FORM_PREVIEW: {
-    width: 200,
-    height: 200,
-    className: 'object-cover rounded-lg border border-gray-200',
-    fallbackType: 'default' as const,
   },
 } as const;
 
@@ -164,24 +109,17 @@ export function handleImageError(
 // Fallback images - organized by usage type
 const FALLBACK_IMAGES = {
   // General defaults
-  default: '/sorry.png',
+  default: '/404.png',
   loading: '/loading.png',
 
   // Error handling
-  error: '/sorry.png',
-  network: '/sorry.png',
+  error: '/404.png',
+  network: '/404.png',
   not_found: '/404.png',
 
   // Branding & logos
   logo: '/logo.png',
   login: '/DENSO_LOGO.png',
-
-  // UI elements
-  hot: '/hot.png',
-
-  // Contact images
-  contact: '/contact.png',
-  contact2: '/contact2.png',
 } as const;
 
 export type FallbackType = keyof typeof FALLBACK_IMAGES;

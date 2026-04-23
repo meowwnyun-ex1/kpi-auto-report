@@ -10,7 +10,7 @@ interface EmptyStateProps {
 export function EmptyState({
   title = 'No Data Found',
   description = 'There is no data to display at the moment.',
-  image = '/found.png',
+  image = '/404.png',
   action,
 }: EmptyStateProps) {
   return (
@@ -27,9 +27,7 @@ export function EmptyState({
         />
       </div>
       <h3 className="text-lg font-semibold text-gray-700 mb-2">{title}</h3>
-      <p className="text-sm text-muted-foreground text-center max-w-md mb-4">
-        {description}
-      </p>
+      <p className="text-sm text-muted-foreground text-center max-w-md mb-4">{description}</p>
       {action && <div className="mt-2">{action}</div>}
     </div>
   );
@@ -67,13 +65,13 @@ export function NotFoundPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <EmptyState
-        title="Page Not Found"
-        description="The page you're looking for doesn't exist or has been moved."
+        title="KPI Page Not Found"
+        description="The KPI page you're looking for doesn't exist or has been moved."
         action={
           <a
-            href="/"
+            href="/dashboard"
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-            Go to Dashboard
+            Go to KPI Dashboard
           </a>
         }
       />
@@ -82,8 +80,8 @@ export function NotFoundPage() {
 }
 
 export function ErrorPage({
-  title = 'Something Went Wrong',
-  description = 'An unexpected error occurred. Please try again later.',
+  title = 'KPI System Error',
+  description = 'An unexpected error occurred in the KPI system. Please try again later.',
   onRetry,
 }: {
   title?: string;
@@ -91,21 +89,19 @@ export function ErrorPage({
   onRetry?: () => void;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <EmptyState
-        title={title}
-        description={description}
-        image="/404.png"
-        action={
-          onRetry && (
-            <button
-              onClick={onRetry}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-              Try Again
-            </button>
-          )
-        }
-      />
-    </div>
+    <EmptyState
+      title={title}
+      description={description}
+      image="/404.png"
+      action={
+        onRetry && (
+          <button
+            onClick={onRetry}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+            Try Again
+          </button>
+        )
+      }
+    />
   );
 }

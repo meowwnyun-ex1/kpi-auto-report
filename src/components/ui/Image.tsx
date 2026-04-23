@@ -7,17 +7,7 @@ interface ImageProps {
   className?: string;
   width?: number | string;
   height?: number | string;
-  fallbackType?:
-    | 'network'
-    | 'not-found'
-    | 'default'
-    | '404'
-    | 'error'
-    | 'logo'
-    | 'login'
-    | 'hot'
-    | 'contact'
-    | 'contact2';
+  fallbackType?: 'network' | 'not-found' | 'default' | '404' | 'error' | 'logo' | 'login';
   fallbackText?: string; // Text/emoji to show when image fails to load
   objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
   onError?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
