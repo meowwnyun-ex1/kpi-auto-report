@@ -272,27 +272,36 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
-                    onClick={() => navigate(DASHBOARD_MENU.url)}
+                    asChild
+                    isActive={isPathActive(location.pathname, DASHBOARD_MENU.url)}
+                    onClick={(e) => {
+                      if (isPathActive(location.pathname, DASHBOARD_MENU.url)) {
+                        e.preventDefault();
+                        navigate(DASHBOARD_MENU.url);
+                      }
+                    }}
                     className={cn(
                       'w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                       isPathActive(location.pathname, DASHBOARD_MENU.url)
                         ? 'bg-sky-100 text-sky-700 border-l-4 border-sky-600'
                         : 'text-gray-600 hover:bg-sky-50 hover:text-sky-700'
                     )}>
-                    <DASHBOARD_MENU.icon
-                      className={cn(
-                        'h-4 w-4',
-                        isPathActive(location.pathname, DASHBOARD_MENU.url)
-                          ? 'text-sky-600'
-                          : 'text-gray-400'
+                    <Link to={DASHBOARD_MENU.url} className="flex items-center gap-3">
+                      <DASHBOARD_MENU.icon
+                        className={cn(
+                          'h-4 w-4',
+                          isPathActive(location.pathname, DASHBOARD_MENU.url)
+                            ? 'text-sky-600'
+                            : 'text-gray-400'
+                        )}
+                      />
+                      <span className="flex-1 truncate">{DASHBOARD_MENU.title}</span>
+                      {openCategories.includes(DASHBOARD_MENU.url) ? (
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
                       )}
-                    />
-                    <span className="flex-1 truncate">{DASHBOARD_MENU.title}</span>
-                    {openCategories.includes(DASHBOARD_MENU.url) ? (
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
-                    )}
+                    </Link>
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
@@ -347,6 +356,13 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
+                          asChild
+                          onClick={(e) => {
+                            if (!isDisabled && (isActive || isChildActive)) {
+                              e.preventDefault();
+                              navigate(child.url);
+                            }
+                          }}
                           className={cn(
                             'w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                             isDisabled && 'opacity-50 cursor-not-allowed',
@@ -354,25 +370,26 @@ export function AppSidebar() {
                               ? 'bg-green-100 text-green-700 border-l-4 border-green-600'
                               : 'text-gray-600 hover:bg-green-50 hover:text-green-700'
                           )}>
-                          <child.icon
-                            className={cn(
-                              'h-4 w-4',
-                              isDisabled
-                                ? 'text-gray-300'
-                                : isActive || isChildActive
-                                  ? 'text-green-600'
-                                  : 'text-gray-400'
-                            )}
-                          />
-                          <span className="flex-1 truncate">{child.title}</span>
-                          {!isDisabled &&
-                            (openCategories.includes(child.url) || isChildActive ? (
-                              <ChevronDown className="h-4 w-4 text-gray-400" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 text-gray-400" />
-                            ))}
+                          <Link to={child.url} className="flex items-center gap-3">
+                            <child.icon
+                              className={cn(
+                                'h-4 w-4',
+                                isDisabled
+                                  ? 'text-gray-300'
+                                  : isActive || isChildActive
+                                    ? 'text-green-600'
+                                    : 'text-gray-400'
+                              )}
+                            />
+                            <span className="flex-1 truncate">{child.title}</span>
+                            {!isDisabled &&
+                              (openCategories.includes(child.url) || isChildActive ? (
+                                <ChevronDown className="h-4 w-4 text-gray-400" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-gray-400" />
+                              ))}
+                          </Link>
                         </SidebarMenuButton>
-                      </CollapsibleTrigger>
                       {!isDisabled && (
                         <CollapsibleContent>
                           <SidebarMenuSub className="ml-6 mt-2 space-y-1">
