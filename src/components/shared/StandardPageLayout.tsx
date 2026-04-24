@@ -149,7 +149,10 @@ export function StandardPageLayout({
               </Select>
             )}
 
-            {/* Refresh Button */}
+            {/* Additional Right Actions */}
+            {rightActions}
+
+            {/* Refresh Button - Always Last */}
             {onRefresh && (
               <Button
                 variant="outline"
@@ -159,9 +162,6 @@ export function StandardPageLayout({
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             )}
-
-            {/* Additional Right Actions */}
-            {rightActions}
           </div>
         </div>
       </div>

@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  getErrorType(error?: Error): ErrorType {
+  getErrorType(error?: Error): '404' | '500' | '403' | 'network' | 'general' {
     if (!error) return 'general';
 
     const message = error.message.toLowerCase();
@@ -63,16 +63,6 @@ export class ErrorBoundary extends Component<Props, State> {
       return '500';
     }
 
-    // Database errors
-    if (
-      message.includes('database') ||
-      message.includes('connection') ||
-      message.includes('timeout') ||
-      stack.includes('database')
-    ) {
-      return 'database';
-    }
-
     // Permission errors
     if (
       message.includes('403') ||
@@ -80,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
       message.includes('unauthorized') ||
       message.includes('permission')
     ) {
-      return 'permission';
+      return '403';
     }
 
     // Not found errors
@@ -88,27 +78,37 @@ export class ErrorBoundary extends Component<Props, State> {
       return '404';
     }
 
-    // Rate limiting
+    // Database errors (treated as server errors)
+    if (
+      message.includes('database') ||
+      message.includes('connection') ||
+      message.includes('timeout') ||
+      stack.includes('database')
+    ) {
+      return '500';
+    }
+
+    // Rate limiting (treated as server errors)
     if (
       message.includes('429') ||
       message.includes('rate limit') ||
       message.includes('too many requests')
     ) {
-      return 'rate-limit';
+      return '500';
     }
 
-    // Timeout errors
+    // Timeout errors (treated as network errors)
     if (message.includes('timeout') || message.includes('aborted')) {
-      return 'timeout';
+      return 'network';
     }
 
-    // Validation errors
+    // Validation errors (treated as general errors)
     if (
       message.includes('validation') ||
       message.includes('invalid') ||
       message.includes('required')
     ) {
-      return 'validation';
+      return 'general';
     }
 
     return 'general';

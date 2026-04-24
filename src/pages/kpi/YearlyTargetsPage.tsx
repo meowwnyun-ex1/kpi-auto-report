@@ -1,54 +1,16 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { ShellLayout } from '@/features/shell';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFiscalYear } from '@/contexts/FiscalYearContext';
-import {
-  Shield,
-  Award,
-  Truck,
-  FileCheck,
-  Users,
-  Star,
-  Leaf,
-  DollarSign,
-  Save,
-  Target,
-  RefreshCw,
-  ChevronLeft,
-  CheckCircle,
-  Loader2,
-  AlertCircle,
-  Building2,
-  Calendar,
-  TrendingUp,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
-import { storage } from '@/shared/utils';
-import { AttachmentPanel, type Attachment } from '@/components/kpi/AttachmentPanel';
-import { AddTargetModal } from '@/components/kpi/AddTargetModal';
+import { ShellLayout } from '@/features/shell';
 import { StandardPageLayout } from '@/components/shared/StandardPageLayout';
 import { TableContainer } from '@/components/shared/TableContainer';
+import { CatCard } from '../shared/CatCard';
+import { AddTargetModal } from '../shared/AddTargetModal';
+import { AttachmentPanel } from '@/components/kpi/AttachmentPanel';
+import { useYearlyTargetsData } from '../yearly/useYearlyTargetsData';
+import { PriorityStatus } from '@/components/kpi/priority-status';
+import { BaseSection, BaseGrid } from '@/components/base/BaseComponent';
+import { useToast } from '@/hooks/use-toast';
 
 // Types
 interface Category {
@@ -79,15 +41,32 @@ interface Stats {
 }
 
 // Constants
-const CAT: Record<string, { color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  safety: { color: '#DC2626', icon: Shield },
-  quality: { color: '#16A34A', icon: Award },
-  delivery: { color: '#2563EB', icon: Truck },
-  compliance: { color: '#9333EA', icon: FileCheck },
-  hr: { color: '#EA580C', icon: Users },
-  attractive: { color: '#DB2777', icon: Star },
-  environment: { color: '#0D9488', icon: Leaf },
-  cost: { color: '#4F46E5', icon: DollarSign },
+const MONTHS = [
+  { value: 'all', label: 'All Months' },
+  { value: 4, label: 'Apr' },
+  { value: 5, label: 'May' },
+  { value: 6, label: 'Jun' },
+  { value: 7, label: 'Jul' },
+  { value: 8, label: 'Aug' },
+  { value: 9, label: 'Sep' },
+  { value: 10, label: 'Oct' },
+  { value: 11, label: 'Nov' },
+  { value: 12, label: 'Dec' },
+  { value: 1, label: 'Jan' },
+  { value: 2, label: 'Feb' },
+  { value: 3, label: 'Mar' },
+];
+
+// Category icons with priority colors
+const CAT: Record<string, { icon: React.ComponentType<{ className?: string }> }> = {
+  safety: { icon: Shield },
+  quality: { icon: Award },
+  delivery: { icon: Truck },
+  compliance: { icon: FileCheck },
+  hr: { icon: Users },
+  attractive: { icon: Star },
+  environment: { icon: Leaf },
+  cost: { icon: DollarSign },
 };
 
 export default function YearlyTargetsPage() {
@@ -95,245 +74,55 @@ export default function YearlyTargetsPage() {
   const { toast } = useToast();
   const { fiscalYear, setFiscalYear, availableYears } = useFiscalYear();
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [cat, setCat] = useState('');
-  const [rows, setRows] = useState<YearlyTarget[]>([]);
-  const [depts, setDepts] = useState<{ dept_id: string }[]>([]);
-  const [dept, setDept] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState<Record<string, Stats>>({});
-  const [statsLoading, setStatsLoading] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Draft state for editing
-  const [drafts, setDrafts] = useState<
-    Record<number, { target: string; note: string; attachment: Attachment | null }>
-  >({});
-
-  const canEdit = ['manager', 'admin', 'superadmin'].includes(user?.role ?? '');
-
-  // Filter rows based on search
-  const filteredRows = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return rows;
-    }
-    const query = searchQuery.toLowerCase();
-    return rows.filter((row) => row.measurement?.toLowerCase().includes(query));
-  }, [rows, searchQuery]);
-
-  // Init
-  useEffect(() => {
-    loadCategories();
-    loadDepts();
-  }, []);
-  useEffect(() => {
-    if (depts.length && !dept) {
-      const ud = depts.find((d) => d.dept_id === user?.department_id);
-      setDept(ud?.dept_id ?? depts[0].dept_id);
-    }
-  }, [depts]);
-  useEffect(() => {
-    if (dept && fiscalYear) loadStats();
-  }, [dept, fiscalYear]);
-  useEffect(() => {
-    if (cat && dept && fiscalYear) loadRows();
-  }, [cat, dept, fiscalYear]);
-
-  const loadCategories = async () => {
-    try {
-      const r = await fetch('/api/kpi-forms/categories');
-      const d = await r.json();
-      if (d.success) setCategories(d.data);
-    } catch {
-      /* silent */
-    }
-  };
-
-  const loadDepts = async () => {
-    try {
-      const r = await fetch('/api/departments');
-      const d = await r.json();
-      if (d.success) {
-        // Filter departments based on user role
-        const filteredDepts =
-          user?.role === 'manager'
-            ? d.data.filter((dept: any) => dept.dept_id === user?.department_id)
-            : d.data;
-        setDepts(filteredDepts);
-      }
-    } catch {
-      /* silent */
-    }
-  };
-
-  const loadStats = useCallback(async () => {
-    setStatsLoading(true);
-    try {
-      const r = await fetch(`/api/kpi-forms/stats/${dept}/${fiscalYear}`, {
-        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-      });
-      const d = await r.json();
-      if (d.success) setStats(d.data ?? {});
-    } catch {
-      /* silent */
-    } finally {
-      setStatsLoading(false);
-    }
-  }, [dept, fiscalYear]);
-
-  const loadRows = async () => {
-    setLoading(true);
-    try {
-      const r = await fetch(`/api/kpi-forms/yearly/${dept}/${fiscalYear}?category=${cat}`, {
-        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-      });
-      const d = await r.json();
-      if (d.success) {
-        setRows(d.data);
-        // Initialize drafts
-        const initialDrafts: Record<
-          number,
-          { target: string; note: string; attachment: Attachment | null }
-        > = {};
-        d.data.forEach((row: YearlyTarget) => {
-          initialDrafts[row.id] = {
-            target: row.total_target.toString(),
-            note: row.description_of_target || '',
-            attachment: null,
-          };
-        });
-        setDrafts(initialDrafts);
-      }
-    } catch {
-      /* silent */
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveRow = async (row: YearlyTarget) => {
-    const draft = drafts[row.id];
-    if (!draft) return;
-
-    try {
-      setRows((p) => p.map((r) => (r.id !== row.id ? r : { ...r, saving: true })));
-
-      const response = await fetch(`/api/kpi-forms/yearly/${row.id}/quota`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${storage.getAuthToken()}`,
-        },
-        body: JSON.stringify({
-          total_quota: parseFloat(draft.target),
-          description_of_target: draft.note || null,
-        }),
-      });
-
-      const data = await response.json();
-      if (!data.success) throw new Error(data.message);
-
-      toast({
-        title: 'Saved',
-        description: `Target set to ${parseFloat(draft.target).toLocaleString()}`,
-      });
-      loadRows();
-      loadStats();
-    } catch (e: any) {
-      toast({
-        title: 'Error',
-        description: e.message || 'Failed to save target',
-        variant: 'destructive',
-      });
-      setRows((p) => p.map((r) => (r.id !== row.id ? r : { ...r, saving: false })));
-    }
-  };
-
-  const onChange = (id: number, value: string) => {
-    setDrafts((p) => ({
-      ...p,
-      [id]: { ...p[id], target: value },
-    }));
-    setRows((p) => p.map((r) => (r.id !== id ? r : { ...r, dirty: true })));
-  };
-
-  const onNoteChange = (id: number, value: string) => {
-    setDrafts((p) => ({
-      ...p,
-      [id]: { ...p[id], note: value },
-    }));
-    setRows((p) => p.map((r) => (r.id !== id ? r : { ...r, dirty: true })));
-  };
-
-  const onAttachmentChange = (id: number, attachment: Attachment | null) => {
-    setDrafts((p) => ({
-      ...p,
-      [id]: { ...p[id], attachment },
-    }));
-    setRows((p) => p.map((r) => (r.id !== id ? r : { ...r, dirty: true })));
-  };
+  const {
+    categories,
+    cat,
+    setCat,
+    rows,
+    depts,
+    dept,
+    setDept,
+    loading,
+    stats,
+    statsLoading,
+    showAddModal,
+    setShowAddModal,
+    searchQuery,
+    setSearchQuery,
+    selectedMonth,
+    setSelectedMonth,
+    drafts,
+    setDrafts,
+    categoryTargetValues,
+    categoryTargetCounts,
+    canEdit,
+    filteredRows,
+    onChange,
+    onNoteChange,
+    onAttachmentChange,
+    saveRow,
+    refreshData,
+  } = useYearlyTargetsData();
 
   const selectedCatName = categories.find((c) => c.key === cat)?.name ?? '';
-  const selectedCatCfg = cat ? (CAT[cat] ?? { color: '#6B7280', icon: Target }) : null;
+  const selectedCatCfg = cat ? CAT[cat] || { icon: Target } : null;
 
-  // Status chip
+  // Status chip using priority-based colors
   const StatusChip = ({ row }: { row: YearlyTarget }) => {
     if (row.saving)
       return (
-        <span className="inline-flex items-center gap-1 text-[11px] text-blue-500">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          Saving
-        </span>
+        <PriorityStatus
+          status="in_progress"
+          label="Saving"
+          size="sm"
+          variant="badge"
+          showIcon={false}
+          className="animate-pulse"
+        />
       );
     if (row.dirty)
-      return (
-        <span className="inline-flex items-center gap-1 text-[11px] text-amber-500 font-medium">
-          <AlertCircle className="w-3 h-3" />
-          Edited
-        </span>
-      );
-    return (
-      <span className="inline-flex items-center gap-1 text-[11px] text-green-500">
-        <CheckCircle className="w-3 h-3" />
-        Active
-      </span>
-    );
-  };
-
-  // Category card
-  const CatCard = ({ c }: { c: Category }) => {
-    const cfg = CAT[c.key] ?? { color: '#6B7280', icon: Target };
-    const Icon = cfg.icon;
-    const count = stats[c.key]?.yearly ?? 0;
-    return (
-      <button
-        key={c.id}
-        onClick={() => setCat(c.key)}
-        className="group relative flex flex-col p-5 bg-white rounded-2xl border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all text-left focus:outline-none"
-        style={{ borderLeftColor: cfg.color, borderLeftWidth: 4 }}>
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-          style={{ background: `${cfg.color}18` }}>
-          <span style={{ color: cfg.color }}>
-            <Icon className="w-5 h-5" />
-          </span>
-        </div>
-        <p className="text-sm font-semibold text-gray-800">{c.name}</p>
-        <div className="mt-3 flex items-end gap-1.5">
-          <span
-            className="text-3xl font-black leading-none"
-            style={{ color: count > 0 ? cfg.color : '#E5E7EB' }}>
-            {count}
-          </span>
-          <span className="text-xs text-gray-400 mb-0.5">targets</span>
-        </div>
-        <div className="absolute right-3 bottom-3 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-          <ChevronLeft className="w-3 h-3 text-gray-500 rotate-180" />
-        </div>
-        {statsLoading && <div className="absolute inset-0 bg-white/40 rounded-2xl" />}
-      </button>
-    );
+      return <PriorityStatus status="pending" label="Edited" size="sm" variant="badge" />;
+    return <PriorityStatus status="active" size="sm" variant="badge" />;
   };
 
   return (
@@ -345,7 +134,6 @@ export default function YearlyTargetsPage() {
         iconColor={cat && selectedCatCfg ? selectedCatCfg.color : 'text-gray-600'}
         showBackButton={!!cat}
         onBackClick={() => setCat('')}
-        badge={cat ? `${rows.length} ${rows.length === 1 ? 'item' : 'items'}` : undefined}
         department={dept}
         fiscalYear={fiscalYear}
         availableYears={availableYears}
@@ -357,242 +145,191 @@ export default function YearlyTargetsPage() {
           setFiscalYear(v);
           setCat('');
         }}
-        onRefresh={() => {
-          loadStats();
-          if (cat) loadRows();
-        }}
+        onRefresh={refreshData}
         loading={statsLoading}
         theme="gray">
         {!cat ? (
           /* Category grid */
-          <div className="p-6">
-            {dept && (
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-                <Building2 className="w-3 h-3" /> {dept} · FY {fiscalYear}
-              </p>
-            )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <BaseSection>
+            <BaseGrid cols={4} gap="md" responsive={true}>
               {categories.map((c) => (
-                <CatCard key={c.id} c={c} />
+                <CatCard
+                  key={c.id}
+                  c={c}
+                  categoryTargetValues={categoryTargetValues}
+                  categoryTargetCounts={categoryTargetCounts}
+                  statsLoading={statsLoading}
+                  onClick={() => setCat(c.key)}
+                  catColor={CAT[c.key]?.color || '#6B7280'}
+                />
               ))}
-            </div>
-          </div>
+            </BaseGrid>
+          </BaseSection>
         ) : (
           /* Yearly targets table */
           <div className="flex-1 p-6 bg-gray-50/60">
             {loading ? (
               <TableContainer
                 icon={Target}
-                title="Annual KPI Targets"
+                title="Yearly Targets"
                 subtitle="Set yearly targets and distribute to departments"
                 theme="gray"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
                 searchPlaceholder="Search by measurement..."
-                searchActions={
-                  canEdit && (
-                    <Button
-                      size="sm"
-                      className="h-9 bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => setShowAddModal(true)}>
-                      <Target className="w-3.5 h-3.5 mr-1.5" />
-                      Add New Target
-                    </Button>
-                  )
-                }
                 loading
               />
             ) : filteredRows.length === 0 ? (
               <TableContainer
                 icon={Target}
-                title="Annual KPI Targets"
+                title="Yearly Targets"
                 subtitle="Set yearly targets and distribute to departments"
                 theme="gray"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
                 searchPlaceholder="Search by measurement..."
-                searchActions={
-                  canEdit && (
-                    <Button
-                      size="sm"
-                      className="h-9 bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => setShowAddModal(true)}>
-                      <Target className="w-3.5 h-3.5 mr-1.5" />
-                      Add New Target
-                    </Button>
-                  )
-                }
                 empty
                 emptyTitle="No KPIs found"
-                emptyDescription={`No yearly targets found for ${dept} · FY ${fiscalYear} · ${selectedCatName}. Create yearly targets to set annual KPI goals.`}
+                emptyDescription={`No yearly targets found for ${selectedCatName}. Create yearly targets to set annual KPI goals.`}
               />
             ) : (
               <TableContainer
                 icon={Target}
-                title="Annual KPI Targets"
-                subtitle="Set yearly targets and distribute to departments"
-                badge={`${filteredRows.length} targets`}
+                title="Yearly Targets"
                 totalCount={filteredRows.length}
+                countUnit="target"
                 theme="gray"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
                 searchPlaceholder="Search by measurement..."
                 searchActions={
-                  canEdit && (
-                    <Button
-                      size="sm"
-                      className="h-9 bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => setShowAddModal(true)}>
-                      <Target className="w-3.5 h-3.5 mr-1.5" />
-                      Add New Target
-                    </Button>
-                  )
-                }
-                legendItems={[
-                  { color: 'bg-green-500', label: 'Active' },
-                  { color: 'bg-gray-300', label: 'Draft' },
-                ]}>
+                  <>
+                    <Select
+                      value={selectedMonth.toString()}
+                      onValueChange={(v) => setSelectedMonth(v === 'all' ? 'all' : parseInt(v))}>
+                      <SelectTrigger className="w-[120px] h-9 bg-gray-50 border-gray-200 text-sm">
+                        <Calendar className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MONTHS.map((m) => (
+                          <SelectItem key={m.value} value={m.value.toString()}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        className="h-9 bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => setShowAddModal(true)}>
+                        <Target className="w-3.5 h-3.5 mr-1.5" />
+                        Add New Target
+                      </Button>
+                    )}
+                  </>
+                }>
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
-                      <TableRow className="border-b border-gray-300">
-                        <TableHead className="w-12 text-center text-xs font-bold text-gray-700 bg-gray-50 pl-6 py-4">
+                    <TableHeader className="bg-gray-50">
+                      <TableRow className="border-b border-gray-200">
+                        <TableHead className="w-16 bg-gray-100 pl-6 text-xs font-bold text-gray-700">
                           #
                         </TableHead>
-                        <TableHead className="text-xs font-bold text-gray-700 min-w-[280px] bg-gray-50 py-4">
+                        <TableHead className="text-xs font-bold text-gray-700 min-w-[200px] bg-gray-100 py-4">
                           <div className="flex items-center gap-2">
                             <Target className="w-4 h-4 text-gray-600" />
                             Measurement
                           </div>
                         </TableHead>
-                        <TableHead className="w-36 text-right text-xs font-bold text-gray-700 bg-gray-50 py-4">
+                        <TableHead className="w-24 text-right text-xs font-bold text-gray-700 bg-gray-100 py-4">
                           <div className="flex items-center justify-end gap-1">
                             <TrendingUp className="w-3 h-3" />
-                            Annual Pool
+                            Target
                           </div>
                         </TableHead>
-                        <TableHead className="w-32 text-right text-xs font-bold text-orange-600 bg-gray-50 py-4">
-                          <div className="flex items-center justify-end gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Used
-                          </div>
+                        <TableHead className="w-24 text-center text-xs font-bold text-gray-700 bg-gray-100 py-4">
+                          Unit
                         </TableHead>
-                        <TableHead className="w-36 text-right text-xs font-bold text-emerald-600 bg-gray-50 py-4">
-                          <div className="flex items-center justify-end gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Remaining
-                          </div>
+                        <TableHead className="w-20 text-center text-xs font-bold text-gray-700 bg-gray-100 py-4">
+                          Main
                         </TableHead>
-                        <TableHead className="w-32 text-center text-xs font-bold text-gray-700 bg-gray-50 py-4">
+                        <TableHead className="min-w-[120px] text-center text-xs font-bold text-gray-700 bg-gray-100 py-4">
+                          Related
+                        </TableHead>
+                        <TableHead className="w-32 text-center text-xs font-bold text-gray-700 bg-gray-100 py-4">
                           Status
                         </TableHead>
-                        <TableHead className="w-16 text-center text-xs font-bold text-gray-700 bg-gray-50 pr-6 py-4">
+                        <TableHead className="w-16 text-center text-xs font-bold text-gray-700 bg-gray-100 pr-6 py-4">
                           Actions
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredRows.map((row, i) => {
-                        const usedPct =
-                          row.total_target > 0
-                            ? Math.min(100, Math.round((row.used_quota / row.total_target) * 100))
-                            : 0;
-                        const draft = drafts[row.id];
-                        return (
-                          <React.Fragment key={row.id}>
-                            <TableRow className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors group">
-                              <TableCell className="text-center text-xs font-mono text-gray-400 font-bold pl-6 py-4 bg-gray-50/50">
-                                {i + 1}
-                              </TableCell>
-                              <TableCell className="py-4 bg-white">
-                                <div className="space-y-2">
-                                  <p className="text-sm font-bold text-gray-900 leading-tight">
-                                    {row.measurement ?? '---'}
-                                  </p>
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    {row.unit && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                                        {row.unit}
-                                      </span>
-                                    )}
-                                    {row.main && (
-                                      <span className="inline-flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-                                        <span className="font-semibold">Main:</span>
-                                        <span>{row.main}</span>
-                                      </span>
-                                    )}
-                                    {row.main_relate_display && (
-                                      <span
-                                        className="inline-flex items-center gap-1 text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-200"
-                                        title="Related departments">
-                                        <Building2 className="w-3 h-3" />
-                                        <span className="truncate max-w-[120px]">
-                                          {row.main_relate_display}
-                                        </span>
-                                      </span>
-                                    )}
-                                  </div>
+                      {filteredRows.map((row, i) => (
+                        <React.Fragment key={row.id}>
+                          <TableRow className="border-b border-gray-200 hover:bg-gray-50 transition-colors group">
+                            <TableCell className="text-center text-xs font-mono text-gray-400 font-bold pl-6 py-4 bg-gray-50/50">
+                              {i + 1}
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <p className="text-sm text-gray-700 leading-tight">
+                                {row.measurement ?? '---'}
+                              </p>
+                            </TableCell>
+                            <TableCell className="text-right py-4 bg-gray-50/50">
+                              <div className="text-right">
+                                <div className="font-mono text-sm font-bold text-blue-600">
+                                  {row.total_target.toLocaleString()}
                                 </div>
-                              </TableCell>
-                              <TableCell className="text-right py-4 bg-gray-50/30">
-                                <div className="text-right">
-                                  <div className="font-mono text-sm font-bold text-gray-700">
-                                    {row.total_target.toLocaleString()}
-                                  </div>
-                                  {row.fy_target && (
-                                    <div className="text-xs text-gray-500 mt-0.5">
-                                      FY: {row.fy_target.toLocaleString()}
-                                    </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center py-4 bg-gray-50/50">
+                              <div className="text-center">
+                                <div className="font-mono text-sm font-bold text-gray-700">
+                                  {row.unit || '---'}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center py-4 bg-gray-50/50">
+                              <div className="text-center">
+                                <div className="font-mono text-sm font-bold text-gray-700">
+                                  {row.main || '---'}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center py-4 bg-gray-50/50">
+                              <div className="text-center">
+                                <div className="font-mono text-sm font-bold text-gray-700">
+                                  {row.main_relate_display?.includes('All')
+                                    ? 'All'
+                                    : row.main_relate_display || '---'}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center py-4">
+                              <StatusChip row={row} />
+                            </TableCell>
+                            <TableCell className="text-center pr-6 py-4">
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2 text-xs border-gray-300 text-gray-700 hover:bg-gray-50"
+                                  onClick={() => saveRow(row)}
+                                  disabled={row.saving}>
+                                  {row.saving ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Save className="w-3 h-3" />
                                   )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right py-4 bg-orange-50/30">
-                                <div className="text-right">
-                                  <div className="font-mono text-sm font-bold text-orange-600">
-                                    {row.used_quota.toLocaleString()}
-                                  </div>
-                                  {row.total_target > 0 && (
-                                    <div className="text-xs text-orange-500 mt-0.5">
-                                      {usedPct.toFixed(1)}%
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right py-4 bg-emerald-50/30">
-                                <div className="text-right">
-                                  <div className="font-mono text-sm font-bold text-emerald-600">
-                                    {row.remaining_quota.toLocaleString()}
-                                  </div>
-                                  {row.total_target > 0 && (
-                                    <div className="text-xs text-emerald-500 mt-0.5">
-                                      {(100 - usedPct).toFixed(1)}%
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-center py-4">
-                                <StatusChip row={row} />
-                              </TableCell>
-                              <TableCell className="text-center pr-6 py-4">
-                                {canEdit && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-7 px-2 text-xs border-gray-200 hover:bg-gray-50"
-                                    onClick={() => saveRow(row)}
-                                    disabled={row.saving}>
-                                    {row.saving ? (
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <Save className="w-3 h-3" />
-                                    )}
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          </React.Fragment>
-                        );
-                      })}
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>

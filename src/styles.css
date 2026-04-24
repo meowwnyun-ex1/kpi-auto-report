@@ -76,7 +76,9 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
 
   ::selection {
@@ -95,6 +97,14 @@
 
   .card-interactive {
     @apply cursor-pointer;
+  }
+
+  /* Full size image display */
+  .img-full-size {
+    max-width: none !important;
+    max-height: none !important;
+    width: auto !important;
+    height: auto !important;
   }
 
   .btn-primary {

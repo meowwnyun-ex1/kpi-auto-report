@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { storage } from '@/shared/utils';
 import { getApiUrl } from '../config/api';
 import { createSessionTimeoutChecker } from '@/shared/utils/session-manager';
@@ -32,6 +33,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
   const validateToken = async (token: string, isRefresh = false) => {
     try {
@@ -62,10 +66,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Handle different error statuses
         if (response.status === 401) {
           console.warn('Auth validation: Token expired or invalid');
-          // Only logout on 401 if it's not a refresh scenario
-          if (!isRefresh) {
-            storage.clearAuthData();
-            setIsAuthenticated(false);
+          // Always clear invalid tokens, even during refresh, to prevent repeated 401s
+          storage.clearAuthData();
+          setUser(null);
+          setIsAuthenticated(false);
+          setValidationAttempted(false);
+          // Redirect to login if not already there
+          const currentPath = window.location.pathname;
+          const loginPath = import.meta.env.PROD ? '/kpi-auto-report/login' : '/login';
+          if (currentPath !== loginPath) {
+            navigateRef.current('/login');
           }
         } else if (response.status === 500) {
           console.error('Auth validation: Server error - check JWT_SECRET configuration');
@@ -119,6 +129,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(false);
       setLoading(false);
       setValidationAttempted(false);
+      return;
+    }
+
+    // If we've already attempted validation and failed, don't retry automatically
+    if (validationAttempted) {
+      setLoading(false);
       return;
     }
 

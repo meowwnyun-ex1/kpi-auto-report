@@ -8,7 +8,6 @@ export * from './collapsible';
 export * from './confirm-dialog';
 export * from './dialog';
 export * from './dropdown-menu';
-export * from './field';
 export * from './form';
 export { Image as ImageDisplay } from './Image';
 export * from './input';
@@ -48,6 +47,7 @@ export {
   NotFoundPage,
   ErrorPage,
 } from './empty-state';
+export { ResizableTable } from './ResizableTable';
 export { UnifiedError } from './unified-error';
 export { MultiSelect } from './multi-select';
 export { NumberInput } from './number-input';

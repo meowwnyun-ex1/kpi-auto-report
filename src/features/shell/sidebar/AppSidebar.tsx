@@ -15,7 +15,6 @@ import {
   LogOut,
   LogIn,
   ChevronUp,
-  BarChart3,
   ClipboardList,
   ChevronDown,
   ChevronRight,
@@ -32,6 +31,7 @@ import {
   Target,
   Tags,
   ListChecks,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -47,6 +47,7 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -56,7 +57,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 type NavItem = {
   title: string;
@@ -90,20 +90,19 @@ const KPI_MANAGEMENT_MENU: NavItem = {
   url: '/kpi-management',
   icon: ClipboardList,
   children: [
-    { title: 'Overview', url: '/overview', icon: BarChart3 },
     {
       title: 'Yearly',
       url: '/yearly',
       icon: Calendar,
-      children: [{ title: 'Yearly Target', url: '/yearly-targets', icon: Target }],
+      children: [{ title: 'Target', url: '/yearly-targets', icon: Target }],
     },
     {
       title: 'Monthly',
       url: '/monthly',
       icon: ClipboardList,
       children: [
-        { title: 'Monthly Target', url: '/monthly-targets', icon: Target },
-        { title: 'Monthly Result', url: '/monthly-result', icon: ClipboardList },
+        { title: 'Target', url: '/monthly-targets', icon: Target },
+        { title: 'Result', url: '/monthly-result', icon: ClipboardList },
       ],
     },
     { title: 'Action Plans', url: '/action-plans', icon: GanttChart, disabled: true },
@@ -120,6 +119,7 @@ const ADMIN_MENU: NavItem = {
     { title: 'Employees', url: '/admin/employees', icon: UserPlus },
     { title: 'KPI Configuration', url: '/admin/categories', icon: Settings },
     { title: 'System Settings', url: '/admin/settings', icon: Settings },
+    { title: 'Error Testing', url: '/test-errors', icon: AlertTriangle },
   ],
 };
 
@@ -206,28 +206,40 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r border-gray-200">
+    <Sidebar className="border-r border-gray-200/60 bg-gradient-to-b from-white to-gray-50/50">
       {/* Logo & System Name */}
-      <SidebarHeader className="border-b border-gray-100 bg-white h-14 px-4 flex items-center">
-        <Link to="/" className="flex items-center gap-3">
-          <img
-            src="/logo.png"
-            alt="DENSO Logo"
-            className="h-10 w-auto object-contain flex-shrink-0"
-          />
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-bold text-gray-900 truncate">KPI Management Tool</span>
-            <span className="text-xs text-gray-500">DENSO Performance System</span>
+      <SidebarHeader className="border-b border-gray-200/60 bg-gradient-to-r from-blue-50 to-indigo-50 h-14 px-4 flex items-center shadow-sm transition-all duration-200">
+        <div className="flex items-center gap-3 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 rounded-lg px-2 py-1 -mx-2 -my-1 transition-all duration-200 cursor-pointer">
+          <div className="relative">
+            <Link to="/">
+              <img
+                src="/logo.png"
+                alt="DENSO Logo"
+                className="h-8 w-auto object-contain flex-shrink-0 transition-transform hover:scale-105"
+              />
+            </Link>
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm"></div>
           </div>
-        </Link>
+          <div className="flex flex-col min-w-0">
+            <Link to="/">
+              <span className="text-sm font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
+                KPI Management Tool
+              </span>
+            </Link>
+            <span className="text-xs text-gray-600 font-medium truncate">
+              DENSO Performance System
+            </span>
+          </div>
+        </div>
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className="bg-white px-3 py-4 overflow-y-auto">
+      <SidebarContent className="bg-white/80 backdrop-blur-sm px-4 py-6 overflow-y-auto">
         {/* Dashboard Menu - Main overview for all users */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase">
-            Menu
+        <SidebarGroup className="mb-4">
+          <SidebarGroupLabel className="px-2 mb-2 text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
+            <span>Main Menu</span>
+            <div className="h-px bg-blue-300 flex-1"></div>
           </SidebarGroupLabel>
           <SidebarMenu className="space-y-1">
             <SidebarMenuItem>
@@ -235,19 +247,19 @@ export function AppSidebar() {
                 asChild
                 isActive={location.pathname === '/'}
                 className={cn(
-                  'w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                  'w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                   location.pathname === '/'
                     ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
                 )}>
                 <Link to="/" className="flex items-center gap-3">
                   <Home
                     className={cn(
-                      'h-5 w-5',
+                      'h-4 w-4',
                       location.pathname === '/' ? 'text-blue-600' : 'text-gray-400'
                     )}
                   />
-                  <span>Home</span>
+                  <span className="truncate">Home</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -262,20 +274,20 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     onClick={() => navigate(DASHBOARD_MENU.url)}
                     className={cn(
-                      'w-full rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                      'w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                       isPathActive(location.pathname, DASHBOARD_MENU.url)
                         ? 'bg-sky-100 text-sky-700 border-l-4 border-sky-600'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        : 'text-gray-600 hover:bg-sky-50 hover:text-sky-700'
                     )}>
                     <DASHBOARD_MENU.icon
                       className={cn(
-                        'h-5 w-5',
+                        'h-4 w-4',
                         isPathActive(location.pathname, DASHBOARD_MENU.url)
                           ? 'text-sky-600'
                           : 'text-gray-400'
                       )}
                     />
-                    <span className="flex-1">{DASHBOARD_MENU.title}</span>
+                    <span className="flex-1 truncate">{DASHBOARD_MENU.title}</span>
                     {openCategories.includes(DASHBOARD_MENU.url) ? (
                       <ChevronDown className="h-4 w-4 text-gray-400" />
                     ) : (
@@ -284,7 +296,7 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <SidebarMenuSub className="ml-4 mt-1 space-y-1">
+                  <SidebarMenuSub className="ml-6 mt-2 space-y-1">
                     {DASHBOARD_MENU.children?.map((child) => {
                       const childActive = location.pathname === child.url;
                       return (
@@ -295,7 +307,7 @@ export function AppSidebar() {
                               'w-full rounded-lg px-3 py-2 text-sm transition-colors',
                               childActive
                                 ? 'bg-sky-100 text-sky-700 border-l-4 border-sky-500'
-                                : 'text-gray-600 hover:bg-gray-50'
+                                : 'text-gray-600 hover:bg-sky-200 hover:text-sky-800'
                             )}>
                             <Link to={child.url} className="flex items-center gap-2">
                               <child.icon className="h-4 w-4" />
@@ -314,9 +326,10 @@ export function AppSidebar() {
 
         {/* KPI Management - Manager/Admin only */}
         {isManagerOrAdmin && (
-          <SidebarGroup className="mt-2">
-            <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase flex items-center gap-1">
-              KPI Management
+          <SidebarGroup className="mb-4">
+            <SidebarGroupLabel className="px-2 mb-4 text-xs font-bold text-green-600 uppercase tracking-wider flex items-center gap-2">
+              <span>KPI Management</span>
+              <div className="h-px bg-green-300 flex-1"></div>
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-1">
               {KPI_MANAGEMENT_MENU.children?.map((child) => {
@@ -330,94 +343,61 @@ export function AppSidebar() {
                   <Collapsible
                     key={child.url}
                     open={openCategories.includes(child.url)}
-                    onOpenChange={() => !isDisabled && toggleCategory(child.url)}
-                    className="group/collapsible">
+                    onOpenChange={() => !isDisabled && toggleCategory(child.url)}>
                     <SidebarMenuItem>
-                      {hasChildren ? (
-                        <>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton
-                              onClick={() =>
-                                !isDisabled &&
-                                child.children?.[0] &&
-                                navigate(child.children[0].url)
-                              }
-                              className={cn(
-                                'w-full rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                                isDisabled && 'opacity-50 cursor-not-allowed',
-                                !isDisabled && (isActive || isChildActive)
-                                  ? 'bg-green-100 text-green-700 border-l-4 border-green-600'
-                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                              )}>
-                              <child.icon
-                                className={cn(
-                                  'h-4 w-4',
-                                  isDisabled
-                                    ? 'text-gray-300'
-                                    : isActive || isChildActive
-                                      ? 'text-green-600'
-                                      : 'text-gray-400'
-                                )}
-                              />
-                              <span className="flex-1">{child.title}</span>
-                              {!isDisabled &&
-                                (openCategories.includes(child.url) || isChildActive ? (
-                                  <ChevronDown className="h-4 w-4 text-gray-400" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                                ))}
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          {!isDisabled && (
-                            <CollapsibleContent>
-                              <SidebarMenuSub className="ml-4 mt-1 space-y-1">
-                                {child.children?.map((subChild) => {
-                                  const subActive = location.pathname === subChild.url;
-                                  return (
-                                    <SidebarMenuSubItem key={subChild.url}>
-                                      <SidebarMenuSubButton
-                                        asChild
-                                        className={cn(
-                                          'w-full rounded-lg px-3 py-2 text-sm transition-colors',
-                                          subActive
-                                            ? 'bg-green-100 text-green-700 border-l-4 border-green-500'
-                                            : 'text-gray-600 hover:bg-gray-50'
-                                        )}>
-                                        <Link to={subChild.url} className="flex items-center gap-2">
-                                          <subChild.icon className="h-4 w-4" />
-                                          <span>{subChild.title}</span>
-                                        </Link>
-                                      </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-                                  );
-                                })}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          )}
-                        </>
-                      ) : (
+                      <CollapsibleTrigger asChild>
                         <SidebarMenuButton
-                          asChild={!isDisabled}
                           className={cn(
-                            'w-full rounded-lg px-3 py-2 text-sm transition-colors',
+                            'w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                             isDisabled && 'opacity-50 cursor-not-allowed',
-                            !isDisabled && isActive
+                            !isDisabled && (isActive || isChildActive)
                               ? 'bg-green-100 text-green-700 border-l-4 border-green-600'
-                              : 'text-gray-600 hover:bg-gray-50'
+                              : 'text-gray-600 hover:bg-green-50 hover:text-green-700'
                           )}>
-                          {isDisabled ? (
-                            <span className="flex items-center gap-2">
-                              <child.icon className="h-4 w-4 text-gray-300" />
-                              <span>{child.title}</span>
-                              <Lock className="h-3 w-3 text-gray-400 ml-auto" />
-                            </span>
-                          ) : (
-                            <Link to={child.url} className="flex items-center gap-2">
-                              <child.icon className="h-4 w-4" />
-                              <span>{child.title}</span>
-                            </Link>
-                          )}
+                          <child.icon
+                            className={cn(
+                              'h-4 w-4',
+                              isDisabled
+                                ? 'text-gray-300'
+                                : isActive || isChildActive
+                                  ? 'text-green-600'
+                                  : 'text-gray-400'
+                            )}
+                          />
+                          <span className="flex-1 truncate">{child.title}</span>
+                          {!isDisabled &&
+                            (openCategories.includes(child.url) || isChildActive ? (
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-gray-400" />
+                            ))}
                         </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      {!isDisabled && (
+                        <CollapsibleContent>
+                          <SidebarMenuSub className="ml-6 mt-2 space-y-1">
+                            {child.children?.map((subChild) => {
+                              const subActive = location.pathname === subChild.url;
+                              return (
+                                <SidebarMenuSubItem key={subChild.url}>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    className={cn(
+                                      'w-full rounded-lg px-3 py-2 text-sm transition-colors',
+                                      subActive
+                                        ? 'bg-green-100 text-green-700 border-l-4 border-green-500'
+                                        : 'text-gray-600 hover:bg-green-50'
+                                    )}>
+                                    <Link to={subChild.url} className="flex items-center gap-2">
+                                      <subChild.icon className="h-4 w-4" />
+                                      <span>{subChild.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              );
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
                       )}
                     </SidebarMenuItem>
                   </Collapsible>
@@ -429,9 +409,10 @@ export function AppSidebar() {
 
         {/* Admin - Only for admins */}
         {isAdminRole && (
-          <SidebarGroup className="mt-2">
-            <SidebarGroupLabel className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase">
-              Admin
+          <SidebarGroup className="mb-4">
+            <SidebarGroupLabel className="px-2 mb-4 text-xs font-bold text-purple-600 uppercase tracking-wider flex items-center gap-2">
+              <span>Administration</span>
+              <div className="h-px bg-purple-300 flex-1"></div>
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-1">
               {ADMIN_MENU.children?.map((child) => (
@@ -439,16 +420,25 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     className={cn(
-                      'w-full rounded-lg px-3 py-2 text-sm transition-colors',
+                      'w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                       location.pathname === child.url ||
                         (location.pathname === '/admin' &&
                           location.search.includes(child.url.split('tab=')[1] || ''))
                         ? 'bg-purple-100 text-purple-700 border-l-4 border-purple-600'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-600 hover:bg-purple-50 hover:text-purple-700'
                     )}>
-                    <Link to={child.url} className="flex items-center gap-2">
-                      <child.icon className="h-4 w-4" />
-                      <span>{child.title}</span>
+                    <Link to={child.url} className="flex items-center gap-3">
+                      <child.icon
+                        className={cn(
+                          'h-4 w-4',
+                          location.pathname === child.url ||
+                            (location.pathname === '/admin' &&
+                              location.search.includes(child.url.split('tab=')[1] || ''))
+                            ? 'text-purple-600'
+                            : 'text-gray-400'
+                        )}
+                      />
+                      <span className="truncate">{child.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -459,54 +449,56 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* User Profile */}
-      <SidebarFooter className="border-t border-gray-100 bg-white p-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="relative">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={userBlock.avatar} alt={userBlock.name} />
-                  <AvatarFallback className="bg-blue-600 text-white text-xs font-semibold">
-                    {userBlock.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                {isAuthenticated && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white"></div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium text-gray-900 truncate">{userBlock.name}</p>
-                <p className="text-xs text-gray-500 truncate">{userBlock.email}</p>
-              </div>
-              <ChevronUp className="h-4 w-4 text-gray-400" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" className="w-48 mb-2">
-            {isAuthenticated ? (
-              <>
+      <SidebarFooter className="border-t border-gray-200/60 bg-gradient-to-r from-gray-50 to-white p-3 shadow-md transition-all duration-200">
+        <div className="hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 rounded-lg px-2 py-1 -mx-2 -my-1 transition-all duration-200">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center gap-2 p-1.5 rounded-md bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200">
+                <div className="relative">
+                  <Avatar className="h-6 w-6 ring-1 ring-gray-100 hover:ring-blue-100 transition-all">
+                    <AvatarImage src={userBlock.avatar} alt={userBlock.name} />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs font-bold">
+                      {userBlock.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isAuthenticated && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white shadow-sm"></div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-xs font-semibold text-gray-900 truncate">{userBlock.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{userBlock.email}</p>
+                </div>
+                <ChevronUp className="h-4 w-4 text-gray-400 hover:text-gray-700 transition-colors" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-48 mb-2">
+              {isAuthenticated ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={handleChangePassword}
+                    className="flex items-center gap-2 cursor-pointer">
+                    <KeyRound className="h-4 w-4" />
+                    <span>Change Password</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 cursor-pointer text-red-600">
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </>
+              ) : (
                 <DropdownMenuItem
-                  onClick={handleChangePassword}
+                  onClick={handleLogin}
                   className="flex items-center gap-2 cursor-pointer">
-                  <KeyRound className="h-4 w-4" />
-                  <span>Change Password</span>
+                  <LogIn className="h-4 w-4" />
+                  <span>Login</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 cursor-pointer text-red-600">
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </DropdownMenuItem>
-              </>
-            ) : (
-              <DropdownMenuItem
-                onClick={handleLogin}
-                className="flex items-center gap-2 cursor-pointer">
-                <LogIn className="h-4 w-4" />
-                <span>Login</span>
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

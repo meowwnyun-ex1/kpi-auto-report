@@ -216,10 +216,11 @@ router.delete('/action-plans/:id', requireManager, async (req, res) => {
   try {
     const { id } = req.params;
     const pool = await getKpiDb();
-    const r = await spoPool
-      .request()
-      .input('dept_id', sql.NVarChar, id)
-      .query(`SELECT Section_name as name_en FROM dept_master WHERE ID = @dept_id`);
+    // This query seems unrelated to deletion, commenting out for now
+    // const r = await pool
+    //   .request()
+    //   .input('dept_id', sql.NVarChar, id)
+    //   .query(`SELECT Section_name as name_en FROM dept_master WHERE ID = @dept_id`);
     res.json({ success: true, message: 'Action plan deleted' });
   } catch (error) {
     logger.error('Error deleting action plan', error);

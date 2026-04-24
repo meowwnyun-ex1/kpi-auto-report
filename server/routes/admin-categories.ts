@@ -167,6 +167,7 @@ router.post(
 
       // Fallback for development mode
       if (process.env.NODE_ENV === 'development') {
+        const { name, key, description, color, icon, sort_order, is_active } = req.body;
         const mockCategory = {
           id: Math.floor(Math.random() * 1000),
           name,
@@ -240,6 +241,7 @@ router.put(
 
       // Fallback for development mode
       if (process.env.NODE_ENV === 'development') {
+        const { name, key, description, color, icon, sort_order, is_active } = req.body;
         const mockCategory = {
           id: parseInt(req.params.id as string),
           name,

@@ -85,7 +85,7 @@ export default function AdminEmployeesPage() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
@@ -254,7 +254,7 @@ export default function AdminEmployeesPage() {
         {loading ? (
           <TableContainer
             icon={UserPlus}
-            title="Associate List"
+            title="Employee List"
             theme="emerald"
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
@@ -273,7 +273,7 @@ export default function AdminEmployeesPage() {
         ) : filteredEmployees.length === 0 ? (
           <TableContainer
             icon={UserPlus}
-            title="Associate List"
+            title="Employee List"
             theme="emerald"
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
@@ -292,50 +292,40 @@ export default function AdminEmployeesPage() {
             emptyDescription={
               searchQuery ? 'Try a different search term.' : 'No associates available.'
             }
-          />
-        ) : (
-          <TableContainer
-            icon={UserPlus}
-            title="Associate List"
-            badge={`${filteredEmployees.length} associates`}
-            totalCount={filteredEmployees.length}
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-            searchPlaceholder="Search by associate ID, name, or department..."
-            searchActions={
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9"
-                onClick={() => setShowAddDialog(true)}>
-                <UserPlus className="h-4 w-4 mr-1" /> Add Associate
-              </Button>
-            }
-            theme="emerald"
-            legendItems={[
-              { color: 'bg-emerald-500', label: 'Available' },
-              { color: 'bg-green-500', label: 'Selected' },
-            ]}>
+            pagination={{
+              currentPage,
+              totalPages: Math.ceil(filteredEmployees.length / itemsPerPage),
+              totalItems: filteredEmployees.length,
+              itemsPerPage,
+              onPageChange: setCurrentPage,
+              onItemsPerPageChange: setItemsPerPage,
+            }}>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-gradient-to-r from-emerald-50 to-green-100 sticky top-0 z-10">
                   <TableRow className={TABLE_STYLES.headerRow}>
-                    <TableHead className={`w-12 bg-emerald-50 ${TABLE_STYLES.headerCell} pl-6`}>
+                    <TableHead
+                      className={`flex-shrink-0 w-12 bg-emerald-50 ${TABLE_STYLES.headerCell} pl-6`}>
                       #
                     </TableHead>
-                    <TableHead className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[120px]`}>
+                    <TableHead
+                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[120px] flex-shrink-0`}>
                       Associate ID
                     </TableHead>
-                    <TableHead className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[150px]`}>
+                    <TableHead
+                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[150px] flex-shrink-0`}>
                       Name
                     </TableHead>
-                    <TableHead className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[200px]`}>
+                    <TableHead
+                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[200px] flex-shrink-0`}>
                       Email
                     </TableHead>
-                    <TableHead className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[150px]`}>
+                    <TableHead
+                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[150px] flex-shrink-0`}>
                       Department
                     </TableHead>
-                    <TableHead className={`w-24 bg-emerald-50 ${TABLE_STYLES.headerCell} pr-6`}>
+                    <TableHead
+                      className={`flex-shrink-0 w-24 bg-emerald-50 ${TABLE_STYLES.headerCell} pr-6`}>
                       Action
                     </TableHead>
                   </TableRow>
@@ -346,20 +336,24 @@ export default function AdminEmployeesPage() {
                       key={emp.employee_id}
                       className={`${TABLE_STYLES.dataRow} hover:bg-emerald-50/30 cursor-pointer`}
                       onClick={() => openAddDialog(emp)}>
-                      <TableCell className={`${TABLE_STYLES.rowNumber} bg-emerald-50/50`}>
+                      <TableCell
+                        className={`${TABLE_STYLES.rowNumber} bg-emerald-50/50 flex-shrink-0 w-12`}>
                         {(currentPage - 1) * itemsPerPage + idx + 1}
                       </TableCell>
-                      <TableCell className="font-mono text-sm py-4 bg-white">
+                      <TableCell className="font-mono text-sm py-4 bg-white min-w-[120px] flex-shrink-0">
                         {emp.employee_id}
                       </TableCell>
-                      <TableCell className="font-medium py-4 bg-gray-50/30">
+                      <TableCell className="font-medium py-4 bg-gray-50/30 min-w-[150px] flex-shrink-0">
                         {emp.name_en}
                       </TableCell>
-                      <TableCell className="text-sm py-4 bg-white">{emp.email}</TableCell>
-                      <TableCell className="text-sm py-4 bg-gray-50/30">
+                      <TableCell className="text-sm py-4 bg-white min-w-[200px] flex-shrink-0">
+                        {emp.email}
+                      </TableCell>
+                      <TableCell className="text-sm py-4 bg-gray-50/30 min-w-[150px] flex-shrink-0">
                         <div>{emp.department_name}</div>
                       </TableCell>
-                      <TableCell className={`${TABLE_STYLES.actionCell} bg-white`}>
+                      <TableCell
+                        className={`${TABLE_STYLES.actionCell} bg-white flex-shrink-0 w-24`}>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -375,12 +369,100 @@ export default function AdminEmployeesPage() {
                 </TableBody>
               </Table>
             </div>
-
-            {/* Footer with total items */}
-            <div className="flex items-center justify-center px-4 py-3 border-t border-gray-100">
-              <div className="text-sm text-gray-600">
-                Total: {filteredEmployees.length} associates
-              </div>
+          </TableContainer>
+        ) : (
+          <TableContainer
+            icon={UserPlus}
+            title="Employee List"
+            theme="emerald"
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search by associate ID, name, or department..."
+            searchActions={
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9"
+                onClick={() => setShowAddDialog(true)}>
+                <UserPlus className="h-4 w-4 mr-1" /> Add Associate
+              </Button>
+            }
+            pagination={{
+              currentPage,
+              totalPages: Math.ceil(filteredEmployees.length / itemsPerPage),
+              totalItems: filteredEmployees.length,
+              itemsPerPage,
+              onPageChange: setCurrentPage,
+              onItemsPerPageChange: setItemsPerPage,
+            }}>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-gradient-to-r from-emerald-50 to-green-100 sticky top-0 z-10">
+                  <TableRow className={TABLE_STYLES.headerRow}>
+                    <TableHead
+                      className={`flex-shrink-0 w-12 bg-emerald-50 ${TABLE_STYLES.headerCell} pl-6`}>
+                      #
+                    </TableHead>
+                    <TableHead
+                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[120px] flex-shrink-0`}>
+                      Associate ID
+                    </TableHead>
+                    <TableHead
+                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[150px] flex-shrink-0`}>
+                      Name
+                    </TableHead>
+                    <TableHead
+                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[200px] flex-shrink-0`}>
+                      Email
+                    </TableHead>
+                    <TableHead
+                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[150px] flex-shrink-0`}>
+                      Department
+                    </TableHead>
+                    <TableHead
+                      className={`flex-shrink-0 w-24 bg-emerald-50 ${TABLE_STYLES.headerCell} pr-6`}>
+                      Action
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedEmployees.map((emp, idx) => (
+                    <TableRow
+                      key={emp.employee_id}
+                      className={`${TABLE_STYLES.dataRow} hover:bg-emerald-50/30 cursor-pointer`}
+                      onClick={() => openAddDialog(emp)}>
+                      <TableCell
+                        className={`${TABLE_STYLES.rowNumber} bg-emerald-50/50 flex-shrink-0 w-12`}>
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm py-4 bg-white min-w-[120px] flex-shrink-0">
+                        {emp.employee_id}
+                      </TableCell>
+                      <TableCell className="font-medium py-4 bg-gray-50/30 min-w-[150px] flex-shrink-0">
+                        {emp.name_en}
+                      </TableCell>
+                      <TableCell className="text-sm py-4 bg-white min-w-[200px] flex-shrink-0">
+                        {emp.email}
+                      </TableCell>
+                      <TableCell className="text-sm py-4 bg-gray-50/30 min-w-[150px] flex-shrink-0">
+                        <div>{emp.department_name}</div>
+                      </TableCell>
+                      <TableCell
+                        className={`${TABLE_STYLES.actionCell} bg-white flex-shrink-0 w-24`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAddDialog(emp);
+                          }}>
+                          <UserPlus className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </TableContainer>
         )}

@@ -109,13 +109,14 @@ export function handleImageError(
 // Fallback images - organized by usage type
 const FALLBACK_IMAGES = {
   // General defaults
-  default: '/404.png',
+  default: '/Sorry.png',
   loading: '/loading.png',
 
   // Error handling
-  error: '/404.png',
-  network: '/404.png',
-  not_found: '/404.png',
+  error: '/Sorry.png',
+  network: '/Sorry.png',
+  not_found: '/Sorry.png',
+  '404': '/Sorry.png',
 
   // Branding & logos
   logo: '/logo.png',
@@ -126,7 +127,8 @@ export type FallbackType = keyof typeof FALLBACK_IMAGES;
 
 // Normalize fallback type to handle aliases
 function normalizeFallbackType(type: string): FallbackType {
-  if (type === 'not-found' || type === '404') return 'not_found';
+  if (type === 'not-found') return 'not_found';
+  if (type === '404') return '404';
   if (type in FALLBACK_IMAGES) return type as FallbackType;
   return 'default';
 }

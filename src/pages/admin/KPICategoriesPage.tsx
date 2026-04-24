@@ -8,22 +8,13 @@ import { StandardPageLayout } from '@/components/shared/StandardPageLayout';
 
 // Import components
 import { KPIOverview } from './components/KPIOverview';
-import { KPIEditDialog } from './components/KPIEditDialog';
-import { KPIAddDialog } from './components/KPIAddDialog';
 
 export default function AdminKPICategoriesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [activeSubcategory, setActiveSubcategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
-  const [editDialog, setEditDialog] = useState(false);
-  const [editType, setEditType] = useState<'category' | 'subcategory' | 'measurement'>('category');
-  const [addDialog, setAddDialog] = useState(false);
-  const [addType, setAddType] = useState<'category' | 'subcategory' | 'measurement'>('category');
 
   // Database data states
   const [categories, setCategories] = useState<any[]>([]);
@@ -40,6 +31,8 @@ export default function AdminKPICategoriesPage() {
   const loadDatabaseData = async () => {
     setLoading(true);
     try {
+      console.log('Loading KPI categories data...');
+
       // Load categories, subcategories, and measurements in parallel
       const [categoriesRes, subcategoriesRes, measurementsRes] = await Promise.all([
         fetch('/api/admin/categories', {
@@ -53,78 +46,64 @@ export default function AdminKPICategoriesPage() {
         }),
       ]);
 
+      console.log('Categories response:', categoriesRes.status);
+      console.log('Subcategories response:', subcategoriesRes.status);
+      console.log('Measurements response:', measurementsRes.status);
+
       if (categoriesRes.ok) {
         const categoriesData = await categoriesRes.json();
+        console.log('Categories data:', categoriesData);
         if (categoriesData.success) {
           setCategories(categoriesData.data);
+          console.log('Categories loaded:', categoriesData.data.length);
         }
+      } else {
+        console.error('Categories API failed:', categoriesRes.status);
       }
 
       if (subcategoriesRes.ok) {
         const subcategoriesData = await subcategoriesRes.json();
         if (subcategoriesData.success) {
           setSubcategories(subcategoriesData.data);
+          console.log('Subcategories loaded:', subcategoriesData.data.length);
         }
+      } else {
+        console.error('Subcategories API failed:', subcategoriesRes.status);
       }
 
       if (measurementsRes.ok) {
         const measurementsData = await measurementsRes.json();
         if (measurementsData.success) {
           setMeasurements(measurementsData.data);
+          console.log('Measurements loaded:', measurementsData.data.length);
         }
+      } else {
+        console.error('Measurements API failed:', measurementsRes.status);
       }
     } catch (error) {
       console.error('Failed to load database data:', error);
-      // Fallback to mock data if API fails
       toast({
-        title: 'Warning',
-        description: 'Using sample data. API endpoints not available.',
-        variant: 'default',
+        title: 'Error',
+        description: 'Failed to load data. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle category selection
-  const handleCategorySelect = (categoryKey: string) => {
-    setActiveCategory(categoryKey);
-    setActiveSubcategory(null);
-    setActiveTab('subcategory');
-  };
-
-  // Handle subcategory selection
-  const handleSubcategorySelect = (subcategoryKey: string) => {
-    setActiveSubcategory(subcategoryKey);
-    setActiveTab('measurement');
-  };
-
-  // Handle back navigation
-  const handleBackToCategories = () => {
-    setActiveCategory(null);
-    setActiveSubcategory(null);
-    setActiveTab('overview');
-  };
-
-  const handleBackToSubcategories = () => {
-    setActiveSubcategory(null);
-    setActiveTab('subcategory');
-  };
-
-  const handleEdit = (
-    type: 'category' | 'subcategory' | 'measurement',
-    category?: string,
-    subcategory?: string
-  ) => {
-    setEditType(type);
-    // setSelectedCategory(category || null); // Removed - variable not defined
-    setSelectedSubcategory(subcategory || null);
-    setEditDialog(true);
+  const handleEdit = (type: 'category' | 'subcategory' | 'measurement') => {
+    toast({
+      title: 'Edit',
+      description: `Edit ${type} functionality coming soon`,
+    });
   };
 
   const handleAdd = (type: 'category' | 'subcategory' | 'measurement') => {
-    setAddType(type);
-    setAddDialog(true);
+    toast({
+      title: 'Add',
+      description: `Add ${type} functionality coming soon`,
+    });
   };
 
   return (
@@ -139,8 +118,8 @@ export default function AdminKPICategoriesPage() {
         {/* Main Content */}
         <KPIOverview
           activeTab={activeTab}
-          activeCategory={activeCategory}
-          activeSubcategory={activeSubcategory}
+          activeCategory={null}
+          activeSubcategory={null}
           categories={categories}
           subcategories={subcategories}
           measurements={measurements}
@@ -148,40 +127,12 @@ export default function AdminKPICategoriesPage() {
           setSearchTerm={setSearchTerm}
           canEdit={canEdit}
           loading={loading}
-          onCategorySelect={handleCategorySelect}
-          onSubcategorySelect={handleSubcategorySelect}
+          onCategorySelect={() => {}}
+          onSubcategorySelect={() => {}}
           onEdit={handleEdit}
           onAdd={handleAdd}
         />
       </StandardPageLayout>
-
-      {/* Edit Dialog */}
-      <KPIEditDialog
-        open={editDialog}
-        onOpenChange={setEditDialog}
-        editType={editType}
-        onEdit={() => {
-          toast({
-            title: 'Success',
-            description: `${editType} updated successfully`,
-          });
-          setEditDialog(false);
-        }}
-      />
-
-      {/* Add Dialog */}
-      <KPIAddDialog
-        open={addDialog}
-        onOpenChange={setAddDialog}
-        addType={addType}
-        onAdd={() => {
-          toast({
-            title: 'Success',
-            description: `${addType} added successfully`,
-          });
-          setAddDialog(false);
-        }}
-      />
     </ShellLayout>
   );
 }

@@ -7,13 +7,15 @@ import { FiscalYearProvider } from './contexts/FiscalYearContext';
 import { ErrorBoundary } from './components/features/ErrorBoundary';
 import { Toaster } from './components/ui/toaster';
 import { UnifiedError } from './components/ui/unified-error';
+import ErrorTestPage from './pages/test/ErrorTestPage';
 import { HomePage, LoginPage } from './pages';
 import { MainDashboard, CategoryDashboard } from './pages/dashboard';
-import OverviewPage from './pages/kpi/OverviewPage';
-import YearlyTargetsPage from './pages/kpi/YearlyTargetsPage';
-import MonthlyTargetsPage from './pages/kpi/MonthlyTargetsPage';
-import MonthlyResultPage from './pages/kpi/MonthlyResultPage';
-import ActionPlansPage from './pages/kpi/ActionPlansPage';
+import {
+  YearlyTargetsPage,
+  MonthlyTargetsPage,
+  MonthlyResultPage,
+  ActionPlansPage,
+} from './pages/kpi';
 import {
   AdminDashboardPage,
   AdminUsersPage,
@@ -45,6 +47,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     isAuthenticated &&
     (user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'manager');
 
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
   if (!isManagerOrAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -58,6 +63,9 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const isAdmin = isAuthenticated && (user?.role === 'admin' || user?.role === 'superadmin');
 
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
   if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -88,15 +96,7 @@ const AppContent: React.FC = () => {
             />
           ))}
 
-          {/* KPI Management - 3 main forms + Overview */}
-          <Route
-            path="/overview"
-            element={
-              <ProtectedRoute>
-                <OverviewPage />
-              </ProtectedRoute>
-            }
-          />
+          {/* KPI Management - 3 main forms */}
           <Route
             path="/yearly-targets"
             element={
@@ -181,6 +181,16 @@ const AppContent: React.FC = () => {
             element={
               <ProtectedRoute>
                 <ChangePasswordPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Test Page - Accessible to all users but appears in admin menu */}
+          <Route
+            path="/test-errors"
+            element={
+              <ProtectedRoute>
+                <ErrorTestPage />
               </ProtectedRoute>
             }
           />

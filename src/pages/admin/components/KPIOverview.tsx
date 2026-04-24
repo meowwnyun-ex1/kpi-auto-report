@@ -16,9 +16,8 @@ import {
   Plus,
   Edit,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
+  MoreHorizontal,
 } from 'lucide-react';
 import { TableContainer, TABLE_STYLES } from '@/components/shared/TableContainer';
 
@@ -59,9 +58,8 @@ export function KPIOverview({
   onAdd,
   loading = false,
 }: KPIOverviewProps) {
-  // Pagination state for each table
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Filter data based on search term
   const filteredCategories = categories.filter((cat) =>
@@ -74,159 +72,237 @@ export function KPIOverview({
     meas.measurement?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination functions
-  const paginate = (items: any[], page: number) => {
-    const startIndex = (page - 1) * itemsPerPage;
-    return items.slice(startIndex, startIndex + itemsPerPage);
-  };
-
-  const totalPages = Math.max(
-    Math.ceil(filteredCategories.length / itemsPerPage),
-    Math.ceil(filteredSubcategories.length / itemsPerPage),
-    Math.ceil(filteredMeasurements.length / itemsPerPage)
-  );
-
   // Get current data based on active tab
   const getCurrentData = () => {
     switch (activeTab) {
+      case 'overview':
       case 'categories':
         return {
-          data: paginate(filteredCategories, currentPage),
+          data: filteredCategories,
           total: filteredCategories.length,
           icon: Tag,
-          title: 'KPI Categories',
+          title: 'KPI Category Management',
           theme: 'blue' as const,
-          columns: ['Name', 'Key', 'Actions'],
+          columns: [
+            { key: 'no', label: '#', width: 'w-12', align: 'text-center' },
+            { key: 'name', label: 'Category Name', width: 'w-64', align: 'text-left' },
+            { key: 'key', label: 'Key Code', width: 'w-32', align: 'text-center' },
+            { key: 'description', label: 'Description', width: 'flex-1', align: 'text-left' },
+            { key: 'status', label: 'Status', width: 'w-28', align: 'text-center' },
+            { key: 'actions', label: 'Actions', width: 'w-24', align: 'text-center' },
+          ],
         };
-      case 'subcategories':
+      case 'subcategory':
         return {
-          data: paginate(filteredSubcategories, currentPage),
+          data: filteredSubcategories,
           total: filteredSubcategories.length,
           icon: FolderOpen,
-          title: 'KPI Subcategories',
+          title: 'KPI Subcategory Registry',
           theme: 'purple' as const,
-          columns: ['Name', 'Category', 'Actions'],
+          columns: [
+            { key: 'no', label: '#', width: 'w-12', align: 'text-center' },
+            { key: 'name', label: 'Subcategory Name', width: 'w-64', align: 'text-left' },
+            { key: 'category', label: 'Parent Category', width: 'w-48', align: 'text-left' },
+            { key: 'created', label: 'Created Date', width: 'w-36', align: 'text-center' },
+            { key: 'actions', label: 'Actions', width: 'w-24', align: 'text-center' },
+          ],
         };
-      case 'measurements':
+      case 'measurement':
         return {
-          data: paginate(filteredMeasurements, currentPage),
+          data: filteredMeasurements,
           total: filteredMeasurements.length,
           icon: Target,
-          title: 'KPI Measurements',
+          title: 'KPI Measurement Definitions',
           theme: 'emerald' as const,
-          columns: ['Measurement', 'Unit', 'Category', 'Subcategory', 'Actions'],
+          columns: [
+            { key: 'no', label: '#', width: 'w-12', align: 'text-center' },
+            { key: 'name', label: 'Measurement Name', width: 'w-72', align: 'text-left' },
+            { key: 'unit', label: 'Unit Type', width: 'w-32', align: 'text-center' },
+            { key: 'category', label: 'Category', width: 'w-40', align: 'text-left' },
+            { key: 'subcategory', label: 'Subcategory', width: 'w-40', align: 'text-left' },
+            { key: 'actions', label: 'Actions', width: 'w-24', align: 'text-center' },
+          ],
         };
       default:
-        return null;
+        return {
+          data: [],
+          total: 0,
+          icon: Tag,
+          title: 'Data Overview',
+          theme: 'blue' as const,
+          columns: [
+            { key: 'no', label: '#', width: 'w-12', align: 'text-center' },
+            { key: 'name', label: 'Item Name', width: 'flex-1', align: 'text-left' },
+            { key: 'actions', label: 'Actions', width: 'w-24', align: 'text-center' },
+          ],
+        };
     }
   };
 
-  const currentData = getCurrentData();
+  const { data, total, icon: Icon, title, theme, columns } = getCurrentData();
 
-  if (!currentData) {
-    return null;
-  }
+  // Pagination
+  const totalPages = Math.ceil(total / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = data.slice(startIndex, endIndex);
 
-  const { data, total, icon: Icon, title, theme, columns } = currentData;
-
+  // Render row based on active tab
   const renderRow = (item: any, index: number) => {
-    const globalIndex = (currentPage - 1) * itemsPerPage + index + 1;
+    const rowNumber = startIndex + index + 1;
+    const isEvenRow = rowNumber % 2 === 0;
 
     switch (activeTab) {
+      case 'overview':
       case 'categories':
         return (
           <>
-            <TableCell className={`${TABLE_STYLES.rowNumber} bg-blue-50/50`}>
-              {globalIndex}
+            <TableCell
+              className={`text-center py-3 px-2 font-medium text-gray-600 ${isEvenRow ? 'bg-gray-50/50' : 'bg-white'}`}>
+              {rowNumber}
             </TableCell>
-            <TableCell className="font-medium py-4 bg-white">{item.name}</TableCell>
-            <TableCell className="font-mono text-sm py-4 bg-gray-50/30">{item.key}</TableCell>
-            <TableCell className={`${TABLE_STYLES.actionCell} bg-gray-50/30`}>
-              <div className="flex items-center gap-1">
-                {canEdit && (
-                  <Button variant="ghost" size="sm" onClick={() => onEdit('category')}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                )}
-                {canEdit && (
-                  <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
+            <TableCell
+              className={`py-3 px-4 font-medium text-gray-900 ${isEvenRow ? 'bg-gray-50/50' : 'bg-white'}`}>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                  style={{ backgroundColor: item.color || '#6b7280' }}
+                />
+                <div className="font-semibold">{item.name}</div>
               </div>
             </TableCell>
-          </>
-        );
-
-      case 'subcategories':
-        return (
-          <>
-            <TableCell className={`${TABLE_STYLES.rowNumber} bg-purple-50/50`}>
-              {globalIndex}
-            </TableCell>
-            <TableCell className="font-medium py-4 bg-white">{item.name}</TableCell>
-            <TableCell className="py-4 bg-gray-50/30">
-              <Badge variant="outline" className="text-xs">
-                {item.category_name || 'N/A'}
+            <TableCell
+              className={`text-center py-3 px-3 ${isEvenRow ? 'bg-gray-50/50' : 'bg-white'}`}>
+              <Badge variant="outline" className="font-mono text-xs px-2 py-1">
+                {item.key || '-'}
               </Badge>
             </TableCell>
-            <TableCell className={`${TABLE_STYLES.actionCell} bg-gray-50/30`}>
-              <div className="flex items-center gap-1">
+            <TableCell
+              className={`py-3 px-4 text-sm text-gray-600 ${isEvenRow ? 'bg-gray-50/50' : 'bg-white'}`}>
+              <div className="line-clamp-2" title={item.description}>
+                {item.description || '-'}
+              </div>
+            </TableCell>
+            <TableCell
+              className={`text-center py-3 px-3 ${isEvenRow ? 'bg-gray-50/50' : 'bg-white'}`}>
+              <Badge
+                variant={item.is_active ? 'default' : 'secondary'}
+                className={`text-xs px-2 py-1 font-medium ${
+                  item.is_active
+                    ? 'bg-green-100 text-green-800 border-green-200'
+                    : 'bg-gray-100 text-gray-600 border-gray-200'
+                }`}>
+                {item.is_active ? 'Active' : 'Inactive'}
+              </Badge>
+            </TableCell>
+            <TableCell
+              className={`text-center py-3 px-2 ${isEvenRow ? 'bg-gray-50/50' : 'bg-white'}`}>
+              <div className="flex items-center justify-center gap-1">
                 {canEdit && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onEdit('subcategory', item.category_key)}>
+                    className="h-8 w-8 p-0 hover:bg-blue-50 text-blue-600"
+                    onClick={() => onEdit('category')}>
                     <Edit className="w-4 h-4" />
                   </Button>
                 )}
-                {canEdit && (
-                  <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-50">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
               </div>
             </TableCell>
           </>
         );
 
-      case 'measurements':
+      case 'subcategory':
         return (
           <>
-            <TableCell className={`${TABLE_STYLES.rowNumber} bg-emerald-50/50`}>
-              {globalIndex}
+            <TableCell
+              className={`text-center py-3 px-2 font-medium text-gray-600 ${isEvenRow ? 'bg-purple-50/30' : 'bg-white'}`}>
+              {rowNumber}
             </TableCell>
-            <TableCell className="font-medium py-4 bg-white">{item.measurement}</TableCell>
-            <TableCell className="text-center py-4 bg-gray-50/30">
-              <Badge variant="outline" className="text-xs">
+            <TableCell
+              className={`py-3 px-4 font-medium text-gray-900 ${isEvenRow ? 'bg-purple-50/30' : 'bg-white'}`}>
+              <div className="font-semibold">{item.name}</div>
+            </TableCell>
+            <TableCell className={`py-3 px-4 ${isEvenRow ? 'bg-purple-50/30' : 'bg-white'}`}>
+              <Badge variant="outline" className="text-xs px-2 py-1">
+                {item.category_name || 'N/A'}
+              </Badge>
+            </TableCell>
+            <TableCell
+              className={`text-center py-3 px-3 text-sm text-gray-500 ${isEvenRow ? 'bg-purple-50/30' : 'bg-white'}`}>
+              {item.created_at
+                ? new Date(item.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : '-'}
+            </TableCell>
+            <TableCell
+              className={`text-center py-3 px-2 ${isEvenRow ? 'bg-purple-50/30' : 'bg-white'}`}>
+              <div className="flex items-center justify-center gap-1">
+                {canEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-purple-50 text-purple-600"
+                    onClick={() => onEdit('subcategory')}>
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-50">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </div>
+            </TableCell>
+          </>
+        );
+
+      case 'measurement':
+        return (
+          <>
+            <TableCell
+              className={`text-center py-3 px-2 font-medium text-gray-600 ${isEvenRow ? 'bg-emerald-50/30' : 'bg-white'}`}>
+              {rowNumber}
+            </TableCell>
+            <TableCell
+              className={`py-3 px-4 font-medium text-gray-900 ${isEvenRow ? 'bg-emerald-50/30' : 'bg-white'}`}>
+              <div className="font-semibold">{item.measurement || item.name}</div>
+            </TableCell>
+            <TableCell
+              className={`text-center py-3 px-3 ${isEvenRow ? 'bg-emerald-50/30' : 'bg-white'}`}>
+              <Badge variant="outline" className="font-mono text-xs px-2 py-1">
                 {item.unit || '-'}
               </Badge>
             </TableCell>
-            <TableCell className="py-4 bg-white">
-              <Badge variant="outline" className="text-xs">
+            <TableCell className={`py-3 px-4 ${isEvenRow ? 'bg-emerald-50/30' : 'bg-white'}`}>
+              <Badge variant="outline" className="text-xs px-2 py-1">
                 {item.category_name || 'N/A'}
               </Badge>
             </TableCell>
-            <TableCell className="py-4 bg-gray-50/30">
-              <Badge variant="outline" className="text-xs">
+            <TableCell className={`py-3 px-4 ${isEvenRow ? 'bg-emerald-50/30' : 'bg-white'}`}>
+              <Badge variant="outline" className="text-xs px-2 py-1">
                 {item.subcategory_name || 'N/A'}
               </Badge>
             </TableCell>
-            <TableCell className={`${TABLE_STYLES.actionCell} bg-white`}>
-              <div className="flex items-center gap-1">
+            <TableCell
+              className={`text-center py-3 px-2 ${isEvenRow ? 'bg-emerald-50/30' : 'bg-white'}`}>
+              <div className="flex items-center justify-center gap-1">
                 {canEdit && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onEdit('measurement', item.category_key, item.subcategory_key)}>
+                    className="h-8 w-8 p-0 hover:bg-emerald-50 text-emerald-600"
+                    onClick={() => onEdit('measurement')}>
                     <Edit className="w-4 h-4" />
                   </Button>
                 )}
-                {canEdit && (
-                  <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-50">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
               </div>
             </TableCell>
           </>
@@ -263,19 +339,6 @@ export function KPIOverview({
     }
   };
 
-  const getRowNumberBg = () => {
-    switch (theme) {
-      case 'blue':
-        return 'bg-blue-50/50';
-      case 'purple':
-        return 'bg-purple-50/50';
-      case 'emerald':
-        return 'bg-emerald-50/50';
-      default:
-        return 'bg-gray-50/50';
-    }
-  };
-
   const getRowHover = () => {
     switch (theme) {
       case 'blue':
@@ -290,73 +353,66 @@ export function KPIOverview({
   };
 
   if (loading) {
-    return <TableContainer icon={Icon} title={title} theme={theme} loading />;
-  }
-
-  if (total === 0) {
     return (
-      <TableContainer
-        icon={Icon}
-        title={title}
-        theme={theme}
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
-        searchPlaceholder={`Search ${title.toLowerCase()}...`}
-        searchActions={
-          canEdit && (
-            <Button size="sm" className="h-9" onClick={() => onAdd(activeTab as any)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add {activeTab.slice(0, -1).charAt(0).toUpperCase() + activeTab.slice(0, -1).slice(1)}
-            </Button>
-          )
-        }
-        empty
-        emptyTitle={`No ${title.toLowerCase()} found`}
-        emptyDescription={searchTerm ? 'Try adjusting your search terms.' : 'No data available.'}
-      />
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
     );
   }
-
   return (
     <TableContainer
       icon={Icon}
       title={title}
-      badge={`${total} items`}
-      totalCount={total}
       searchValue={searchTerm}
       onSearchChange={setSearchTerm}
       searchPlaceholder={`Search ${title.toLowerCase()}...`}
       searchActions={
-        canEdit && (
-          <Button size="sm" className="h-9" onClick={() => onAdd(activeTab as any)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add {activeTab.slice(0, -1).charAt(0).toUpperCase() + activeTab.slice(0, -1).slice(1)}
-          </Button>
-        )
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-9"
+          onClick={() =>
+            onAdd(activeTab.slice(0, -1) as 'category' | 'subcategory' | 'measurement')
+          }>
+          <Plus className="h-4 w-4 mr-1" />
+          Add {activeTab.slice(0, -1).charAt(0).toUpperCase() + activeTab.slice(0, -1).slice(1)}
+        </Button>
       }
-      theme={theme}>
+      pagination={{
+        currentPage,
+        totalPages: Math.ceil(total / itemsPerPage),
+        totalItems: total,
+        itemsPerPage,
+        onPageChange: setCurrentPage,
+        onItemsPerPageChange: setItemsPerPage,
+      }}
+      theme={theme}
+      loading={loading}
+      empty={total === 0}
+      emptyTitle={`No ${title.toLowerCase()} found`}
+      emptyDescription={searchTerm ? 'Try adjusting your search terms.' : 'No data available.'}>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader className={`${getHeaderGradient()} sticky top-0 z-10`}>
             <TableRow className={TABLE_STYLES.headerRow}>
-              <TableHead className={`w-12 ${getHeaderCellBg()} ${TABLE_STYLES.headerCell} pl-6`}>
-                #
-              </TableHead>
               {columns.map((col, idx) => (
                 <TableHead
-                  key={idx}
-                  className={`${getHeaderCellBg()} ${TABLE_STYLES.headerCell} ${
-                    col === 'Actions' ? 'w-24 pr-6' : ''
-                  } ${col === 'Unit' ? 'text-center' : ''}`}>
-                  {col}
+                  key={col.key}
+                  className={`${col.width} ${getHeaderCellBg()} ${TABLE_STYLES.headerCell} ${col.align} ${
+                    col.key === 'no' ? 'pl-6' : ''
+                  } ${col.key === 'actions' ? 'pr-6' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    {col.label}
+                    {col.key === 'name' && <ChevronDown className="w-4 h-4 opacity-50" />}
+                  </div>
                 </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((item, idx) => (
+            {paginatedData.map((item, idx) => (
               <TableRow key={item.id || idx} className={`${TABLE_STYLES.dataRow} ${getRowHover()}`}>
-                {renderRow(item, idx)}
+                {renderRow(item, (currentPage - 1) * itemsPerPage + idx)}
               </TableRow>
             ))}
           </TableBody>

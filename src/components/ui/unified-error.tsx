@@ -5,6 +5,7 @@ import { Home, RefreshCw, Mail } from 'lucide-react';
 import { ShellLayout } from '@/features/shell';
 
 export type ErrorType =
+  | '403'
   | '404'
   | '500'
   | 'network'
@@ -39,6 +40,17 @@ interface ErrorConfig {
 }
 
 const errorConfigs: Record<ErrorType, ErrorConfig> = {
+  '403': {
+    title: 'Access Denied',
+    message: 'You do not have permission to access this page.',
+    description: 'Contact your administrator if you believe this is an error.',
+    action: 'Go Home',
+    image: '/404.png',
+    severity: 'medium',
+    showRetry: false,
+    showHome: true,
+    showContact: true,
+  },
   '404': {
     title: 'Page Not Found',
     message: 'The page does not exist.',

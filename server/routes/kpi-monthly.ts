@@ -445,7 +445,10 @@ router.post('/monthly-targets/batch', requireManager, async (req, res) => {
  */
 router.put('/monthly/:yearlyTargetId/:month', requireManager, async (req, res) => {
   try {
-    const { yearlyTargetId, month } = req.params;
+    const yearlyTargetId = Array.isArray(req.params.yearlyTargetId)
+      ? req.params.yearlyTargetId[0]
+      : req.params.yearlyTargetId;
+    const month = Array.isArray(req.params.month) ? req.params.month[0] : req.params.month;
     const { target, comment } = req.body;
 
     const pool = await getKpiDb();

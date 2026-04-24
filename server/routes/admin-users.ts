@@ -862,12 +862,6 @@ router.post(
         success: false,
         message: 'Sub-categories are no longer supported. Use kpi_yearly_targets directly.',
       });
-
-      res.json({
-        success: true,
-        message: 'Sub-category created successfully',
-        data: result.recordset[0],
-      });
     } catch (error) {
       logger.error('Failed to create sub-category', error);
       next(error);
@@ -911,11 +905,7 @@ router.post('/kpi-items', async (req: Request, res: Response, next: NextFunction
         'Legacy KPI items are no longer supported. Use /api/kpi-forms/yearly routes instead.',
     });
 
-    res.json({
-      success: true,
-      message: 'KPI item created successfully',
-      data: { ...result.recordset[0], category_key },
-    });
+    // This code is unreachable due to early return above
   } catch (error) {
     logger.error('Failed to create KPI item', error);
     next(error);
@@ -1027,6 +1017,101 @@ router.get('/kpi-templates', async (req: Request, res: Response, next: NextFunct
     res.json({ success: true, data: allTemplates });
   } catch (error) {
     logger.error('Failed to get KPI templates', error);
+    next(error);
+  }
+});
+
+/**
+ * @route GET /api/admin/stats
+ * @desc Get admin dashboard statistics
+ * @access Private (admin/superadmin only)
+ */
+router.get('/stats', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const db = await getKpiDb();
+
+    // Get year from query param or use current fiscal year
+    const queryYear = req.query.year ? parseInt(req.query.year as string) : null;
+
+    // Get current fiscal year (Thai fiscal year starts April)
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentFiscalYear = currentMonth >= 4 ? now.getFullYear() : now.getFullYear() - 1;
+
+    const fiscalYear = queryYear || currentFiscalYear;
+
+    // Get comprehensive admin statistics
+    const statsResult = await db.request().query(`
+      SELECT 
+        -- User statistics
+        (SELECT COUNT(*) FROM users WHERE is_active = 1) as totalUsers,
+        (SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1) as adminUsers,
+        (SELECT COUNT(*) FROM users WHERE role = 'manager' AND is_active = 1) as managerUsers,
+        (SELECT COUNT(*) FROM users WHERE role = 'user' AND is_active = 1) as regularUsers,
+        
+        -- KPI statistics for the fiscal year
+        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = ${fiscalYear}) as totalTargets,
+        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = ${fiscalYear} AND fy_target IS NOT NULL) as targetsSet,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = ${fiscalYear}) as monthlyEntries,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = ${fiscalYear} AND result IS NOT NULL) as resultsEntered,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = ${fiscalYear} AND result IS NOT NULL AND result >= target) as achievedTargets,
+        
+        -- Department statistics
+        (SELECT COUNT(*) FROM kpi_department_mapping) as totalDepartments,
+        (SELECT COUNT(DISTINCT main) FROM kpi_yearly_targets WHERE fiscal_year = ${fiscalYear}) as activeDepartments,
+        
+        -- Category statistics
+        (SELECT COUNT(*) FROM kpi_categories WHERE is_active = 1) as totalCategories,
+        
+        -- Action plans
+        (SELECT COUNT(*) FROM kpi_action_plans WHERE fiscal_year = ${fiscalYear}) as actionPlans,
+        
+        -- Recent activity
+        (SELECT COUNT(*) FROM users WHERE last_login >= DATEADD(day, -7, GETDATE())) as activeUsersLast7Days,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE updated_at >= DATEADD(day, -7, GETDATE())) as updatedLast7Days
+    `);
+
+    const stats = statsResult.recordset[0];
+
+    // Get available fiscal years
+    const yearsResult = await db.request().query(`
+      SELECT DISTINCT fiscal_year 
+      FROM kpi_yearly_targets 
+      WHERE fiscal_year IS NOT NULL 
+      ORDER BY fiscal_year DESC
+    `);
+    const availableYears = yearsResult.recordset.map((r: any) => r.fiscal_year);
+
+    res.json({
+      success: true,
+      data: {
+        fiscalYear,
+        availableYears,
+        users: {
+          total: stats.totalUsers || 0,
+          admins: stats.adminUsers || 0,
+          managers: stats.managerUsers || 0,
+          regular: stats.regularUsers || 0,
+          activeLast7Days: stats.activeUsersLast7Days || 0,
+        },
+        kpis: {
+          totalTargets: stats.totalTargets || 0,
+          targetsSet: stats.targetsSet || 0,
+          monthlyEntries: stats.monthlyEntries || 0,
+          resultsEntered: stats.resultsEntered || 0,
+          achievedTargets: stats.achievedTargets || 0,
+          updatedLast7Days: stats.updatedLast7Days || 0,
+        },
+        departments: {
+          total: stats.totalDepartments || 0,
+          active: stats.activeDepartments || 0,
+        },
+        categories: stats.totalCategories || 0,
+        actionPlans: stats.actionPlans || 0,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to get admin stats', error);
     next(error);
   }
 });

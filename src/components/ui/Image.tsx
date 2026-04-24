@@ -13,6 +13,7 @@ interface ImageProps {
   onError?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
   optimized?: boolean; // Enable/disable lazy loading optimizations
   lazy?: boolean; // Control lazy loading behavior
+  fullSize?: boolean; // Display image at full original size without constraints
 }
 
 export const Image: React.FC<ImageProps> = ({
@@ -27,6 +28,7 @@ export const Image: React.FC<ImageProps> = ({
   onError,
   optimized = true,
   lazy = true,
+  fullSize = false,
 }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [hasError, setHasError] = React.useState(false);
@@ -99,16 +101,20 @@ export const Image: React.FC<ImageProps> = ({
     <img
       src={finalSrc}
       alt={alt}
-      className={`${className} bg-transparent`}
+      className={`${className} bg-transparent ${fullSize ? 'img-full-size' : ''}`}
       style={{
-        ...(width && { width: typeof width === 'number' ? `${width}px` : width }),
-        ...(height && { height: typeof height === 'number' ? `${height}px` : height }),
-        objectFit,
+        ...(fullSize
+          ? {}
+          : {
+              ...(width && { width: typeof width === 'number' ? `${width}px` : width }),
+              ...(height && { height: typeof height === 'number' ? `${height}px` : height }),
+            }),
+        objectFit: fullSize ? 'none' : fallbackType === '404' ? 'contain' : objectFit,
         backgroundColor: 'transparent',
       }}
       onError={handleError}
       onLoad={handleLoad}
-      loading={lazy && optimized ? 'lazy' : 'eager'}
+      loading={lazy && optimized && !fullSize ? 'lazy' : 'eager'}
     />
   );
 };

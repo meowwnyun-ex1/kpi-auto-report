@@ -31,14 +31,30 @@ import { storage } from '@/shared/utils';
 import { StandardPageLayout } from '@/components/shared/StandardPageLayout';
 
 interface AdminStats {
-  totalUsers: number;
-  activeUsers: number;
-  totalTargets: number;
-  monthlyTargets: number;
-  actionPlans: number;
-  departments: number;
+  fiscalYear: number;
+  availableYears: number[];
+  users: {
+    total: number;
+    admins: number;
+    managers: number;
+    regular: number;
+    activeLast7Days: number;
+  };
+  kpis: {
+    totalTargets: number;
+    targetsSet: number;
+    monthlyEntries: number;
+    resultsEntered: number;
+    achievedTargets: number;
+    updatedLast7Days: number;
+  };
+  departments: {
+    total: number;
+    active: number;
+  };
   categories: number;
-  recentActivities: Array<{
+  actionPlans: number;
+  recentActivities?: Array<{
     id: number;
     action: string;
     user: string;
@@ -124,8 +140,10 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-1">
-                <div className="text-2xl font-bold text-blue-900">{stats?.totalUsers || 0}</div>
-                <div className="text-xs text-blue-600">{stats?.activeUsers || 0} active</div>
+                <div className="text-2xl font-bold text-blue-900">{stats?.users?.total || 0}</div>
+                <div className="text-xs text-blue-600">
+                  {stats?.users?.activeLast7Days || 0} active this week
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -139,8 +157,12 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-1">
-                <div className="text-2xl font-bold text-green-900">{stats?.totalTargets || 0}</div>
-                <div className="text-xs text-green-600">{stats?.monthlyTargets || 0} monthly</div>
+                <div className="text-2xl font-bold text-green-900">
+                  {stats?.kpis?.totalTargets || 0}
+                </div>
+                <div className="text-xs text-green-600">
+                  {stats?.kpis?.monthlyEntries || 0} monthly entries
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -169,7 +191,9 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-1">
-                <div className="text-2xl font-bold text-orange-900">{stats?.departments || 0}</div>
+                <div className="text-2xl font-bold text-orange-900">
+                  {stats?.departments?.total || 0}
+                </div>
                 <div className="text-xs text-orange-600">{stats?.categories || 0} categories</div>
               </div>
             </CardContent>

@@ -1,6 +1,9 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Loader2 } from 'lucide-react';
+import { Pagination } from './Pagination';
+import { COLORS, TABLE_COLORS } from '@/constants/colors';
+import { PRIORITY_COLORS, getPriorityClasses } from '@/constants/priority-colors';
 
 // ============================================
 // THEME CONFIG
@@ -18,61 +21,68 @@ const THEME_CONFIG: Record<
     rowNumberBg: string;
     dotColor: string;
     iconColor: string;
+    priority: 'medium' | 'low' | 'neutral' | 'high' | 'critical';
   }
 > = {
   blue: {
-    headerBg: 'bg-gradient-to-r from-blue-50 to-indigo-50',
-    headerGradient: 'bg-gradient-to-r from-blue-50 to-indigo-100',
-    headerCellBg: 'bg-blue-50',
-    rowHover: 'hover:bg-blue-50/30',
-    rowNumberBg: 'bg-blue-50/50',
-    dotColor: 'bg-blue-400',
-    iconColor: 'text-blue-600',
+    headerBg: TABLE_COLORS.header.blue,
+    headerGradient: TABLE_COLORS.header.blue,
+    headerCellBg: TABLE_COLORS.cell.header,
+    rowHover: TABLE_COLORS.hover.blue,
+    rowNumberBg: TABLE_COLORS.cell.rowNumber,
+    dotColor: COLORS.primary[400],
+    iconColor: COLORS.primary[600],
+    priority: 'medium',
   },
   emerald: {
-    headerBg: 'bg-gradient-to-r from-emerald-50 to-green-50',
-    headerGradient: 'bg-gradient-to-r from-emerald-50 to-green-100',
-    headerCellBg: 'bg-emerald-50',
-    rowHover: 'hover:bg-emerald-50/30',
-    rowNumberBg: 'bg-emerald-50/50',
-    dotColor: 'bg-emerald-400',
-    iconColor: 'text-emerald-600',
+    headerBg: TABLE_COLORS.header.emerald,
+    headerGradient: TABLE_COLORS.header.emerald,
+    headerCellBg: TABLE_COLORS.cell.header,
+    rowHover: TABLE_COLORS.hover.emerald,
+    rowNumberBg: TABLE_COLORS.cell.rowNumber,
+    dotColor: COLORS.success[400],
+    iconColor: COLORS.success[600],
+    priority: 'low',
   },
   gray: {
-    headerBg: 'bg-gradient-to-r from-gray-50 to-slate-50',
-    headerGradient: 'bg-gradient-to-r from-gray-50 to-gray-100',
-    headerCellBg: 'bg-gray-50',
-    rowHover: 'hover:bg-gray-50/30',
-    rowNumberBg: 'bg-gray-50/50',
-    dotColor: 'bg-gray-400',
-    iconColor: 'text-gray-600',
+    headerBg: TABLE_COLORS.header.gray,
+    headerGradient: TABLE_COLORS.header.gray,
+    headerCellBg: TABLE_COLORS.cell.header,
+    rowHover: TABLE_COLORS.hover.gray,
+    rowNumberBg: TABLE_COLORS.cell.rowNumber,
+    dotColor: COLORS.gray[400],
+    iconColor: COLORS.gray[600],
+    priority: 'neutral',
   },
   purple: {
     headerBg: 'bg-gradient-to-r from-purple-50 to-violet-50',
     headerGradient: 'bg-gradient-to-r from-purple-50 to-violet-100',
-    headerCellBg: 'bg-purple-50',
+    headerCellBg: TABLE_COLORS.cell.header,
     rowHover: 'hover:bg-purple-50/30',
-    rowNumberBg: 'bg-purple-50/50',
-    dotColor: 'bg-purple-400',
-    iconColor: 'text-purple-600',
+    rowNumberBg: TABLE_COLORS.cell.rowNumber,
+    dotColor: '#a78bfa',
+    iconColor: '#9333ea',
+    priority: 'high',
   },
   red: {
     headerBg: 'bg-gradient-to-r from-red-50 to-rose-50',
     headerGradient: 'bg-gradient-to-r from-red-50 to-rose-100',
-    headerCellBg: 'bg-red-50',
+    headerCellBg: TABLE_COLORS.cell.header,
     rowHover: 'hover:bg-red-50/30',
-    rowNumberBg: 'bg-red-50/50',
-    dotColor: 'bg-red-400',
-    iconColor: 'text-red-600',
+    rowNumberBg: TABLE_COLORS.cell.rowNumber,
+    dotColor: COLORS.error[400],
+    iconColor: COLORS.error[600],
+    priority: 'critical',
   },
   orange: {
     headerBg: 'bg-gradient-to-r from-orange-50 to-amber-50',
     headerGradient: 'bg-gradient-to-r from-orange-50 to-amber-100',
-    headerCellBg: 'bg-orange-50',
+    headerCellBg: TABLE_COLORS.cell.header,
     rowHover: 'hover:bg-orange-50/30',
-    rowNumberBg: 'bg-orange-50/50',
-    dotColor: 'bg-orange-400',
-    iconColor: 'text-orange-600',
+    rowNumberBg: TABLE_COLORS.cell.rowNumber,
+    dotColor: COLORS.warning[400],
+    iconColor: COLORS.warning[600],
+    priority: 'high',
   },
 };
 
@@ -100,6 +110,7 @@ interface TableContainerProps {
   subtitle?: string;
   badge?: string | number;
   totalCount?: number;
+  countUnit?: string;
 
   legendItems?: LegendItem[];
 
@@ -121,6 +132,17 @@ interface TableContainerProps {
   emptyTitle?: string;
   emptyDescription?: string;
   emptyIcon?: React.ComponentType<{ className?: string }>;
+
+  // Pagination props
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    onPageChange: (page: number) => void;
+    onItemsPerPageChange?: (itemsPerPage: number) => void;
+    itemsPerPageOptions?: number[];
+  };
 }
 
 export function TableContainer({
@@ -130,6 +152,7 @@ export function TableContainer({
   subtitle,
   badge,
   totalCount,
+  countUnit,
   legendItems,
   searchValue,
   onSearchChange,
@@ -144,6 +167,7 @@ export function TableContainer({
   emptyTitle = 'No data found',
   emptyDescription = '',
   emptyIcon: EmptyIcon,
+  pagination,
 }: TableContainerProps) {
   const cfg = THEME_CONFIG[theme];
   const resolvedIconColor = iconColor || cfg.iconColor;
@@ -185,32 +209,25 @@ export function TableContainer({
             <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm">
               <Icon className={`w-4 h-4 ${resolvedIconColor}`} />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-gray-900">{title}</h3>
-                {badge !== undefined && (
-                  <span className="text-xs font-mono text-gray-500 bg-white/60 px-1.5 py-0.5 rounded">
-                    {badge}
-                  </span>
-                )}
-              </div>
-              {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+              {totalCount !== undefined && (
+                <span className="text-xs font-mono text-gray-500 bg-white/60 px-2 py-1 rounded">
+                  {totalCount.toLocaleString()}{' '}
+                  {countUnit
+                    ? totalCount === 1
+                      ? countUnit.charAt(0).toUpperCase() + countUnit.slice(1)
+                      : countUnit.charAt(0).toUpperCase() + countUnit.slice(1) + 's'
+                    : ''}
+                </span>
+              )}
             </div>
+            {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-4">
-            {totalCount !== undefined && (
+            {badge !== undefined && (
               <div className="text-xs font-mono text-gray-500 bg-white/60 px-2 py-1 rounded">
-                Total: {totalCount.toLocaleString()}
-              </div>
-            )}
-            {legendItems && legendItems.length > 0 && (
-              <div className="flex items-center gap-4 text-xs text-gray-600">
-                {legendItems.map((item) => (
-                  <div key={item.label} className="flex items-center gap-1">
-                    <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                    <span>{item.label}</span>
-                  </div>
-                ))}
+                {badge}
               </div>
             )}
             {actions}
@@ -238,6 +255,19 @@ export function TableContainer({
 
       {/* Table content */}
       {children}
+
+      {/* Pagination */}
+      {pagination && !loading && !empty && (
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={pagination.totalItems}
+          itemsPerPage={pagination.itemsPerPage}
+          onPageChange={pagination.onPageChange}
+          onItemsPerPageChange={pagination.onItemsPerPageChange}
+          itemsPerPageOptions={pagination.itemsPerPageOptions}
+        />
+      )}
     </div>
   );
 }
@@ -248,17 +278,17 @@ export function TableContainer({
 
 export const TABLE_STYLES = {
   /** Sticky header row classes */
-  headerRow: 'border-b border-gray-300',
+  headerRow: TABLE_COLORS.border.header,
   /** Standard header cell classes */
-  headerCell: 'text-xs font-bold text-gray-700 py-4',
+  headerCell: `text-xs font-bold ${TABLE_COLORS.text.header} py-2`,
   /** Row number cell */
-  rowNumber: 'text-center text-xs font-mono text-gray-400 font-bold pl-6 py-4',
+  rowNumber: `text-center text-xs font-mono text-gray-400 font-bold pl-6 py-2 ${TABLE_COLORS.cell.rowNumber}`,
   /** Measurement/content cell */
-  measurementCell: 'py-4 bg-white',
+  measurementCell: `py-2 ${TABLE_COLORS.cell.data}`,
   /** Numeric cell (neutral) */
-  numericCell: 'text-right py-4 bg-gray-50/30',
+  numericCell: `text-right py-2 ${TABLE_COLORS.cell.alternate}`,
   /** Standard data row */
-  dataRow: 'border-b border-gray-100 transition-colors group',
+  dataRow: `${TABLE_COLORS.border.default} transition-colors group`,
   /** Action cell */
-  actionCell: 'text-center pr-6 py-4',
+  actionCell: 'text-center pr-6 py-2',
 } as const;

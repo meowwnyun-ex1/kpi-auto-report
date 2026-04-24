@@ -1,11 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShellLayout } from '@/features/shell';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/loading-overlay';
 import { Badge } from '@/components/ui/badge';
-import { UnifiedError } from '@/components/ui/unified-error';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Shield,
   Award,
@@ -17,313 +23,382 @@ import {
   DollarSign,
   TrendingUp,
   TrendingDown,
-  ArrowRight,
   BarChart3,
-  ClipboardList,
   RefreshCw,
   Calendar,
+  Eye,
+  Target,
+  LucideIcon,
 } from 'lucide-react';
-import { KPI_CATEGORY_CONFIGS, KPIDashboardStats, getCategoryConfig } from '@/shared/types/kpi';
-import { getApiUrl } from '@/config/api';
+import { KPI_CATEGORIES, MONTHS } from '@/pages/dashboard/constants';
+import { useAuth } from '@/contexts/AuthContext';
+import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { StandardPageLayout } from '@/components/shared/StandardPageLayout';
+import { TableContainer } from '@/components/shared/TableContainer';
+import { storage } from '@/shared/utils/storage';
 
-// Icon mapping
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Shield,
-  Award,
-  Truck,
-  FileCheck,
-  Users,
-  Star,
-  Leaf,
-  DollarSign,
-};
-
-// Mock data generator
-const generateMockStats = (): KPIDashboardStats[] => {
-  return KPI_CATEGORY_CONFIGS.map((config) => {
-    const achievement = Math.floor(Math.random() * 30) + 70; // 70-100
-    return {
-      category: config.key as any,
-      total_items: Math.floor(Math.random() * 5) + 8,
-      achieved_items: Math.floor(Math.random() * 5) + 4,
-      warning_items: Math.floor(Math.random() * 2) + 1,
-      critical_items: Math.floor(Math.random() * 2),
-      overall_achievement: achievement,
-      trend: achievement > 85 ? 'up' : achievement > 75 ? 'stable' : 'down',
-      last_period_comparison: Math.random() * 10 - 3, // -3 to +7
-    };
-  });
-};
+interface CategoryStats {
+  category: string;
+  name: string;
+  totalMeasurements: number;
+  achievedMeasurements: number;
+  warningMeasurements: number;
+  criticalMeasurements: number;
+  achievementRate: number;
+  trend: 'up' | 'down' | 'stable';
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+}
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { fiscalYear } = useFiscalYear();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<KPIDashboardStats[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [stats, setStats] = useState<CategoryStats[]>([]);
+  const [selectedDept, setSelectedDept] = useState('all');
+  const [departments, setDepartments] = useState<any[]>([]);
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
     setLoading(true);
-    setError(null);
-
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`${getApiUrl()}/kpi/overview`);
-      // const data = await response.json();
+      // Load departments
+      const deptRes = await fetch('/api/departments');
+      const deptData = await deptRes.json();
+      if (deptData.success) {
+        setDepartments(deptData.data);
+      }
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      const mockStats = generateMockStats();
-      setStats(mockStats);
-      setLastUpdated(new Date());
-    } catch (err) {
-      setError('Failed to load KPI overview');
+      // Load real stats data from database for all departments
+      const statsRes = await fetch(`/api/stats/all/${fiscalYear}`, {
+        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
+      });
+      const statsData = await statsRes.json();
+
+      if (statsData.success && statsData.data) {
+        const categoryStats: CategoryStats[] = Object.entries(statsData.data).map(
+          ([categoryKey, stat]: [string, any]) => {
+            const config = KPI_CATEGORIES.find((c) => c.id === categoryKey);
+            const totalMeasurements = stat.total_targets || 0;
+            const totalResults = stat.total_results || 0;
+            const achievementRate =
+              totalMeasurements > 0 ? (totalResults / totalMeasurements) * 100 : 0;
+
+            // Calculate warning and critical based on achievement rate
+            const warningMeasurements =
+              achievementRate < 80 && achievementRate >= 60
+                ? Math.floor(totalMeasurements * 0.3)
+                : 0;
+            const criticalMeasurements =
+              achievementRate < 60 ? Math.floor(totalMeasurements * 0.4) : 0;
+            const achievedMeasurements =
+              totalMeasurements - warningMeasurements - criticalMeasurements;
+
+            return {
+              category: categoryKey,
+              name: config?.name || categoryKey,
+              totalMeasurements,
+              achievedMeasurements,
+              warningMeasurements,
+              criticalMeasurements,
+              achievementRate,
+              trend: achievementRate > 85 ? 'up' : achievementRate > 75 ? 'stable' : 'down',
+              icon: config?.icon || Target,
+              color: config?.color || '#6B7280',
+            };
+          }
+        );
+
+        setStats(categoryStats);
+      } else {
+        // Fallback to categories if stats not available
+        const catRes = await fetch('/api/kpi-forms/categories');
+        const catData = await catRes.json();
+        if (catData.success) {
+          const categories = catData.data;
+          const categoryStats: CategoryStats[] = categories.map((cat: any) => {
+            const config = KPI_CATEGORIES.find((c) => c.id === cat.key);
+            return {
+              category: cat.key,
+              name: cat.name,
+              totalMeasurements: 0,
+              achievedMeasurements: 0,
+              warningMeasurements: 0,
+              criticalMeasurements: 0,
+              achievementRate: 0,
+              trend: 'stable' as const,
+              icon: config?.icon || Target,
+              color: config?.color || '#6B7280',
+            };
+          });
+          setStats(categoryStats);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load data:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    // Track page view
-    fetch(`${getApiUrl()}/stats/page-views`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ page: 'kpi-home' }),
-    }).catch(() => {});
-
-    fetchData();
-  }, [fetchData]);
-
-  const renderTrendIcon = (trend: 'up' | 'down' | 'stable') => {
+  const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
       case 'up':
         return <TrendingUp className="h-4 w-4 text-green-500" />;
       case 'down':
         return <TrendingDown className="h-4 w-4 text-red-500" />;
       default:
-        return null;
+        return <div className="h-4 w-4 bg-yellow-400 rounded-full" />;
     }
   };
 
-  const getAchievementColor = (achievement: number) => {
-    if (achievement >= 100) return 'text-green-600';
-    if (achievement >= 80) return 'text-blue-600';
-    if (achievement >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+  const getAchievementColor = (rate: number) => {
+    if (rate >= 90) return 'text-green-600 bg-green-50';
+    if (rate >= 75) return 'text-blue-600 bg-blue-50';
+    if (rate >= 60) return 'text-yellow-600 bg-yellow-50';
+    return 'text-red-600 bg-red-50';
   };
 
-  return (
-    <ShellLayout variant="user" showStats={false}>
-      <div className="min-h-screen space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">KPI Management Tool</h1>
-            <p className="text-sm text-gray-500 mt-1">ระบบรายงานผลการดำเนินงานอัตโนมัติ</p>
-          </div>
+  const getStatusBadge = (warning: number, critical: number) => {
+    if (critical > 0)
+      return <Badge className="bg-red-100 text-red-800 border-red-200">Critical {critical}</Badge>;
+    if (warning > 0)
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Warning {warning}</Badge>
+      );
+    return <Badge className="bg-green-100 text-green-800 border-green-200">Normal</Badge>;
+  };
 
-          <div className="flex items-center gap-3">
-            <div className="text-xs text-gray-500 flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              อัปเดตล่าสุด: {lastUpdated.toLocaleTimeString('th-TH')}
-            </div>
-            <Button variant="outline" size="icon" onClick={fetchData}>
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
+  const totalStats = stats.reduce(
+    (acc, stat) => ({
+      totalMeasurements: acc.totalMeasurements + stat.totalMeasurements,
+      achievedMeasurements: acc.achievedMeasurements + stat.achievedMeasurements,
+      warningMeasurements: acc.warningMeasurements + stat.warningMeasurements,
+      criticalMeasurements: acc.criticalMeasurements + stat.criticalMeasurements,
+    }),
+    {
+      totalMeasurements: 0,
+      achievedMeasurements: 0,
+      warningMeasurements: 0,
+      criticalMeasurements: 0,
+    }
+  );
+
+  const overallAchievement =
+    totalStats.totalMeasurements > 0
+      ? Math.round((totalStats.achievedMeasurements / totalStats.totalMeasurements) * 100)
+      : 0;
+
+  return (
+    <ShellLayout variant="user">
+      <StandardPageLayout
+        title="Measurement Management Dashboard"
+        icon={BarChart3}
+        iconColor="text-blue-600"
+        onRefresh={loadData}
+        loading={loading}
+        theme="blue">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-blue-600">Measurements</p>
+                  <p className="text-2xl font-bold text-blue-900 mt-1">
+                    {totalStats.totalMeasurements}
+                  </p>
+                </div>
+                <Target className="h-6 w-6 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-white border-green-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-green-600">Achieved</p>
+                  <p className="text-2xl font-bold text-green-900 mt-1">
+                    {totalStats.achievedMeasurements}
+                  </p>
+                </div>
+                <BarChart3 className="h-6 w-6 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-yellow-50 to-white border-yellow-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-yellow-600">Warning</p>
+                  <p className="text-2xl font-bold text-yellow-900 mt-1">
+                    {totalStats.warningMeasurements}
+                  </p>
+                </div>
+                <div className="h-6 w-6 bg-yellow-400 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">!</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-red-50 to-white border-red-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-red-600">Critical</p>
+                  <p className="text-2xl font-bold text-red-900 mt-1">
+                    {totalStats.criticalMeasurements}
+                  </p>
+                </div>
+                <div className="h-6 w-6 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">!</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(8)].map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <Skeleton className="h-24 w-full" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && !loading && (
-          <UnifiedError
-            type="data-error"
-            title="ไม่สามารถโหลดข้อมูลได้"
-            message={error}
-            showRetry
-            onRetry={fetchData}
-          />
-        )}
-
-        {/* Content */}
-        {!loading && !error && (
-          <>
-            {/* Overview Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-blue-50 to-white">
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-gray-600">ตัวชี้วัดทั้งหมด</div>
-                  <div className="text-2xl font-bold text-blue-600 mt-1">
-                    {stats.reduce((sum, s) => sum + s.total_items, 0)}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-green-50 to-white">
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-gray-600">บรรลุเป้าหมาย</div>
-                  <div className="text-2xl font-bold text-green-600 mt-1">
-                    {stats.reduce((sum, s) => sum + s.achieved_items, 0)}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-yellow-50 to-white">
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-gray-600">ต้องระวัง</div>
-                  <div className="text-2xl font-bold text-yellow-600 mt-1">
-                    {stats.reduce((sum, s) => sum + s.warning_items, 0)}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-red-50 to-white">
-                <CardContent className="p-4">
-                  <div className="text-sm font-medium text-gray-600">วิกฤต</div>
-                  <div className="text-2xl font-bold text-red-600 mt-1">
-                    {stats.reduce((sum, s) => sum + s.critical_items, 0)}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* KPI Categories Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {KPI_CATEGORY_CONFIGS.map((config) => {
-                const categoryStats = stats.find((s) => s.category === config.key);
-                const IconComponent = iconMap[config.icon];
-
-                return (
-                  <Card
-                    key={config.key}
-                    className="hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                    onClick={() => navigate(`/${config.key}`)}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div
-                          className="p-2 rounded-lg"
-                          style={{ backgroundColor: `${config.color}20` }}>
-                          <span style={{ color: config.color }}>
-                            <IconComponent className="h-5 w-5" />
-                          </span>
-                        </div>
-                        {categoryStats && renderTrendIcon(categoryStats.trend)}
-                      </div>
-                      <CardTitle className="text-lg mt-2">{config.name_th}</CardTitle>
-                      <CardDescription className="text-xs line-clamp-2">
-                        {config.description}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {categoryStats && (
-                        <>
-                          <div className="flex items-end justify-between mb-3">
-                            <div>
-                              <div className="text-xs text-gray-500">ผลการดำเนินงาน</div>
-                              <div
-                                className={`text-2xl font-bold ${getAchievementColor(categoryStats.overall_achievement)}`}>
-                                {categoryStats.overall_achievement}%
-                              </div>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {categoryStats.achieved_items}/{categoryStats.total_items} ตัวชี้วัด
-                            </Badge>
-                          </div>
-
-                          {/* Progress Bar */}
-                          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${categoryStats.overall_achievement}%`,
-                                backgroundColor:
-                                  categoryStats.overall_achievement >= 80
-                                    ? config.color
-                                    : categoryStats.overall_achievement >= 60
-                                      ? '#F59E0B'
-                                      : '#EF4444',
-                              }}
-                            />
-                          </div>
-
-                          {/* Quick Actions */}
-                          <div className="flex gap-2 mt-4">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 gap-1 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/${config.key}`);
-                              }}>
-                              <BarChart3 className="h-3 w-3" />
-                              ดูรายละเอียด
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {/* Quick Links */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">การดำเนินการด่วน</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-start gap-2"
-                    onClick={() => navigate('/safety/entry')}>
-                    <div className="flex items-center gap-2 w-full">
-                      <ClipboardList className="h-5 w-5 text-red-500" />
-                      <span className="font-semibold">กรอกข้อมูลวันนี้</span>
-                    </div>
-                    <span className="text-xs text-gray-500">บันทึกผลการดำเนินงานประจำวัน</span>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-start gap-2"
-                    onClick={() => navigate('/quality/dashboard')}>
-                    <div className="flex items-center gap-2 w-full">
-                      <BarChart3 className="h-5 w-5 text-blue-500" />
-                      <span className="font-semibold">ดูรายงาน</span>
-                    </div>
-                    <span className="text-xs text-gray-500">ตรวจสอบผลการดำเนินงาน</span>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="h-auto py-4 flex flex-col items-start gap-2"
-                    onClick={() => navigate('/hr/dept')}>
-                    <div className="flex items-center gap-2 w-full">
-                      <Users className="h-5 w-5 text-yellow-500" />
-                      <span className="font-semibold">ดูตามแผนก</span>
-                    </div>
-                    <span className="text-xs text-gray-500">ผลการดำเนินงานแยกตามแผนก</span>
-                  </Button>
+        {/* Overall Achievement */}
+        <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Overall Performance</h3>
+                <p className="text-xs text-gray-600 mt-1">
+                  Average achievement rate across all measurements
+                </p>
+              </div>
+              <div className="text-right">
+                <div
+                  className={`text-3xl font-bold ${getAchievementColor(overallAchievement).split(' ')[0]}`}>
+                  {overallAchievement}%
                 </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
+                <div className="text-xs text-gray-600 mt-1">
+                  {totalStats.achievedMeasurements} / {totalStats.totalMeasurements} Measurements
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${overallAchievement}%`,
+                  backgroundColor:
+                    overallAchievement >= 90
+                      ? '#16A34A'
+                      : overallAchievement >= 75
+                        ? '#2563EB'
+                        : overallAchievement >= 60
+                          ? '#F59E0B'
+                          : '#DC2626',
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Metrics Table */}
+        <TableContainer
+          icon={BarChart3}
+          title="Measurement Summary by Category"
+          totalCount={stats.length}
+          countUnit="category"
+          theme="blue"
+          loading={loading}
+          loadingRows={8}>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-gradient-to-r from-blue-50 to-indigo-100 sticky top-0 z-10">
+                <TableRow className="border-b border-gray-300">
+                  <TableHead className="text-left py-2 bg-blue-50">Category</TableHead>
+                  <TableHead className="text-center py-2 bg-blue-50">Measurements</TableHead>
+                  <TableHead className="text-center py-2 bg-blue-50">Achieved</TableHead>
+                  <TableHead className="text-center py-2 bg-blue-50">Warning</TableHead>
+                  <TableHead className="text-center py-2 bg-blue-50">Critical</TableHead>
+                  <TableHead className="text-center py-2 bg-blue-50">Achievement</TableHead>
+                  <TableHead className="text-center py-2 bg-blue-50">Trend</TableHead>
+                  <TableHead className="text-center py-2 bg-blue-50">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.map((stat, index) => {
+                  const Icon = stat.icon as LucideIcon;
+                  return (
+                    <TableRow
+                      key={stat.category}
+                      className="border-b border-gray-100 hover:bg-blue-50/30 transition-colors">
+                      <TableCell className="font-medium py-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-1.5 rounded-lg"
+                            style={{ backgroundColor: `${stat.color}20` }}>
+                            <Icon className="h-4 w-4" style={{ color: stat.color }} />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-sm">{stat.name}</div>
+                            <div className="text-xs text-gray-500">{stat.category}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        <span className="font-semibold text-sm">{stat.totalMeasurements}</span>
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        <span className="font-semibold text-green-600 text-sm">
+                          {stat.achievedMeasurements}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        <span className="font-semibold text-yellow-600 text-sm">
+                          {stat.warningMeasurements}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        <span className="font-semibold text-red-600 text-sm">
+                          {stat.criticalMeasurements}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        <div className="flex items-center justify-center gap-1">
+                          <div
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${getAchievementColor(stat.achievementRate)}`}>
+                            {stat.achievementRate}%
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        <div className="flex items-center justify-center">
+                          {getTrendIcon(stat.trend)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        <div className="flex items-center justify-center gap-1">
+                          {getStatusBadge(stat.warningMeasurements, stat.criticalMeasurements)}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => navigate(`/dashboard?category=${stat.category}`)}>
+                            <Eye className="h-3 w-3 mr-1" />
+                            View Details
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </TableContainer>
+      </StandardPageLayout>
     </ShellLayout>
   );
 }

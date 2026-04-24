@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -60,6 +60,8 @@ export function AdminUsersList({
   onRemoveUser,
 }: AdminUsersListProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -76,15 +78,20 @@ export function AdminUsersList({
     );
   }, [systemUsers, searchQuery]);
 
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   if (loading) {
-    return <TableContainer icon={Users} title="System Users" theme="blue" loading />;
+    return <TableContainer icon={Users} title="User Management" theme="blue" loading />;
   }
 
   if (systemUsers.length === 0) {
     return (
       <TableContainer
         icon={Users}
-        title="System Users"
+        title="User Management"
         theme="blue"
         empty
         emptyTitle="No users found"
@@ -97,7 +104,7 @@ export function AdminUsersList({
     return (
       <TableContainer
         icon={Users}
-        title="System Users"
+        title="User Management"
         theme="blue"
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -112,138 +119,157 @@ export function AdminUsersList({
   return (
     <TableContainer
       icon={Users}
-      title="System Users"
-      badge={`${filteredUsers.length} users`}
-      totalCount={filteredUsers.length}
+      title="User Management"
       searchValue={searchQuery}
       onSearchChange={setSearchQuery}
       searchPlaceholder="Search by name, username, email, role, or department..."
       theme="blue"
-      legendItems={[
-        { color: 'bg-red-500', label: 'Super Admin' },
-        { color: 'bg-blue-500', label: 'Admin' },
-        { color: 'bg-green-500', label: 'Manager' },
-        { color: 'bg-gray-500', label: 'User' },
-      ]}>
+      totalCount={filteredUsers.length}
+      countUnit="user"
+      pagination={{
+        currentPage,
+        totalPages: Math.ceil(filteredUsers.length / itemsPerPage),
+        totalItems: filteredUsers.length,
+        itemsPerPage,
+        onPageChange: setCurrentPage,
+        onItemsPerPageChange: setItemsPerPage,
+      }}>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-gradient-to-r from-blue-50 to-indigo-100 sticky top-0 z-10">
             <TableRow className={TABLE_STYLES.headerRow}>
-              <TableHead className={`w-12 bg-blue-50 ${TABLE_STYLES.headerCell} pl-6`}>#</TableHead>
-              <TableHead className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[150px]`}>
+              <TableHead
+                className={`flex-shrink-0 w-12 bg-blue-50 ${TABLE_STYLES.headerCell} pl-6`}>
+                #
+              </TableHead>
+              <TableHead
+                className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[150px] flex-shrink-0`}>
                 Name
               </TableHead>
-              <TableHead className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[120px]`}>
+              <TableHead
+                className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[120px] flex-shrink-0`}>
                 Username
               </TableHead>
-              <TableHead className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[200px]`}>
+              <TableHead
+                className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[200px] flex-shrink-0`}>
                 Email
               </TableHead>
-              <TableHead className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[100px]`}>
+              <TableHead
+                className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[100px] flex-shrink-0`}>
                 Role
               </TableHead>
-              <TableHead className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[180px]`}>
+              <TableHead
+                className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[180px] flex-shrink-0`}>
                 Department
               </TableHead>
-              <TableHead className={`w-20 bg-blue-50 ${TABLE_STYLES.headerCell} pr-6`}>
+              <TableHead
+                className={`flex-shrink-0 w-20 bg-blue-50 ${TABLE_STYLES.headerCell} pr-6`}>
                 Actions
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((u, idx) => (
-              <TableRow
-                key={u.id}
-                className={`${TABLE_STYLES.dataRow} hover:bg-blue-50/30 cursor-pointer`}
-                onClick={() => onEditUser(u)}>
-                <TableCell className={`${TABLE_STYLES.rowNumber} bg-blue-50/50`}>
-                  {idx + 1}
-                </TableCell>
-                <TableCell className="font-medium py-4 bg-white">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-8 h-8 rounded flex items-center justify-center"
-                      style={{ backgroundColor: '#3B82F618' }}>
-                      <span className="text-sm font-semibold" style={{ color: '#3B82F6' }}>
-                        {u.full_name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <span>{u.full_name}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono text-sm py-4 bg-gray-50/30">{u.username}</TableCell>
-                <TableCell className="py-4 bg-white">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-700">{u.email}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="py-4 bg-gray-50/30">{getRoleBadge(u.role)}</TableCell>
-                <TableCell className="py-4 bg-white">
-                  {(() => {
-                    const hasAccess = u.department_access && u.department_access.length > 0;
-                    const totalDepts = departments.length;
-                    const hasAllDepts = hasAccess && u.department_access?.length === totalDepts;
-
-                    if (!hasAccess) {
-                      return (
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm text-gray-500">
-                            {u.department_name || 'No department'}
-                          </span>
-                        </div>
-                      );
-                    }
-
-                    if (hasAllDepts) {
-                      return (
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-green-500" />
-                          <span className="text-sm font-medium text-green-700">
-                            All Departments
-                          </span>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap gap-1">
-                          {u.department_access?.slice(0, 3).map((d, i) => (
-                            <Badge
-                              key={i}
-                              variant="secondary"
-                              className="text-xs bg-blue-100 text-blue-700 border-blue-200">
-                              {d.department_name || d.department_id}
-                            </Badge>
-                          ))}
-                          {(u.department_access?.length || 0) > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{(u.department_access?.length || 0) - 3} more
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {u.department_access?.length || 0} of {totalDepts} departments
-                        </div>
+            {filteredUsers
+              .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+              .map((u, idx) => (
+                <TableRow
+                  key={u.id}
+                  className={`${TABLE_STYLES.dataRow} hover:bg-blue-50/30 cursor-pointer`}
+                  onClick={() => onEditUser(u)}>
+                  <TableCell
+                    className={`${TABLE_STYLES.rowNumber} bg-blue-50/50 flex-shrink-0 w-12`}>
+                    {(currentPage - 1) * itemsPerPage + idx + 1}
+                  </TableCell>
+                  <TableCell className="font-medium py-4 bg-white min-w-[150px] flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-8 h-8 rounded flex items-center justify-center"
+                        style={{ backgroundColor: '#3B82F618' }}>
+                        <span className="text-sm font-semibold" style={{ color: '#3B82F6' }}>
+                          {u.full_name.charAt(0).toUpperCase()}
+                        </span>
                       </div>
-                    );
-                  })()}
-                </TableCell>
-                <TableCell className={`${TABLE_STYLES.actionCell} bg-gray-50/30`}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditUser(u);
-                    }}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                      <span>{u.full_name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm py-4 bg-gray-50/30 min-w-[120px] flex-shrink-0">
+                    {u.username}
+                  </TableCell>
+                  <TableCell className="py-4 bg-white min-w-[200px] flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm text-gray-700">{u.email}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 bg-gray-50/30 min-w-[100px] flex-shrink-0">
+                    {getRoleBadge(u.role)}
+                  </TableCell>
+                  <TableCell className="py-4 bg-white min-w-[180px] flex-shrink-0">
+                    {(() => {
+                      const hasAccess = u.department_access && u.department_access.length > 0;
+                      const totalDepts = departments.length;
+                      const hasAllDepts = hasAccess && u.department_access?.length === totalDepts;
+
+                      if (!hasAccess) {
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-500">
+                              {u.department_name || 'No department'}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      if (hasAllDepts) {
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-green-500" />
+                            <span className="text-sm font-medium text-green-700">
+                              All Departments
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap gap-1">
+                            {u.department_access?.slice(0, 3).map((d, i) => (
+                              <Badge
+                                key={i}
+                                variant="secondary"
+                                className="text-xs bg-blue-100 text-blue-700 border-blue-200">
+                                {d.department_name || d.department_id}
+                              </Badge>
+                            ))}
+                            {(u.department_access?.length || 0) > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{(u.department_access?.length || 0) - 3} more
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {u.department_access?.length || 0} of {totalDepts} departments
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell
+                    className={`${TABLE_STYLES.actionCell} bg-gray-50/30 flex-shrink-0 w-20`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditUser(u);
+                      }}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </div>

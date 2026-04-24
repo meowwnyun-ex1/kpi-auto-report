@@ -2,25 +2,9 @@
  * Application Constants - Only truly reused values
  */
 
-// Common toast messages used across multiple components
-export const TOAST_MESSAGES = {
-  // Success messages
-  SAVE_SUCCESS: 'Saved successfully',
-  DELETE_SUCCESS: 'Deleted successfully',
-  ADD_SUCCESS: 'Added successfully',
-
-  // Error messages
-  SAVE_FAILED: 'Unable to save. Please try again.',
-  DELETE_FAILED: 'Unable to delete. Please try again.',
-  LOAD_FAILED: 'Unable to load data. Please try again.',
-  CONNECTION_ERROR: 'Unable to connect. Please check your connection and try again.',
-  ACCESS_DENIED: 'You do not have permission to perform this action.',
-  INVALID_INPUT: 'Invalid input. Please check and try again.',
-
-  // Validation messages
-  REQUIRED_FIELD: 'This field is required.',
-  INVALID_FORMAT: 'Invalid format. Please check and try again.',
-} as const;
+// Re-export from unified notification system for backward compatibility
+// TODO: Update all imports to use @/constants/notifications directly
+export { TOAST_MESSAGES } from '@/constants/notifications';
 
 // Common loading messages
 export const LOADING_MESSAGES = {

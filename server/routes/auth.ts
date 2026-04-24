@@ -656,4 +656,65 @@ router.post(
   }
 );
 
+/**
+ * @route POST /api/auth/create-super-admin
+ * @desc Temporary endpoint to create Super@Admin user
+ * @access Public (temporary for setup)
+ */
+router.post('/create-super-admin', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const db = await getKpiDb();
+
+    // Check if user already exists
+    const checkResult = await db
+      .request()
+      .input('username', 'Super@Admin')
+      .query(`SELECT id FROM users WHERE username = @username`);
+
+    if (checkResult.recordset.length > 0) {
+      // Update existing user
+      const hashedPassword = await bcrypt.hash('i@NN636195', 10);
+
+      await db
+        .request()
+        .input('username', 'Super@Admin')
+        .input('password_hash', hashedPassword)
+        .input('full_name', 'Super Administrator')
+        .input('role', 'superadmin')
+        .input('email', 'superadmin@denso.com').query(`
+          UPDATE users 
+          SET password_hash = @password_hash, 
+              full_name = @full_name, 
+              role = @role,
+              email = @email,
+              is_active = 1
+          WHERE username = @username
+        `);
+
+      logger.info('Updated existing Super@Admin user');
+      res.json({ success: true, message: 'User updated successfully' });
+    } else {
+      // Create new user
+      const hashedPassword = await bcrypt.hash('i@NN636195', 10);
+
+      await db
+        .request()
+        .input('username', 'Super@Admin')
+        .input('email', 'superadmin@denso.com')
+        .input('password_hash', hashedPassword)
+        .input('full_name', 'Super Administrator')
+        .input('role', 'superadmin').query(`
+          INSERT INTO users (username, email, password_hash, full_name, role, is_active)
+          VALUES (@username, @email, @password_hash, @full_name, @role, 1)
+        `);
+
+      logger.info('Created new Super@Admin user');
+      res.json({ success: true, message: 'User created successfully' });
+    }
+  } catch (error) {
+    logger.error('Create super admin error', error);
+    next(error);
+  }
+});
+
 export default router;

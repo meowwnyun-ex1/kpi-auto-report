@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { getKpiDb } from '../config/database';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import * as sql from 'mssql';
 
 const router = express.Router();
 
@@ -157,9 +158,59 @@ router.get('/overview', async (_req: Request, res: Response, next: NextFunction)
 });
 
 /**
+ * @route GET /api/stats/all/:fiscal_year
+ * @desc Get KPI statistics for all departments
+ * @access Public
+ */
+router.get('/all/:fiscal_year', async (req, res) => {
+  try {
+    const { fiscal_year } = req.params;
+    const db = await getKpiDb();
+    const fiscalYear = parseInt(fiscal_year);
+
+    // Get stats for all departments
+    const statsResult = await db.request().input('fiscal_year', sql.Int, fiscalYear).query(`
+      SELECT 
+        kc.[key] as category_key,
+        kc.name as category_name,
+        COUNT(*) as total_targets,
+        SUM(CASE WHEN yt.fy_target IS NOT NULL THEN 1 ELSE 0 END) as targets_set,
+        SUM(CASE WHEN mt.result IS NOT NULL THEN 1 ELSE 0 END) as results_entered,
+        SUM(CASE WHEN mt.result IS NOT NULL AND mt.result >= yt.fy_target THEN 1 ELSE 0 END) as achieved_targets
+      FROM kpi_yearly_targets yt
+      LEFT JOIN kpi_categories kc ON yt.category_id = kc.id
+      LEFT JOIN kpi_monthly_targets mt ON yt.id = mt.yearly_target_id AND mt.fiscal_year = yt.fiscal_year
+      WHERE yt.fiscal_year = @fiscal_year
+      GROUP BY kc.[key], kc.name
+      ORDER BY kc.[key]
+    `);
+
+    const stats = statsResult.recordset;
+
+    // Convert to expected format
+    const statsData: Record<string, any> = {};
+    stats.forEach((row: any) => {
+      statsData[row.category_key] = {
+        category_name: row.category_name,
+        total_targets: row.total_targets || 0,
+        targets_set: row.targets_set || 0,
+        results_entered: row.results_entered || 0,
+        achieved_targets: row.achieved_targets || 0,
+        total_results: row.results_entered || 0,
+      };
+    });
+
+    res.json({ success: true, data: statsData });
+  } catch (error: any) {
+    logger.error('Error fetching all department stats', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch stats' });
+  }
+});
+
+/**
  * @route GET /api/stats/system-health
  * @desc Get system health metrics
- * @access Public
+ * @access Private (admin only)
  */
 router.get('/system-health', async (_req: Request, res: Response, next: NextFunction) => {
   try {
