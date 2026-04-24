@@ -390,6 +390,7 @@ export function AppSidebar() {
                               ))}
                           </Link>
                         </SidebarMenuButton>
+                      </CollapsibleTrigger>
                       {!isDisabled && (
                         <CollapsibleContent>
                           <SidebarMenuSub className="ml-6 mt-2 space-y-1">
