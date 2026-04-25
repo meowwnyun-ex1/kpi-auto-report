@@ -19,7 +19,7 @@ import {
   ChevronDown,
   MoreHorizontal,
 } from 'lucide-react';
-import { TableContainer, TABLE_STYLES } from '@/components/shared/TableContainer';
+import { TableContainer, TABLE_STYLES } from '@/shared/components/TableContainer';
 
 interface KPIOverviewProps {
   activeTab: string;
@@ -421,3 +421,5 @@ export function KPIOverview({
     </TableContainer>
   );
 }
+
+export default KPIOverview;

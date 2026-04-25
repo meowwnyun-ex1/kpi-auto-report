@@ -19,24 +19,22 @@ interface KPIAddDialogProps {
   onAdd: () => void;
 }
 
-export function KPIAddDialog({
-  open,
-  onOpenChange,
-  addType,
-  onAdd,
-}: KPIAddDialogProps) {
+export function KPIAddDialog({ open, onOpenChange, addType, onAdd }: KPIAddDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            Add New {addType === 'category' ? 'Category' : addType === 'subcategory' ? 'Subcategory' : 'Measurement'}
+            Add New{' '}
+            {addType === 'category'
+              ? 'Category'
+              : addType === 'subcategory'
+                ? 'Subcategory'
+                : 'Measurement'}
           </DialogTitle>
-          <DialogDescription>
-            Add a new item to the KPI structure.
-          </DialogDescription>
+          <DialogDescription>Add a new item to the KPI structure.</DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           {addType === 'category' && (
             <div className="space-y-2">
@@ -44,14 +42,14 @@ export function KPIAddDialog({
               <Input id="newCategoryName" placeholder="Enter category name" />
             </div>
           )}
-          
+
           {addType === 'subcategory' && (
             <div className="space-y-2">
               <Label htmlFor="newSubcategoryName">Subcategory Name</Label>
               <Input id="newSubcategoryName" placeholder="Enter subcategory name" />
             </div>
           )}
-          
+
           {addType === 'measurement' && (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -77,16 +75,16 @@ export function KPIAddDialog({
             </div>
           )}
         </div>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={onAdd}>
-            Add {addType}
-          </Button>
+          <Button onClick={onAdd}>Add {addType}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+export default KPIAddDialog;

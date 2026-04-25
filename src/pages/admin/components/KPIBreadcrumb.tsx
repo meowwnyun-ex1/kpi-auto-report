@@ -26,8 +26,7 @@ export function KPIBreadcrumb({
       <Button
         variant={activeTab === 'overview' ? 'default' : 'ghost'}
         onClick={onBackToCategories}
-        className="font-medium"
-      >
+        className="font-medium">
         Categories
       </Button>
       {activeCategory && (
@@ -36,9 +35,8 @@ export function KPIBreadcrumb({
           <Button
             variant={activeTab === 'subcategory' ? 'default' : 'ghost'}
             onClick={onBackToSubcategories}
-            className="font-medium"
-          >
-            {categories.find(c => c.key === activeCategory)?.name || activeCategory}
+            className="font-medium">
+            {categories.find((c) => c.key === activeCategory)?.name || activeCategory}
           </Button>
         </>
       )}
@@ -46,10 +44,12 @@ export function KPIBreadcrumb({
         <>
           <ChevronRight className="w-4 h-4 text-gray-400" />
           <span className="font-medium text-gray-600">
-            {subcategories.find(s => s.key === activeSubcategory)?.name || activeSubcategory}
+            {subcategories.find((s) => s.key === activeSubcategory)?.name || activeSubcategory}
           </span>
         </>
       )}
     </div>
   );
 }
+
+export default KPIBreadcrumb;

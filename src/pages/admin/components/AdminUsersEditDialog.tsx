@@ -35,7 +35,7 @@ import {
   Shield,
   Crown,
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/shared/hooks/use-toast';
 import { HelpTooltip } from '@/components/ui/help-tooltip';
 import { TOAST_MESSAGES } from '@/shared/constants';
 
@@ -397,3 +397,5 @@ export function AdminUsersEditDialog({
     </Dialog>
   );
 }
+
+export default AdminUsersEditDialog;

@@ -19,24 +19,24 @@ interface KPIEditDialogProps {
   onEdit: () => void;
 }
 
-export function KPIEditDialog({
-  open,
-  onOpenChange,
-  editType,
-  onEdit,
-}: KPIEditDialogProps) {
+export function KPIEditDialog({ open, onOpenChange, editType, onEdit }: KPIEditDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            Edit {editType === 'category' ? 'Category' : editType === 'subcategory' ? 'Subcategory' : 'Measurement'}
+            Edit{' '}
+            {editType === 'category'
+              ? 'Category'
+              : editType === 'subcategory'
+                ? 'Subcategory'
+                : 'Measurement'}
           </DialogTitle>
           <DialogDescription>
             Make changes to the KPI structure. This will affect all related data.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           {editType === 'category' && (
             <div className="space-y-2">
@@ -44,14 +44,14 @@ export function KPIEditDialog({
               <Input id="categoryName" placeholder="Enter category name" />
             </div>
           )}
-          
+
           {editType === 'subcategory' && (
             <div className="space-y-2">
               <Label htmlFor="subcategoryName">Subcategory Name</Label>
               <Input id="subcategoryName" placeholder="Enter subcategory name" />
             </div>
           )}
-          
+
           {editType === 'measurement' && (
             <div className="space-y-4">
               <div className="space-y-2">
@@ -77,16 +77,16 @@ export function KPIEditDialog({
             </div>
           )}
         </div>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={onEdit}>
-            Save Changes
-          </Button>
+          <Button onClick={onEdit}>Save Changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+export default KPIEditDialog;

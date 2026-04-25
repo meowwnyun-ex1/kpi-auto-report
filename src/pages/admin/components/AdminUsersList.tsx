@@ -10,7 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Edit, Mail, Building2, Users } from 'lucide-react';
-import { TableContainer, TABLE_STYLES } from '@/components/shared/TableContainer';
+import { TableContainer, TABLE_STYLES } from '@/shared/components/TableContainer';
 
 interface SystemUser {
   id: number;
@@ -276,3 +276,5 @@ export function AdminUsersList({
     </TableContainer>
   );
 }
+
+export default AdminUsersList;
