@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { useNavigate } from 'react-router-dom';
 import { storage } from '@/shared/utils';
 import { getApiUrl } from '../config/api';
-import { createSessionTimeoutChecker } from '@/shared/utils/session-manager';
+import { createSessionTimeoutChecker } from '@/shared/utils';
 
 interface User {
   id: number;

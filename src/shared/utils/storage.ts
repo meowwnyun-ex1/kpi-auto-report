@@ -1,99 +1,80 @@
 /**
- * Storage Utilities - Centralized localStorage management
+ * Local Storage Utilities
+ * Centralized storage management for the application
  */
 
-// Storage keys
-export const STORAGE_KEYS = {
-  AUTH_TOKEN: 'admin_token',
-  AUTH_LOGIN_TIME: 'admin_login_time',
-  USER_DATA: 'admin_user',
-  USER_PREFERENCES: 'user_preferences',
-  SIDEBAR_STATE: 'sidebar_state',
-} as const;
-
-// Storage utility functions
 export const storage = {
-  // Auth token management
-  getAuthToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-  },
-
-  setAuthToken(token: string): void {
-    localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
-  },
-
-  removeAuthToken(): void {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-  },
-
-  // Login time management
-  getLoginTime(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.AUTH_LOGIN_TIME);
-  },
-
-  setLoginTime(): void {
-    localStorage.setItem(STORAGE_KEYS.AUTH_LOGIN_TIME, Date.now().toString());
-  },
-
-  removeLoginTime(): void {
-    localStorage.removeItem(STORAGE_KEYS.AUTH_LOGIN_TIME);
-  },
-
-  // User data management
-  getUserData(): any | null {
-    const userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
-    if (userData) {
-      try {
-        return JSON.parse(userData);
-      } catch {
-        return null;
-      }
+  /**
+   * Get item from localStorage
+   */
+  get<T>(key: string): T | null {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch (error) {
+      console.error(`Error getting storage item ${key}:`, error);
+      return null;
     }
-    return null;
   },
 
-  setUserData(userData: any): void {
-    localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+  /**
+   * Set item in localStorage
+   */
+  set<T>(key: string, value: T): void {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error(`Error setting storage item ${key}:`, error);
+    }
   },
 
-  removeUserData(): void {
-    localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+  /**
+   * Remove item from localStorage
+   */
+  remove(key: string): void {
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error(`Error removing storage item ${key}:`, error);
+    }
   },
 
-  // Clear all auth data
-  clearAuthData(): void {
-    this.removeAuthToken();
-    this.removeLoginTime();
-    this.removeUserData();
+  /**
+   * Clear all localStorage
+   */
+  clear(): void {
+    try {
+      localStorage.clear();
+    } catch (error) {
+      console.error('Error clearing storage:', error);
+    }
   },
 
-  // Generic storage methods
-  getItem(key: string): string | null {
-    return localStorage.getItem(key);
+  /**
+   * Check if item exists in localStorage
+   */
+  exists(key: string): boolean {
+    return localStorage.getItem(key) !== null;
   },
 
-  setItem(key: string, value: string): void {
-    localStorage.setItem(key, value);
+  /**
+   * Get authentication token
+   */
+  getAuthToken(): string | null {
+    return this.get<string>('auth_token');
   },
 
-  removeItem(key: string): void {
-    localStorage.removeItem(key);
+  /**
+   * Set authentication token
+   */
+  setAuthToken(token: string): void {
+    this.set('auth_token', token);
   },
 
-  // Check if session is valid (16 hours)
-  isSessionValid(): boolean {
-    const loginTime = this.getLoginTime();
-    if (!loginTime) return false;
-
-    const currentTime = Date.now();
-    const timeElapsed = currentTime - parseInt(loginTime);
-    const SESSION_TIMEOUT = 16 * 60 * 60 * 1000; // 16 hours
-
-    return timeElapsed < SESSION_TIMEOUT;
-  },
-
-  // Extend session
-  extendSession(): void {
-    this.setLoginTime();
+  /**
+   * Remove authentication token
+   */
+  removeAuthToken(): void {
+    this.remove('auth_token');
   },
 };
