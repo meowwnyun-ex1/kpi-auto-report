@@ -257,13 +257,8 @@ try {
     exit 1
 }
 
-# Save PM2 process list for auto-restart
-Write-Host "Saving PM2 process list..." -ForegroundColor Blue
-try {
-    & pnpm pm2:save
-} catch {
-    Write-Host "Warning: PM2 save failed, continuing..." -ForegroundColor Yellow
-}
+# PM2 auto-restart disabled to prevent Windows Defender false positive
+Write-Host "PM2 auto-restart disabled for security" -ForegroundColor Yellow
 
 # Wait for server to start
 Write-Host "Waiting for server to start..." -ForegroundColor Blue
@@ -328,13 +323,8 @@ if (Test-Path $nginxPath) {
     Write-Host "WARNING: Nginx not found at $nginxPath, skipping nginx configuration" -ForegroundColor Yellow
 }
 
-# Setup PM2 auto-restart
-Write-Host "Setting up PM2 auto-restart..." -ForegroundColor Blue
-try {
-    & pnpm pm2:resurrect
-} catch {
-    Write-Host "Warning: PM2 resurrect failed, continuing..." -ForegroundColor Yellow
-}
+# PM2 auto-restart disabled to prevent Windows Defender false positive
+Write-Host "Skipping PM2 auto-restart setup (security measure)" -ForegroundColor Yellow
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
@@ -344,7 +334,7 @@ Write-Host ""
 Write-Host "KPI is now running at: http://10.73.148.75/kpi-auto-report/" -ForegroundColor Cyan
 Write-Host "API Server: http://localhost:4007" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "PM2 processes will auto-restart on system reboot" -ForegroundColor Gray
+Write-Host "PM2 processes will NOT auto-restart (manual restart required)" -ForegroundColor Yellow
 Write-Host ""
 
 Read-Host "Press Enter to exit"

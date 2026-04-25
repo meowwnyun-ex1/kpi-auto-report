@@ -8,11 +8,11 @@ const config = {
       // Cluster mode - 2 instances for zero-downtime deployment
       instances: 2,
       exec_mode: 'cluster',
-      autorestart: true,
+      autorestart: false,
       watch: false,
       max_memory_restart: '1G',
-      // Restart every day at 4:00 AM (avoid memory leaks, refresh connections)
-      cron_restart: '0 4 * * *',
+      // Auto-restart disabled to prevent Windows Defender false positive
+      // cron_restart: '0 4 * * *',
       // Graceful shutdown timeout (30 seconds)
       kill_timeout: 30000,
       // Wait for app to be ready before killing old instance
