@@ -11,7 +11,7 @@ import {
   formatValueWithPriority,
   formatDiffWithPriority,
   formatTargetStatusWithPriority,
-} from '@/constants/text-priority-colors';
+} from '@/shared/constants/text-priority-colors';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Target } from 'lucide-react';
 
 // ============================================
@@ -388,5 +388,5 @@ export function PriorityKpiCard({
 // QUICK EXPORTS
 // ============================================
 
-export type { TextPriority } from '@/constants/text-priority-colors';
-export { TEXT_PRIORITY_COLORS } from '@/constants/text-priority-colors';
+export type { TextPriority } from '@/shared/constants/text-priority-colors';
+export { TEXT_PRIORITY_COLORS } from '@/shared/constants/text-priority-colors';

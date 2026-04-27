@@ -10,11 +10,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Target, CalendarDays, CheckCircle, Circle } from 'lucide-react';
-import { TABLE_COLORS } from '@/constants/colors';
-import { TableContainer } from '@/components/shared/TableContainer';
+import { TABLE_COLORS } from '@/shared/constants/colors';
+import { TableContainer } from '@/shared/components/TableContainer';
 import { MONTHS } from '../shared';
 import { YearlyTarget } from '../shared';
-import { kpiNotifications } from '@/constants/notifications';
+import { kpiNotifications } from '@/shared/constants/notifications';
 
 interface MonthlyTargetsTableProps {
   filteredYearlyTargets: YearlyTarget[];
@@ -61,7 +61,7 @@ export function MonthlyTargetsTable({
     );
   }
 
-  if (filteredYearlyTargets.length === 0) {
+  if (!filteredYearlyTargets || filteredYearlyTargets.length === 0) {
     return (
       <TableContainer
         icon={CalendarDays}
@@ -96,7 +96,13 @@ export function MonthlyTargetsTable({
             onClick={() => {
               // Fill all rows with equal distribution
               filteredYearlyTargets.forEach((row) => {
-                const monthlyTarget = Math.floor(row.remaining_quota / 12); // Distribute evenly
+                const setMonths = MONTHS.filter((m) => {
+                  const mt = getMonthlyTarget(row.id, m.value);
+                  return mt?.target;
+                }).length;
+                const remainingMonths = 12 - setMonths;
+                const monthlyTarget =
+                  remainingMonths > 0 ? Math.floor(row.remaining_quota / remainingMonths) : 0;
                 fillAllMonths(row.id, monthlyTarget, toast);
               });
               kpiNotifications.targetsDistributed(toast, filteredYearlyTargets.length);
@@ -110,47 +116,49 @@ export function MonthlyTargetsTable({
         <Table>
           <TableHeader className="bg-blue-50">
             <TableRow className="border-b border-blue-200">
-              <TableHead className="flex-shrink-0 w-16 text-center text-xs font-bold text-gray-700 bg-blue-100 pl-6 py-2">
+              <TableHead className="flex-shrink-0 w-16 text-center text-xs font-bold text-black bg-blue-100 pl-6 py-2">
                 #
               </TableHead>
-              <TableHead className="min-w-[150px] text-xs font-bold text-gray-700 bg-blue-100 py-2">
+              <TableHead className="min-w-[150px] text-xs font-bold text-black bg-blue-100 py-2">
                 <div className="flex items-center gap-2">
                   <Target className="w-4 h-4 text-blue-600" />
                   Measurement
                 </div>
               </TableHead>
-              <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-gray-700 bg-blue-100 py-2">
+              <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-red-600 bg-blue-100 py-2">
                 <div className="flex items-center justify-end gap-1">
                   <CalendarDays className="w-3 h-3" />
-                  Target
+                  FY Target
                 </div>
               </TableHead>
-              <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-blue-600 bg-blue-100 py-2">
+              <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-black bg-blue-100 py-2">
                 <div className="flex items-center justify-end gap-1">
                   <Target className="w-3 h-3" />
                   Usage
                 </div>
               </TableHead>
-              <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-emerald-600 bg-blue-100 py-2">
+              <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-black bg-blue-100 py-2">
                 <div className="flex items-center justify-end gap-1">
                   <Target className="w-3 h-3" />
                   Remain
                 </div>
               </TableHead>
-              <TableHead className="min-w-[80px] flex-shrink-0 text-center text-xs font-bold text-gray-700 bg-blue-100 py-2">
+              <TableHead className="min-w-[80px] flex-shrink-0 text-center text-xs font-bold text-black bg-blue-100 py-2">
                 Unit
               </TableHead>
-              <TableHead className="min-w-[80px] flex-shrink-0 text-center text-xs font-bold text-gray-700 bg-blue-100 py-2">
+              <TableHead className="min-w-[80px] flex-shrink-0 text-center text-xs font-bold text-black bg-blue-100 py-2">
                 Main
               </TableHead>
-              <TableHead className="min-w-[100px] flex-shrink-0 text-center text-xs font-bold text-gray-700 bg-blue-100 py-2">
+              <TableHead className="min-w-[100px] flex-shrink-0 text-center text-xs font-bold text-black bg-blue-100 py-2">
                 Related
               </TableHead>
-              {MONTHS.filter((m) => m.value !== 'all').map((month) => (
+              {MONTHS.map((month) => (
                 <TableHead
                   key={month.value}
-                  className="text-center py-2 bg-blue-100 border-blue-200 min-w-[100px] flex-shrink-0">
-                  <div className="text-xs font-bold text-gray-700">{month.label}</div>
+                  className="text-center py-3 bg-gradient-to-b from-blue-100 to-blue-50 border-l-2 border-blue-300 min-w-[110px] flex-shrink-0">
+                  <div className="flex flex-col items-center">
+                    <div className="text-xs font-bold text-black">{month.label}</div>
+                  </div>
                 </TableHead>
               ))}
             </TableRow>
@@ -172,7 +180,7 @@ export function MonthlyTargetsTable({
                   <TableCell
                     className={`text-right py-2 ${TABLE_COLORS.cell.alternate} min-w-[100px] flex-shrink-0`}>
                     <div className="text-right">
-                      <div className={`font-mono text-sm font-bold ${TABLE_COLORS.text.target}`}>
+                      <div className={`font-mono text-sm font-bold text-cyan-600`}>
                         {row.total_target.toLocaleString()}
                       </div>
                     </div>
@@ -180,7 +188,7 @@ export function MonthlyTargetsTable({
                   <TableCell
                     className={`text-right py-2 ${TABLE_COLORS.cell.alternate} min-w-[100px] flex-shrink-0`}>
                     <div className="text-right">
-                      <div className={`font-mono text-sm font-bold ${TABLE_COLORS.text.usage}`}>
+                      <div className={`font-mono text-sm font-bold text-amber-600`}>
                         {row.used_quota.toLocaleString()}
                       </div>
                     </div>
@@ -188,7 +196,7 @@ export function MonthlyTargetsTable({
                   <TableCell
                     className={`text-right py-2 ${TABLE_COLORS.cell.alternate} min-w-[100px] flex-shrink-0`}>
                     <div className="text-right">
-                      <div className={`font-mono text-sm font-bold ${TABLE_COLORS.text.remaining}`}>
+                      <div className={`font-mono text-sm font-bold text-emerald-600`}>
                         {row.remaining_quota?.toLocaleString() ||
                           row.total_target?.toLocaleString() ||
                           '---'}
@@ -221,8 +229,8 @@ export function MonthlyTargetsTable({
                       </div>
                     </div>
                   </TableCell>
-                  {MONTHS.filter((m) => m.value !== 'all').map((month) => {
-                    const monthValue = typeof month.value === 'number' ? month.value : 0;
+                  {MONTHS.map((month) => {
+                    const monthValue = month.value;
                     const status = getTargetStatus(row.id, monthValue);
                     const StatusIcon =
                       status.icon === 'CheckCircle'
@@ -235,21 +243,21 @@ export function MonthlyTargetsTable({
                     return (
                       <TableCell
                         key={month.value}
-                        className={`text-center py-2 ${TABLE_COLORS.cell.data} ${TABLE_COLORS.border.light} min-w-[100px] flex-shrink-0`}>
-                        <div className="flex flex-col items-center gap-1">
+                        className={`text-center py-3 ${TABLE_COLORS.cell.data} border-l-2 border-blue-200 min-w-[110px] flex-shrink-0`}>
+                        <div className="flex flex-col items-center">
                           {canEdit ? (
                             <Input
                               type="number"
                               min="0"
-                              max={row.remaining_quota}
-                              className="w-20 h-8 text-center text-xs bg-white border-gray-200 focus:border-blue-400 font-mono mx-auto"
+                              max={row.total_target}
+                              className="w-20 h-8 text-center text-xs bg-white border-blue-200 focus:border-blue-400 font-mono mx-auto"
                               defaultValue={mt?.target?.toString() || ''}
                               onBlur={(e) => {
                                 const value = parseFloat(e.target.value) || 0;
-                                if (value > row.remaining_quota) {
+                                if (value > row.total_target) {
                                   kpiNotifications.quotaExceeded(
                                     toast,
-                                    row.remaining_quota.toLocaleString()
+                                    row.total_target.toLocaleString()
                                   );
                                   e.target.value = mt?.target?.toString() || '';
                                   return;
@@ -260,7 +268,12 @@ export function MonthlyTargetsTable({
                               }}
                             />
                           ) : (
-                            <div className="font-mono text-xs font-bold text-gray-700 min-h-[32px] flex items-center justify-center">
+                            <div
+                              className={`font-mono text-xs font-bold px-2 py-1 rounded min-h-[32px] flex items-center justify-center ${
+                                mt?.target === 0 || !mt?.target
+                                  ? 'text-gray-400 bg-gray-50'
+                                  : 'text-cyan-600 bg-cyan-50'
+                              }`}>
                               {mt?.target?.toLocaleString() || '---'}
                             </div>
                           )}

@@ -27,7 +27,7 @@ import {
   Calendar,
   TrendingUp,
 } from 'lucide-react';
-import { TableContainer, TABLE_STYLES } from '@/components/shared/TableContainer';
+import { TableContainer, TABLE_STYLES } from '@/shared/components/TableContainer';
 import { AttachmentPanel } from '@/components/kpi/AttachmentPanel';
 import { AddTargetModal } from '@/components/kpi/AddTargetModal';
 import { MONTHS, Category } from '../shared';
@@ -187,8 +187,14 @@ export function YearlyTargetsTable({
                 <TableHead className="text-right text-xs font-bold text-gray-700 bg-gray-50 py-2 min-w-[100px] flex-shrink-0">
                   <div className="flex items-center justify-end gap-1">
                     <TrendingUp className="w-3 h-3" />
-                    Target
+                    FY Target
                   </div>
+                </TableHead>
+                <TableHead className="text-right text-xs font-bold text-amber-600 bg-gray-50 py-2 min-w-[80px] flex-shrink-0">
+                  Usage
+                </TableHead>
+                <TableHead className="text-right text-xs font-bold text-emerald-600 bg-gray-50 py-2 min-w-[80px] flex-shrink-0">
+                  Remain
                 </TableHead>
                 <TableHead className="text-center text-xs font-bold text-gray-700 bg-gray-50 py-2 min-w-[80px] flex-shrink-0">
                   Unit
@@ -226,6 +232,18 @@ export function YearlyTargetsTable({
                           <div className="font-mono text-sm font-bold text-indigo-700">
                             {row.total_target.toLocaleString()}
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right py-2 bg-gray-50/30 min-w-[80px] flex-shrink-0">
+                        <div className="font-mono text-sm font-bold text-amber-600">
+                          {row.used_quota?.toLocaleString() || '0'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right py-2 bg-gray-50/30 min-w-[80px] flex-shrink-0">
+                        <div className="font-mono text-sm font-bold text-emerald-600">
+                          {row.remaining_quota?.toLocaleString() ||
+                            row.total_target?.toLocaleString() ||
+                            '---'}
                         </div>
                       </TableCell>
                       <TableCell className="text-center py-2 bg-gray-50/30 min-w-[80px] flex-shrink-0">

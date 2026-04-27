@@ -1,23 +1,14 @@
-import {
-  Shield,
-  Award,
-  Truck,
-  Scale,
-  Heart,
-  Users,
-  Leaf,
-  DollarSign,
-} from 'lucide-react';
+import { Shield, Award, Truck, Scale, Heart, Users, Leaf, DollarSign } from 'lucide-react';
 
 export const KPI_CATEGORIES = [
-  { id: 'safety', name: 'Safety', icon: Shield, color: '#DC2626' },
-  { id: 'quality', name: 'Quality', icon: Award, color: '#16A34A' },
-  { id: 'delivery', name: 'Delivery', icon: Truck, color: '#2563EB' },
-  { id: 'compliance', name: 'Compliance', icon: Scale, color: '#9333EA' },
-  { id: 'hr', name: 'HR', icon: Users, color: '#EA580C' },
-  { id: 'attractive', name: 'Attractive', icon: Heart, color: '#DB2777' },
-  { id: 'environment', name: 'Environment', icon: Leaf, color: '#0D9488' },
-  { id: 'cost', name: 'Cost', icon: DollarSign, color: '#4F46E5' },
+  { id: 'safety', key: 'safety', name: 'Safety', icon: Shield, color: '#DC2626' },
+  { id: 'quality', key: 'quality', name: 'Quality', icon: Award, color: '#16A34A' },
+  { id: 'delivery', key: 'delivery', name: 'Delivery', icon: Truck, color: '#2563EB' },
+  { id: 'compliance', key: 'compliance', name: 'Compliance', icon: Scale, color: '#9333EA' },
+  { id: 'hr', key: 'hr', name: 'HR', icon: Users, color: '#EA580C' },
+  { id: 'attractive', key: 'attractive', name: 'Attractive', icon: Heart, color: '#DB2777' },
+  { id: 'environment', key: 'environment', name: 'Environment', icon: Leaf, color: '#0D9488' },
+  { id: 'cost', key: 'cost', name: 'Cost', icon: DollarSign, color: '#4F46E5' },
 ];
 
 export const MONTHS = [

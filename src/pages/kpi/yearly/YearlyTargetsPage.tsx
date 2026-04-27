@@ -1,18 +1,20 @@
 import React from 'react';
-import { ShellLayout } from '@/features/shell';
 import { Target } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { StandardPageLayout } from '@/components/shared/StandardPageLayout';
-import { CAT, CatCard } from '../shared';
-import { useYearlyTargetsData } from './useYearlyTargetsData';
+import { ShellLayout } from '@/components/layout';
+import { StandardPageLayout } from '@/shared/components/StandardPageLayout';
+import { CatCard, CAT } from '../shared';
 import { YearlyTargetsTable } from './YearlyTargetsTable';
+import { BaseSection, BaseGrid } from '@/components/base/BaseComponent';
+import { useToast } from '@/shared/hooks/use-toast';
+import { COLORS } from '@/shared/constants/colors';
+import { useYearlyTargetsData } from './useYearlyTargetsData';
+import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
 
 export default function YearlyTargetsPage() {
-  const { toast } = useToast();
+  const toast = useToast();
+  const { fiscalYear, setFiscalYear, availableYears } = useFiscalYearSelector();
+
   const {
-    fiscalYear,
-    setFiscalYear,
-    availableYears,
     categories,
     cat,
     setCat,
@@ -22,31 +24,33 @@ export default function YearlyTargetsPage() {
     statsLoading,
     searchQuery,
     setSearchQuery,
-    categoryTargetValues,
-    filteredRows,
+    selectedMonth,
+    setSelectedMonth,
     drafts,
+    categoryTargetValues,
+    categoryTargetCounts,
+    canEdit,
+    filteredRows,
     onChange,
     onNoteChange,
     onAttachmentChange,
     saveRow,
-    refreshData,
     showAddModal,
     setShowAddModal,
-    selectedMonth,
-    setSelectedMonth,
-    canEdit,
-  } = useYearlyTargetsData();
+    refreshData,
+  } = useYearlyTargetsData(fiscalYear, setFiscalYear);
 
-  const selectedCatName = categories.find((c) => c.key === cat)?.name ?? '';
+  const selectedCatName = Array.isArray(categories)
+    ? (categories.find((c) => c.key === cat)?.name ?? '')
+    : '';
   const selectedCatCfg = cat ? (CAT[cat] ?? { color: '#6B7280', icon: Target }) : null;
 
   return (
     <ShellLayout>
       <StandardPageLayout
         title={cat ? selectedCatName : 'Yearly Targets'}
-        subtitle={undefined}
         icon={cat && selectedCatCfg ? selectedCatCfg.icon : Target}
-        iconColor={cat && selectedCatCfg ? selectedCatCfg.color : 'text-gray-600'}
+        iconColor={cat && selectedCatCfg ? selectedCatCfg.color : COLORS.primary[600]}
         showBackButton={!!cat}
         onBackClick={() => setCat('')}
         department={dept}
@@ -64,43 +68,44 @@ export default function YearlyTargetsPage() {
         loading={statsLoading}
         theme="gray">
         {!cat ? (
-          <div className="p-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {categories.map((c) => (
-                <CatCard
-                  key={c.id}
-                  c={c}
-                  categoryTargetValues={categoryTargetValues}
-                  statsLoading={statsLoading}
-                  onClick={() => setCat(c.key)}
-                  catColor={CAT[c.key]?.color}
-                />
-              ))}
-            </div>
-          </div>
+          <BaseSection>
+            <BaseGrid cols={4} gap="md" responsive={true}>
+              {Array.isArray(categories) &&
+                categories.map((c) => (
+                  <CatCard
+                    key={c.id}
+                    c={c}
+                    categoryTargetValues={categoryTargetValues}
+                    categoryTargetCounts={categoryTargetCounts}
+                    categoryActualCounts={{}}
+                    statsLoading={statsLoading}
+                    onClick={() => setCat(c.key)}
+                    catColor={CAT[c.key]?.color}
+                  />
+                ))}
+            </BaseGrid>
+          </BaseSection>
         ) : (
-          <div className="flex-1 p-6 bg-gray-50/60">
-            <YearlyTargetsTable
-              filteredRows={filteredRows}
-              loading={loading}
-              canEdit={canEdit}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              selectedMonth={selectedMonth}
-              setSelectedMonth={setSelectedMonth}
-              drafts={drafts}
-              onChange={onChange}
-              onNoteChange={onNoteChange}
-              onAttachmentChange={onAttachmentChange}
-              saveRow={saveRow}
-              showAddModal={showAddModal}
-              setShowAddModal={setShowAddModal}
-              selectedCatName={selectedCatName}
-              categories={categories}
-              cat={cat}
-              toast={toast}
-            />
-          </div>
+          <YearlyTargetsTable
+            filteredRows={filteredRows}
+            loading={loading}
+            canEdit={canEdit}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            drafts={drafts}
+            onChange={onChange}
+            onNoteChange={onNoteChange}
+            onAttachmentChange={onAttachmentChange}
+            saveRow={saveRow}
+            showAddModal={showAddModal}
+            setShowAddModal={setShowAddModal}
+            selectedCatName={selectedCatName}
+            categories={categories}
+            cat={cat}
+            toast={toast}
+          />
         )}
       </StandardPageLayout>
     </ShellLayout>

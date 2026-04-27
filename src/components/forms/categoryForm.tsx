@@ -5,8 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Image } from '@/components/ui/Image';
 import { AlertCircle, Upload, X, Loader2, Folder } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/shared/utils';
+import { useToast } from '@/shared/hooks/use-toast';
 import type { KPICategory } from '@/shared/types';
 type Category = KPICategory & { image_thumbnail?: string };
 

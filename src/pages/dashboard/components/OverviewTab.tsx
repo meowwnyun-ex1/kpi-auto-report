@@ -10,7 +10,7 @@ import { CategorySummaryTable } from '../tables/CategorySummaryTable';
 import { KPI_CATEGORIES } from '../constants';
 
 interface OverviewTabProps {
-  kpiData: any[];
+  kpiData?: any[];
   calculateTotalTargets: () => number;
   calculateCategoryStats: (categoryId: number) => { target: number; result: number; count: number };
   selectedCategory?: string;

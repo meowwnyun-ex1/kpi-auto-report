@@ -19,8 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
-import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { useToast } from '@/shared/hooks/use-toast';
+import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
 import { storage } from '@/shared/utils';
 
 interface AddTargetModalProps {
@@ -825,7 +825,7 @@ export function AddTargetModal({
   onSuccess,
 }: AddTargetModalProps) {
   const { toast } = useToast();
-  const { fiscalYear } = useFiscalYear();
+  const { fiscalYear } = useFiscalYearSelector();
   const [loading, setLoading] = useState(false);
 
   // Form state
@@ -839,28 +839,57 @@ export function AddTargetModal({
   const [mainRelate, setMainRelate] = useState<string[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [customMeasurement, setCustomMeasurement] = useState(false);
+  const [apiMeasurements, setApiMeasurements] = useState<any[]>([]);
+  const [apiCategories, setApiCategories] = useState<any[]>([]);
 
-  // Get category key from category name
+  // Fetch measurements and categories from API
+  useEffect(() => {
+    if (open) {
+      const loadData = async () => {
+        try {
+          const mRes = await fetch(`/api/measurements?category_id=${categoryId}`, {
+            headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
+          });
+          const mData = await mRes.json();
+          if (mData.success) setApiMeasurements(mData.data || []);
+          else if (mData.data) setApiMeasurements(mData.data);
+        } catch {
+          /* fallback to KPI_DATA below */
+        }
+        try {
+          const cRes = await fetch('/api/kpi-forms/categories');
+          const cData = await cRes.json();
+          if (cData.success) setApiCategories(cData.data || []);
+          else if (cData.data) setApiCategories(cData.data);
+        } catch {
+          /* silent */
+        }
+      };
+      loadData();
+    }
+  }, [open, categoryId]);
+
+  // Get category key from API categories
   const getCategoryKey = () => {
-    const categoryMap: Record<number, string> = {
-      1: 'safety',
-      2: 'quality',
-      3: 'delivery',
-      4: 'compliance',
-      5: 'hr',
-      6: 'attractive',
-      7: 'environment',
-      8: 'cost',
-    };
-    return categoryMap[categoryId] || 'safety';
+    const cat = apiCategories.find((c: any) => c.id === categoryId);
+    return cat?.key || 'safety';
   };
 
-  // Get available subcategories for current category
+  // Get available subcategories for current category from API measurements
   const getAvailableSubcategories = () => {
+    if (apiMeasurements.length > 0) {
+      const subCats = new Map<number, string>();
+      apiMeasurements.forEach((m: any) => {
+        if (m.sub_category_id && m.sub_category_name) {
+          subCats.set(m.sub_category_id, m.sub_category_name);
+        }
+      });
+      return Array.from(subCats.entries()).map(([id, name]) => ({ key: String(id), name }));
+    }
+    // Fallback to KPI_DATA
     const categoryKey = getCategoryKey();
     const categoryData = KPI_DATA[categoryKey as keyof typeof KPI_DATA];
     if (!categoryData) return [];
-
     return Object.keys(categoryData.subcategories).map((key) => ({
       key,
       name: (categoryData.subcategories[key as keyof typeof categoryData.subcategories] as any)
@@ -872,15 +901,28 @@ export function AddTargetModal({
   const getAvailableMeasurements = () => {
     if (!subcategory) return [];
 
+    // Use API measurements if available
+    if (apiMeasurements.length > 0) {
+      return apiMeasurements
+        .filter((m: any) => String(m.sub_category_id) === subcategory)
+        .map((m: any) => ({
+          id: m.id,
+          measurement: m.measurement || m.name,
+          unit: m.unit,
+          main: m.main_department_id || m.main || '',
+          description: m.description || '',
+          defaultTarget: 0,
+        }));
+    }
+
+    // Fallback to KPI_DATA
     const categoryKey = getCategoryKey();
     const categoryData = KPI_DATA[categoryKey as keyof typeof KPI_DATA];
     if (!categoryData) return [];
-
     const subcategoryData = categoryData.subcategories[
       subcategory as keyof typeof categoryData.subcategories
     ] as any;
     if (!subcategoryData) return [];
-
     return subcategoryData.measurements;
   };
 
@@ -888,15 +930,33 @@ export function AddTargetModal({
   const getRelatedDepartments = () => {
     if (!subcategory) return [];
 
+    // Use API measurements if available
+    if (apiMeasurements.length > 0) {
+      const subMeasurements = apiMeasurements.filter(
+        (m: any) => String(m.sub_category_id) === subcategory
+      );
+      const deptSet = new Set<string>();
+      subMeasurements.forEach((m: any) => {
+        if (m.main_department_id) deptSet.add(m.main_department_id);
+        if (m.related_departments) {
+          String(m.related_departments)
+            .split(',')
+            .forEach((d: string) => {
+              if (d.trim()) deptSet.add(d.trim());
+            });
+        }
+      });
+      return Array.from(deptSet);
+    }
+
+    // Fallback to KPI_DATA
     const categoryKey = getCategoryKey();
     const categoryData = KPI_DATA[categoryKey as keyof typeof KPI_DATA];
     if (!categoryData) return [];
-
     const subcategoryData = categoryData.subcategories[
       subcategory as keyof typeof categoryData.subcategories
     ] as any;
     if (!subcategoryData) return [];
-
     return subcategoryData.relatedDepts;
   };
 
@@ -1181,7 +1241,13 @@ export function AddTargetModal({
                   <SelectValue placeholder="Select main KPI" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEPARTMENTS.map((dept) => (
+                  {(departments.length > 0
+                    ? departments.map((dept: any) => ({
+                        code: dept.dept_id,
+                        name: dept.name_en || dept.dept_id,
+                      }))
+                    : DEPARTMENTS
+                  ).map((dept) => (
                     <SelectItem key={dept.code} value={dept.code}>
                       <div className="flex flex-col">
                         <span>{dept.code}</span>
@@ -1203,7 +1269,13 @@ export function AddTargetModal({
             <div className="space-y-2">
               <Label>Select Related Departments</Label>
               <div className="grid grid-cols-3 gap-3 max-h-40 overflow-y-auto p-2 border rounded-md">
-                {DEPARTMENTS.map((dept) => (
+                {(departments.length > 0
+                  ? departments.map((dept: any) => ({
+                      code: dept.dept_id,
+                      name: dept.name_en || dept.dept_id,
+                    }))
+                  : DEPARTMENTS
+                ).map((dept) => (
                   <div key={dept.code} className="flex items-center space-x-2">
                     <Checkbox
                       id={dept.code}

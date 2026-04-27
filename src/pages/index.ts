@@ -1,2 +1,5 @@
 export { default as HomePage } from './HomePage';
-export { LoginPage } from './admin';
+export * from './admin';
+export { default as ChangePasswordPage } from './auth/ChangePasswordPage';
+export * from './dashboard';
+export * from './kpi';

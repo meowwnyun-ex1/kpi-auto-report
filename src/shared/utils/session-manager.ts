@@ -1,150 +1,73 @@
 /**
  * Session Management Utilities
- * Centralized session validation and error handling
+ * Handles authentication headers and session timeout
  */
 
-import { storage } from './storage';
-
-export interface SessionValidationResult {
-  isValid: boolean;
-  shouldRedirect: boolean;
-  toastMessage?: {
-    title: string;
-    description: string;
-    variant: 'destructive' | 'default';
-  };
-}
+import { getApiUrl } from '@/config/api';
 
 /**
- * Centralized session validation function
- * Returns validation result with appropriate actions
+ * Get authentication headers for API requests
  */
-export function validateSession(): SessionValidationResult {
-  const token = storage.getAuthToken();
-
-  if (!token) {
-    return {
-      isValid: false,
-      shouldRedirect: true,
-      toastMessage: {
-        title: 'Authentication Required',
-        description: 'Please login to access this feature.',
-        variant: 'destructive' as const,
-      },
-    };
-  }
-
-  if (!storage.isSessionValid()) {
-    return {
-      isValid: false,
-      shouldRedirect: true,
-      toastMessage: {
-        title: 'Session Expired',
-        description: 'Your session has expired. Please login again.',
-        variant: 'destructive' as const,
-      },
-    };
-  }
-
-  return {
-    isValid: true,
-    shouldRedirect: false,
-  };
-}
-
-/**
- * Handle session validation with automatic redirect
- * Returns true if session is valid, false if redirected
- */
-export function handleSessionValidation(
-  logout: () => void,
-  navigate: (path: string) => void,
-  toast?: (options: any) => void
-): boolean {
-  const validation = validateSession();
-
-  if (!validation.isValid && validation.shouldRedirect) {
-    // Show toast if available
-    if (toast && validation.toastMessage) {
-      toast(validation.toastMessage);
-    }
-
-    // Logout and redirect
-    logout();
-    navigate('/admin/login');
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Session validation hook for API calls
- * Returns headers with authorization if session is valid
- */
-export function getAuthHeaders(): Record<string, string> | null {
-  const token = storage.getAuthToken();
-
-  // If no token at all, return null
-  if (!token) {
-    return null;
-  }
-
-  // If session is expired, still return headers for API calls
-  // Let the server decide if the token is valid
+export const getAuthHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem('auth_token');
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   return headers;
-}
+};
 
 /**
- * Centralized error handler for 401/403 responses
+ * Create session timeout checker
  */
-export function handleAuthError(
-  error: Response,
-  logout: () => void,
-  navigate: (path: string) => void,
-  toast?: (options: any) => void
-): void {
-  if (error.status === 401 || error.status === 403) {
-    const toastMessage =
-      error.status === 401
-        ? {
-            title: 'Authentication Failed',
-            description: 'Your session has expired. Please login again.',
-            variant: 'destructive' as const,
-          }
-        : {
-            title: 'Access Denied',
-            description: 'You do not have permission to perform this action.',
-            variant: 'destructive' as const,
-          };
+export const createSessionTimeoutChecker = (
+  onTimeout: () => void,
+  warningTime: number = 5 * 60 * 1000 // 5 minutes before timeout
+) => {
+  let timeoutId: NodeJS.Timeout;
+  let warningId: NodeJS.Timeout | null = null;
 
-    if (toast) {
-      toast(toastMessage);
+  const checkSession = () => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      onTimeout();
+      return;
     }
 
-    logout();
-    navigate('/admin/login');
-  }
-}
+    // Parse JWT token to check expiration
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expirationTime = payload.exp * 1000; // Convert to milliseconds
+      const currentTime = Date.now();
+      const timeUntilExpiration = expirationTime - currentTime;
 
-/**
- * Session timeout checker
- * Can be used in intervals to check session validity
- */
-export function createSessionTimeoutChecker(
-  onTimeout: () => void,
-  intervalMs: number = 5 * 60 * 1000 // 5 minutes
-): () => void {
-  const interval = setInterval(() => {
-    if (!storage.isSessionValid()) {
+      if (timeUntilExpiration <= 0) {
+        onTimeout();
+      } else if (timeUntilExpiration <= warningTime) {
+        // Show warning
+        console.warn('Session will expire soon');
+      } else {
+        // Schedule next check
+        timeoutId = setTimeout(checkSession, Math.min(timeUntilExpiration, 60000)); // Check every minute or until expiration
+      }
+    } catch (error) {
+      console.error('Error parsing token:', error);
       onTimeout();
     }
-  }, intervalMs);
+  };
 
-  return () => clearInterval(interval);
-}
+  const start = () => {
+    checkSession();
+  };
+
+  const stop = () => {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (warningId) clearTimeout(warningId);
+  };
+
+  return { start, stop };
+};

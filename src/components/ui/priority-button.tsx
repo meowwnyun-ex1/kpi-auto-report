@@ -5,8 +5,12 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { PriorityLevel, PRIORITY_COLORS, getPriorityClasses } from '@/constants/priority-colors';
-import { cn } from '@/lib/utils';
+import {
+  PriorityLevel,
+  PRIORITY_COLORS,
+  getPriorityClasses,
+} from '@/shared/constants/priority-colors';
+import { cn } from '@/shared/utils';
 
 interface PriorityButtonProps {
   priority: PriorityLevel;
@@ -31,12 +35,12 @@ export function PriorityButton({
 }: PriorityButtonProps) {
   const colors = disabled ? PRIORITY_COLORS.disabled : PRIORITY_COLORS[priority];
   const priorityClasses = getPriorityClasses(priority);
-  
+
   const getButtonClasses = () => {
     const baseClasses = 'relative transition-all duration-200';
     const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : '';
     const loadingClasses = loading ? 'cursor-wait' : '';
-    
+
     switch (variant) {
       case 'solid':
         return cn(
@@ -46,7 +50,7 @@ export function PriorityButton({
           `bg-[${colors.button}] text-white hover:bg-[${colors.button_hover}] border-transparent`,
           className
         );
-        
+
       case 'outline':
         return cn(
           baseClasses,
@@ -55,16 +59,16 @@ export function PriorityButton({
           `border-[${colors.border}] text-[${colors.text}] bg-white hover:bg-[${colors.bg}]`,
           className
         );
-        
+
       case 'ghost':
         return cn(
           baseClasses,
           disabledClasses,
           loadingClasses,
-          `text-[${colors.text]} hover:bg-[${colors.bg}] border-transparent`,
+          `text-[${colors.text}] hover:bg-[${colors.bg}] border-transparent`,
           className
         );
-        
+
       default:
         return cn(
           baseClasses,
@@ -83,11 +87,7 @@ export function PriorityButton({
   }[size];
 
   return (
-    <Button
-      className={cn(getButtonClasses(), sizeClasses)}
-      disabled={disabled}
-      onClick={onClick}
-    >
+    <Button className={cn(getButtonClasses(), sizeClasses)} disabled={disabled} onClick={onClick}>
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -139,32 +139,29 @@ export function PriorityActionButtons({
           variant="outline"
           onClick={onSecondary}
           disabled={disabled}
-          className="flex-1"
-        >
+          className="flex-1">
           {secondaryLabel}
         </PriorityButton>
       )}
-      
+
       {onDanger && (
         <PriorityButton
           priority={dangerPriority}
           onClick={onDanger}
           disabled={disabled}
           loading={loading}
-          className="flex-1"
-        >
+          className="flex-1">
           {dangerLabel}
         </PriorityButton>
       )}
-      
+
       {onPrimary && (
         <PriorityButton
           priority={primaryPriority}
           onClick={onPrimary}
           disabled={disabled}
           loading={loading}
-          className={onSecondary || onDanger ? 'flex-1' : ''}
-        >
+          className={onSecondary || onDanger ? 'flex-1' : ''}>
           {primaryLabel}
         </PriorityButton>
       )}
@@ -192,7 +189,7 @@ export function PriorityFab({
   className = '',
 }: PriorityFabProps) {
   const colors = disabled ? PRIORITY_COLORS.disabled : PRIORITY_COLORS[priority];
-  
+
   return (
     <button
       onClick={onClick}
@@ -202,8 +199,7 @@ export function PriorityFab({
         disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105',
         `bg-[${colors.button}] text-white`,
         className
-      )}
-    >
+      )}>
       {children}
     </button>
   );
@@ -224,10 +220,7 @@ interface PriorityButtonGroupProps {
   className?: string;
 }
 
-export function PriorityButtonGroup({
-  buttons,
-  className = '',
-}: PriorityButtonGroupProps) {
+export function PriorityButtonGroup({ buttons, className = '' }: PriorityButtonGroupProps) {
   return (
     <div className={cn('flex gap-1', className)}>
       {buttons.map((button, index) => (
@@ -237,8 +230,7 @@ export function PriorityButtonGroup({
           variant={button.variant || 'solid'}
           onClick={button.onClick}
           disabled={button.disabled}
-          className="flex-1"
-        >
+          className="flex-1">
           {button.label}
         </PriorityButton>
       ))}
@@ -250,4 +242,4 @@ export function PriorityButtonGroup({
 // QUICK EXPORTS
 // ============================================
 
-export { PriorityLevel, PRIORITY_COLORS } from '@/constants/priority-colors';
+export { PriorityLevel, PRIORITY_COLORS } from '@/shared/constants/priority-colors';

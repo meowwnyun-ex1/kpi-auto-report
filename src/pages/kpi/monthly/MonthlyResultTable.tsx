@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Save, Target, Loader2, CalendarDays } from 'lucide-react';
-import { TableContainer } from '@/components/shared/TableContainer';
+import { TableContainer } from '@/shared/components/TableContainer';
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { MONTHS } from '../shared';
 import { MonthlyResultRow } from './useMonthlyResultData';
-import { kpiNotifications } from '@/constants/notifications';
+import { kpiNotifications } from '@/shared/constants/notifications';
 
 interface MonthlyResultTableProps {
   filteredRows: MonthlyResultRow[];
@@ -22,7 +22,6 @@ interface MonthlyResultTableProps {
   searchQuery: string;
   setSearchQuery: (v: string) => void;
   selectedCatName: string;
-  onChange: (yearlyTargetId: number, month: number, value: string) => void;
   onChangeResult: (yearlyTargetId: number, month: number, value: string) => void;
   saveMonthResult: (yearlyTargetId: number, month: number, monthData: any, toast: any) => void;
   toast: any;
@@ -35,7 +34,6 @@ export function MonthlyResultTable({
   searchQuery,
   setSearchQuery,
   selectedCatName,
-  onChange,
   onChangeResult,
   saveMonthResult,
   toast,
@@ -84,38 +82,44 @@ export function MonthlyResultTable({
         <Table>
           <TableHeader className="bg-emerald-50">
             <TableRow className="border-b border-emerald-200">
-              <TableHead className="flex-shrink-0 w-16 text-center text-xs font-bold text-gray-700 bg-emerald-100 pl-6 py-2">
+              <TableHead className="flex-shrink-0 w-16 text-center text-xs font-bold text-black bg-emerald-100 pl-6 py-2">
                 #
               </TableHead>
-              <TableHead className="min-w-[150px] text-xs font-bold text-gray-700 bg-emerald-100 py-2">
+              <TableHead className="min-w-[150px] text-xs font-bold text-black bg-emerald-100 py-2">
                 <div className="flex items-center gap-2">
                   <Target className="w-4 h-4 text-emerald-600" />
                   Measurement
                 </div>
               </TableHead>
-              <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-gray-700 bg-emerald-100 py-2">
+              <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-red-600 bg-emerald-100 py-2">
                 <div className="flex items-center justify-end gap-1">
                   <CalendarDays className="w-3 h-3" />
                   FY Target
                 </div>
               </TableHead>
-              <TableHead className="min-w-[80px] flex-shrink-0 text-right text-xs font-bold text-gray-700 bg-emerald-100 py-2">
-                Used
-              </TableHead>
-              <TableHead className="min-w-[80px] flex-shrink-0 text-right text-xs font-bold text-gray-700 bg-emerald-100 py-2">
-                Remaining
-              </TableHead>
-              <TableHead className="min-w-[80px] flex-shrink-0 text-center text-xs font-bold text-gray-700 bg-emerald-100 py-2">
+              <TableHead className="min-w-[80px] flex-shrink-0 text-center text-xs font-bold text-black bg-emerald-100 py-2">
                 Unit
               </TableHead>
-              <TableHead className="min-w-[80px] flex-shrink-0 text-center text-xs font-bold text-gray-700 bg-emerald-100 py-2">
+              <TableHead className="min-w-[80px] flex-shrink-0 text-center text-xs font-bold text-black bg-emerald-100 py-2">
                 Main
               </TableHead>
-              {MONTHS.filter((m) => m.value !== 'all').map((m) => (
+              <TableHead className="min-w-[80px] flex-shrink-0 text-right text-xs font-bold text-amber-600 bg-emerald-100 py-2">
+                Usage
+              </TableHead>
+              <TableHead className="min-w-[80px] flex-shrink-0 text-right text-xs font-bold text-emerald-600 bg-emerald-100 py-2">
+                Remain
+              </TableHead>
+              {MONTHS.map((m) => (
                 <TableHead
                   key={m.value}
-                  className="min-w-[120px] flex-shrink-0 text-center text-xs font-bold text-gray-700 bg-emerald-100 py-2">
-                  <div className="text-xs font-bold">{m.label}</div>
+                  className="text-center py-3 bg-gradient-to-b from-emerald-100 to-emerald-50 border-l-2 border-emerald-300 min-w-[130px] flex-shrink-0">
+                  <div className="flex flex-col items-center">
+                    <div className="text-xs font-bold text-black mb-1">{m.label}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-[9px] text-blue-600 font-medium">Target</div>
+                      <div className="text-[9px] text-emerald-600 font-medium">Result</div>
+                    </div>
+                  </div>
                 </TableHead>
               ))}
             </TableRow>
@@ -132,20 +136,8 @@ export function MonthlyResultTable({
                   <p className="text-sm text-gray-700 leading-tight">{row.measurement ?? '---'}</p>
                 </TableCell>
                 <TableCell className="text-right py-2 bg-emerald-50/50 min-w-[100px] flex-shrink-0">
-                  <div className="font-mono text-sm font-bold text-blue-600">
+                  <div className={`font-mono text-sm font-bold text-cyan-600`}>
                     {row.fy_target?.toLocaleString() || '---'}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right py-2 bg-emerald-50/50 min-w-[80px] flex-shrink-0">
-                  <div className="font-mono text-sm font-bold text-orange-600">
-                    {row.used_quota?.toLocaleString() || '0'}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right py-2 bg-emerald-50/50 min-w-[80px] flex-shrink-0">
-                  <div className="font-mono text-sm font-bold text-emerald-600">
-                    {row.remaining_quota?.toLocaleString() ||
-                      row.fy_target?.toLocaleString() ||
-                      '---'}
                   </div>
                 </TableCell>
                 <TableCell className="text-center py-2 bg-emerald-50/50 min-w-[80px] flex-shrink-0">
@@ -158,43 +150,51 @@ export function MonthlyResultTable({
                     {row.main || '---'}
                   </div>
                 </TableCell>
-                {MONTHS.filter((m) => m.value !== 'all').map((m) => {
-                  const monthValue = typeof m.value === 'number' ? m.value : 0;
+                <TableCell className="text-right py-2 bg-emerald-50/50 min-w-[80px] flex-shrink-0">
+                  <div className="font-mono text-sm font-bold text-amber-600">
+                    {row.used_quota?.toLocaleString() || '0'}
+                  </div>
+                </TableCell>
+                <TableCell className="text-right py-2 bg-emerald-50/50 min-w-[80px] flex-shrink-0">
+                  <div className="font-mono text-sm font-bold text-emerald-600">
+                    {row.remaining_quota?.toLocaleString() ||
+                      row.total_target?.toLocaleString() ||
+                      '---'}
+                  </div>
+                </TableCell>
+                {MONTHS.map((m) => {
+                  const monthValue = m.value;
                   const monthData = row.months[monthValue];
                   return (
                     <TableCell
                       key={m.value}
-                      className="text-center py-2 min-w-[120px] flex-shrink-0">
+                      className="text-center py-3 border-l-2 border-emerald-200 min-w-[130px] flex-shrink-0">
                       <div className="space-y-1">
-                        <div className="flex items-center justify-center gap-1">
+                        <div className="flex items-center justify-center">
                           <div className="flex flex-col items-center">
-                            <span className="text-[10px] text-blue-600 font-medium">T</span>
-                            {canEdit ? (
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                className="w-20 h-6 text-center text-[10px] bg-blue-50 border-blue-200 mx-auto"
-                                value={monthData?.draft || ''}
-                                onChange={(e) =>
-                                  onChange(row.yearly_target_id, monthValue, e.target.value)
-                                }
-                                placeholder="0"
-                              />
-                            ) : (
-                              <div className="font-mono text-[10px] text-blue-600">
-                                {monthData?.target?.toLocaleString() || '---'}
-                              </div>
-                            )}
+                            <span className="text-[10px] text-red-600 font-medium mb-1">
+                              Target
+                            </span>
+                            <div
+                              className={`font-mono text-[10px] px-2 py-1 rounded min-w-[60px] ${
+                                monthData?.target === 0 || !monthData?.target
+                                  ? 'text-gray-400 bg-gray-50'
+                                  : 'text-cyan-600 bg-cyan-50'
+                              }`}>
+                              {monthData?.target?.toLocaleString() || '---'}
+                            </div>
                           </div>
+                          <div className="mx-3 text-gray-400">|</div>
                           <div className="flex flex-col items-center">
-                            <span className="text-[10px] text-orange-600 font-medium">R</span>
-                            {canEdit ? (
+                            <span className="text-[10px] text-emerald-600 font-medium mb-1">
+                              Result
+                            </span>
+                            {canEdit && monthData?.target && monthData?.target > 0 ? (
                               <Input
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                className="w-20 h-6 text-center text-[10px] bg-orange-50 border-orange-200 mx-auto"
+                                className="w-20 h-6 text-center text-[10px] bg-emerald-50 border-emerald-200 mx-auto"
                                 value={monthData?.draftResult || ''}
                                 onChange={(e) =>
                                   onChangeResult(row.yearly_target_id, monthValue, e.target.value)
@@ -202,17 +202,22 @@ export function MonthlyResultTable({
                                 placeholder="0"
                               />
                             ) : (
-                              <div className="font-mono text-[10px] text-orange-600">
+                              <div
+                                className={`font-mono text-[10px] px-2 py-1 rounded min-w-[60px] ${
+                                  monthData?.result === 0 || !monthData?.result
+                                    ? 'text-gray-400 bg-gray-50'
+                                    : 'text-emerald-600 bg-emerald-50'
+                                }`}>
                                 {monthData?.result?.toLocaleString() || '---'}
                               </div>
                             )}
                           </div>
                         </div>
-                        {(monthData?.dirty || monthData?.dirtyResult) && (
+                        {monthData?.dirtyResult && monthData?.target && monthData?.target > 0 && (
                           <Button
                             size="sm"
                             variant="outline"
-                            className={`h-5 px-2 text-[9px] border-emerald-200 hover:bg-emerald-50`}
+                            className={`h-5 px-2 text-[9px] border-emerald-200 hover:bg-emerald-50 mx-auto`}
                             onClick={() =>
                               saveMonthResult(row.yearly_target_id, monthValue, monthData, toast)
                             }

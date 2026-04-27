@@ -1,6 +1,6 @@
 import { getApiUrl } from '@/config/api';
 import { API_ENDPOINTS } from '@/shared/constants';
-import { getAuthHeaders } from '@/shared/utils/session-manager';
+import { getAuthHeaders } from '@/shared/utils';
 
 // Simple cache implementation
 const cache = new Map<string, { data: unknown; timestamp: number; ttl: number }>();

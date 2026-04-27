@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils';
 
 interface NumberInputProps extends Omit<React.ComponentProps<'input'>, 'type' | 'value' | 'onChange'> {
   value: number | null | undefined;

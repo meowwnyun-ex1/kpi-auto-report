@@ -1,39 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Target } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { COLORS } from '@/constants/colors';
-import { StandardPageLayout } from '@/components/shared/StandardPageLayout';
-import { ShellLayout } from '@/features/shell';
-import { CatCard } from '../shared';
+import { useToast } from '@/shared/hooks/use-toast';
+import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
+import { COLORS } from '@/shared/constants/colors';
+import { StandardPageLayout } from '@/shared/components/StandardPageLayout';
+import { ShellLayout } from '@/components/layout';
+import { CatCard, CAT } from '../shared';
 import { useMonthlyResultData } from './useMonthlyResultData';
 import { MonthlyResultTable } from './MonthlyResultTable';
 import { BaseSection, BaseGrid } from '@/components/base/BaseComponent';
 
 export default function MonthlyResultPage() {
   const { toast } = useToast();
+  const { fiscalYear, setFiscalYear, availableYears } = useFiscalYearSelector();
 
   const {
-    fiscalYear,
-    setFiscalYear,
-    availableYears,
+    user,
     categories,
     cat,
     setCat,
+    rows,
+    depts,
     dept,
     setDept,
     loading,
+    stats,
     statsLoading,
     searchQuery,
     setSearchQuery,
     categoryTargetValues,
     categoryTargetCounts,
+    categoryActualCounts,
     filteredRows,
     canEdit,
-    onChange,
     onChangeResult,
     saveMonthResult,
     refreshData,
-  } = useMonthlyResultData();
+  } = useMonthlyResultData(fiscalYear, setFiscalYear);
 
   const selectedCatName = categories.find((c) => c.key === cat)?.name ?? '';
   const selectedCatCfg = cat ? (CAT[cat] ?? { color: '#059669', icon: Target }) : null;
@@ -70,8 +73,10 @@ export default function MonthlyResultPage() {
                   c={c}
                   categoryTargetValues={categoryTargetValues}
                   categoryTargetCounts={categoryTargetCounts}
+                  categoryActualCounts={categoryActualCounts}
                   statsLoading={statsLoading}
                   onClick={() => setCat(c.key)}
+                  catColor={CAT[c.key]?.color}
                 />
               ))}
             </BaseGrid>
@@ -85,7 +90,6 @@ export default function MonthlyResultPage() {
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               selectedCatName={selectedCatName}
-              onChange={onChange}
               onChangeResult={onChangeResult}
               saveMonthResult={saveMonthResult}
               toast={toast}

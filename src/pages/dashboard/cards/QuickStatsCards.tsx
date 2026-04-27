@@ -9,7 +9,10 @@ interface QuickStatsCardsProps {
   selectedCategory?: string;
 }
 
-export function QuickStatsCards({ calculateCategoryStats, selectedCategory = 'all' }: QuickStatsCardsProps) {
+export function QuickStatsCards({
+  calculateCategoryStats,
+  selectedCategory = 'all',
+}: QuickStatsCardsProps) {
   // Filter categories based on selection
   const categoriesToShow =
     selectedCategory === 'all'
@@ -35,45 +38,93 @@ export function QuickStatsCards({ calculateCategoryStats, selectedCategory = 'al
   }).length;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card className="border-l-4 border-green-500 bg-gradient-to-r from-green-50/30 to-white">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Card className="border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white/90 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50/80 flex items-center justify-center shadow-lg border border-emerald-100">
+                <CheckCircle2 className="w-7 h-7 text-emerald-700" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">High Performers</p>
+                <p className="text-sm text-gray-600">Excellent progress</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">High Performers</p>
-              <p className="text-xs text-gray-500">{highPerformers} categories</p>
+            <div className="text-right">
+              <div className="text-3xl font-black text-emerald-700">{highPerformers}</div>
+              <p className="text-xs text-emerald-600 font-medium">categories</p>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-2 bg-emerald-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
+                style={{ width: `${(highPerformers / categoriesToShow.length) * 100}%` }}></div>
+            </div>
+            <span className="text-xs text-gray-500 font-medium">
+              {((highPerformers / categoriesToShow.length) * 100).toFixed(0)}%
+            </span>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-l-4 border-amber-500 bg-gradient-to-r from-amber-50/30 to-white">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
+      <Card className="border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white/90 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50/80 flex items-center justify-center shadow-lg border border-amber-100">
+                <AlertTriangle className="w-7 h-7 text-amber-700" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">Need Attention</p>
+                <p className="text-sm text-gray-600">Below target</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Need Attention</p>
-              <p className="text-xs text-gray-500">{needAttention} categories</p>
+            <div className="text-right">
+              <div className="text-3xl font-black text-amber-700">{needAttention}</div>
+              <p className="text-xs text-amber-600 font-medium">categories</p>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-2 bg-amber-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-500 rounded-full transition-all duration-1000"
+                style={{ width: `${(needAttention / categoriesToShow.length) * 100}%` }}></div>
+            </div>
+            <span className="text-xs text-gray-500 font-medium">
+              {((needAttention / categoriesToShow.length) * 100).toFixed(0)}%
+            </span>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-l-4 border-blue-500 bg-gradient-to-r from-blue-50/30 to-white">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Target className="w-5 h-5 text-blue-600" />
+      <Card className="border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden bg-white/90 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-slate-50/80 flex items-center justify-center shadow-lg border border-slate-100">
+                <Target className="w-7 h-7 text-slate-700" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-gray-900">On Track</p>
+                <p className="text-sm text-gray-600">Good progress</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">On Track</p>
-              <p className="text-xs text-gray-500">{onTrack} categories</p>
+            <div className="text-right">
+              <div className="text-3xl font-black text-slate-700">{onTrack}</div>
+              <p className="text-xs text-slate-600 font-medium">categories</p>
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-slate-500 rounded-full transition-all duration-1000"
+                style={{ width: `${(onTrack / categoriesToShow.length) * 100}%` }}></div>
+            </div>
+            <span className="text-xs text-gray-500 font-medium">
+              {((onTrack / categoriesToShow.length) * 100).toFixed(0)}%
+            </span>
           </div>
         </CardContent>
       </Card>

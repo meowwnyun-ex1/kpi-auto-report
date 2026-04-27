@@ -43,9 +43,13 @@ export function CategoryCharts({ catStats, deptBreakdown, catColor }: CategoryCh
             </div>
             <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white rounded-lg border border-gray-200">
               <div className="text-center">
-                <div className="w-24 h-24 rounded-full border-8 border-gray-200" style={{ borderTopColor: catColor, borderRightColor: catColor }}></div>
+                <div
+                  className="w-24 h-24 rounded-full border-8 border-gray-200"
+                  style={{ borderTopColor: catColor, borderRightColor: catColor }}></div>
                 <p className="mt-4 text-sm text-gray-500">Chart visualization</p>
-                <p className="text-xs text-gray-400 mt-1">Achieved: {catStats.passedCount} | Missed: {catStats.failedCount}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Achieved: {catStats.passedCount} | Missed: {catStats.failedCount}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -68,9 +72,10 @@ export function CategoryCharts({ catStats, deptBreakdown, catColor }: CategoryCh
                         style={{
                           height: `${(dept.rate / 100) * 100}px`,
                           background: `linear-gradient(to top, ${catColor}, ${catColor}40)`,
-                        }}
-                      ></div>
-                      <span className="text-xs text-gray-500 max-w-[60px] truncate">{dept.name}</span>
+                        }}></div>
+                      <span className="text-xs text-gray-500 max-w-[60px] truncate">
+                        {dept.name}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -91,20 +96,28 @@ export function CategoryCharts({ catStats, deptBreakdown, catColor }: CategoryCh
           <div className="h-48 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white rounded-lg border border-gray-200">
             <div className="text-center">
               <div className="flex items-center gap-1">
-                {MONTHS.slice(0, 6).map((month, idx) => (
-                  <div key={month.value} className="flex flex-col items-center gap-1">
-                    <div
-                      className="w-6 bg-gradient-to-t"
-                      style={{
-                        height: `${Math.random() * 60 + 20}px`,
-                        background: `linear-gradient(to top, ${catColor}, ${catColor}60)`,
-                      }}
-                    ></div>
-                    <span className="text-xs text-gray-500">{month.label.slice(0, 3)}</span>
-                  </div>
-                ))}
+                {deptBreakdown.slice(0, 8).map((dept) => {
+                  const rate = dept.target > 0 ? (dept.result / dept.target) * 100 : 0;
+                  return (
+                    <div key={dept.name} className="flex flex-col items-center gap-1">
+                      <div
+                        className="w-6 bg-gradient-to-t"
+                        style={{
+                          height: `${Math.max(8, Math.min(80, rate * 0.8))}px`,
+                          background: `linear-gradient(to top, ${catColor}, ${catColor}60)`,
+                        }}></div>
+                      <span className="text-xs text-gray-500" title={dept.name}>
+                        {dept.name.slice(0, 3)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              <p className="mt-4 text-sm text-gray-500">Monthly performance trend</p>
+              <p className="mt-4 text-sm text-gray-500">
+                {catStats.totalTargets > 0
+                  ? `${catStats.resultRate.toFixed(1)}% achievement across ${catStats.totalTargets} targets`
+                  : 'No data available'}
+              </p>
             </div>
           </div>
         </CardContent>

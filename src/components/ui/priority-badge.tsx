@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { AlertTriangle, Info, CheckCircle, XCircle, Clock, Ban } from 'lucide-react';
-import { PriorityLevel, PRIORITY_COLORS, getPriorityClasses } from '@/constants/priority-colors';
+import { PriorityLevel, PRIORITY_COLORS, getPriorityClasses } from '@/shared/constants/priority-colors';
 
 interface PriorityBadgeProps {
   priority: PriorityLevel;
@@ -228,4 +228,4 @@ export function PriorityText({
 // ============================================
 
 export { PriorityLevel };
-export { PRIORITY_COLORS, PRIORITY_LABELS, KPI_CATEGORY_PRIORITIES, KPI_STATUS_PRIORITIES } from '@/constants/priority-colors';
+export { PRIORITY_COLORS, PRIORITY_LABELS, KPI_CATEGORY_PRIORITIES, KPI_STATUS_PRIORITIES } from '@/shared/constants/priority-colors';

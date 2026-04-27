@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Image } from '@/components/ui/Image';
 import { Home, RefreshCw, Mail } from 'lucide-react';
-import { ShellLayout } from '@/features/shell';
+import { ShellLayout } from '@/components/layout';
 
 export type ErrorType =
   | '403'

@@ -458,7 +458,8 @@ router.put('/monthly/:yearlyTargetId/:month', requireManager, async (req, res) =
     const yearlyTarget = await pool
       .request()
       .input('yearlyTargetId', sql.Int, parseInt(yearlyTargetId)).query(`
-        SELECT y.id, y.total_target, y.used_quota, y.remaining_quota,
+        SELECT y.id, ISNULL(y.total_quota, 0) as total_target, y.used_quota, 
+               ISNULL(y.total_quota, 0) - ISNULL(y.used_quota, 0) as remaining_quota,
                y.department_id, y.fiscal_year, m.measurement
         FROM kpi_yearly_targets y
         LEFT JOIN kpi_measurements m ON y.metric_id = m.id
@@ -511,8 +512,7 @@ router.put('/monthly/:yearlyTargetId/:month', requireManager, async (req, res) =
             SELECT COALESCE(SUM(m.target), 0)
             FROM kpi_monthly_targets m
             WHERE m.yearly_target_id = @yearlyTargetId
-          ),
-          y.remaining_quota = y.total_target - y.used_quota
+          )
           FROM kpi_yearly_targets y
           WHERE y.id = @yearlyTargetId
         `);
@@ -528,6 +528,113 @@ router.put('/monthly/:yearlyTargetId/:month', requireManager, async (req, res) =
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to update monthly target',
+    });
+  }
+});
+
+/**
+ * PUT /api/kpi-forms/monthly/:id
+ * Update monthly target/result by ID
+ */
+router.put('/monthly/:id', requireManager, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { target, result, comment, note, image_url, image_caption } = req.body;
+
+    const pool = await getKpiDb();
+    const userId = (req as any).user?.id;
+
+    // Ensure id is a string
+    const idStr = Array.isArray(id) ? id[0] : id;
+
+    // Get existing monthly entry
+    const existing = await pool.request().input('id', sql.Int, parseInt(idStr)).query(`
+        SELECT m.*, y.total_quota, y.used_quota, y.department_id, y.fiscal_year
+        FROM kpi_monthly_targets m
+        LEFT JOIN kpi_yearly_targets y ON m.yearly_target_id = y.id
+        WHERE m.id = @id
+      `);
+
+    if (existing.recordset.length === 0) {
+      return res.status(404).json({ success: false, message: 'Monthly entry not found' });
+    }
+
+    const entry = existing.recordset[0];
+    const updateFields = [];
+    const updateRequest = pool.request().input('id', sql.Int, parseInt(idStr));
+
+    if (target !== undefined && target !== null) {
+      updateRequest.input('target', sql.Decimal(18, 4), parseFloat(target));
+      updateFields.push('target=@target');
+    }
+
+    if (result !== undefined && result !== null) {
+      updateRequest.input('result', sql.Decimal(18, 4), parseFloat(result));
+      updateFields.push('result=@result');
+
+      // Auto-calculate EV if target exists
+      if (entry.target !== null) {
+        const evValue = parseFloat(result) >= parseFloat(entry.target.toString()) ? 'O' : 'X';
+        updateRequest.input('ev', sql.NVarChar(10), evValue);
+        updateFields.push('ev=@ev');
+      }
+    }
+
+    if (comment !== undefined) {
+      updateRequest.input('comment', sql.NVarChar(sql.MAX), comment || null);
+      updateFields.push('comment=@comment');
+    }
+
+    if (note !== undefined) {
+      updateRequest.input('note', sql.NVarChar(1000), note || null);
+      updateFields.push('note=@note');
+    }
+
+    if (image_url !== undefined) {
+      updateRequest.input('image_url', sql.NVarChar(500), image_url || null);
+      updateFields.push('image_url=@image_url');
+    }
+
+    if (image_caption !== undefined) {
+      updateRequest.input('image_caption', sql.NVarChar(255), image_caption || null);
+      updateFields.push('image_caption=@image_caption');
+    }
+
+    if (updateFields.length > 0) {
+      updateFields.push('updated_at=GETDATE()');
+      updateRequest.input('updated_by', sql.Int, userId);
+      updateFields.push('updated_by=@updated_by');
+
+      await updateRequest.query(`
+        UPDATE kpi_monthly_targets
+        SET ${updateFields.join(',')}
+        WHERE id=@id
+      `);
+    }
+
+    // Update used quota on yearly target if target changed
+    if (target !== undefined && target !== null) {
+      await pool.request().input('yearly_target_id', sql.Int, entry.yearly_target_id).query(`
+        UPDATE y
+        SET y.used_quota = (
+          SELECT COALESCE(SUM(m.target), 0)
+          FROM kpi_monthly_targets m
+          WHERE m.yearly_target_id = @yearly_target_id
+        )
+        FROM kpi_yearly_targets y
+        WHERE y.id = @yearly_target_id
+      `);
+    }
+
+    res.json({
+      success: true,
+      message: 'Monthly entry updated successfully',
+    });
+  } catch (error: any) {
+    logger.error('Error updating monthly entry:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update monthly entry',
     });
   }
 });

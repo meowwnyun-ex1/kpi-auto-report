@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Image } from '@/components/ui/Image';
 import { getApiUrl } from '@/config/api';
 import { useLoading } from '@/contexts/LoadingContext';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ERROR_MESSAGES, LOADING_MESSAGES } from '@/shared/constants';

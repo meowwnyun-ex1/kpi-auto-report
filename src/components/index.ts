@@ -1,17 +1,7 @@
-// UI Components
-export * from './ui';
-
-// Feature Components
-export * from './features';
-
-// Form Components
-export * from './forms';
-
-// Admin Components
+// Re-export all component categories
 export * from './admin';
-
-// KPI Components
+export * from './base';
+export * from './forms';
 export * from './kpi';
-
-// Shared Components
-export * from './shared';
+export * from './layout';
+export * from './ui';

@@ -52,3 +52,4 @@ export { UnifiedError } from './unified-error';
 export { MultiSelect } from './multi-select';
 export { NumberInput } from './number-input';
 export { HelpTooltip, HelpContent } from './help-tooltip';
+export { Breadcrumb } from './breadcrumb';

@@ -1,27 +1,29 @@
-export { default as MainDashboard } from './MainDashboard';
-export { CategoryDashboard } from './CategoryDashboard';
+// Main dashboard exports
+export { default as MainDashboard } from './pages/MainDashboard';
+export { default as CategoryDashboard } from './pages/CategoryDashboard';
+export { default as CompactDashboard } from './pages/CompactDashboard';
 
-// Components
-export { OverviewTab } from './OverviewTab';
-export { DetailsTab } from './DetailsTab';
-export { DepartmentsTab } from './DepartmentsTab';
-export { CategoriesTab } from './CategoriesTab';
+// Component exports
+export { CategoriesTab } from './components/CategoriesTab';
+export { DepartmentsTab } from './components/DepartmentsTab';
+export { DetailsTab } from './components/DetailsTab';
+export { OverviewTab } from './components/OverviewTab';
 
-// Cards
-export { OverviewSummaryCard } from './cards/OverviewSummaryCard';
-export { CategoryCards } from './cards/CategoryCards';
-export { QuickStatsCards } from './cards/QuickStatsCards';
-export { CategorySummaryCards } from './cards/CategorySummaryCards';
-export { DepartmentBreakdownCards } from './cards/DepartmentBreakdownCards';
+// Hook exports
+export { useDashboardData } from './hooks/useDashboardData';
 
-// Charts
-export { OverviewCharts } from './charts/OverviewCharts';
-export { CategoryCharts } from './charts/CategoryCharts';
+// Chart exports
+export { CategoryCharts as CategoryChart } from './charts/CategoryCharts';
+export { OverviewCharts as DepartmentChart } from './charts/OverviewCharts';
 
-// Tables
-export { CategorySummaryTable } from './tables/CategorySummaryTable';
-export { CategoryDetailsTable } from './tables/CategoryDetailsTable';
+// Card exports
+export { OverviewSummaryCard as SummaryCard } from './cards/OverviewSummaryCard';
+export { CategorySummaryCards as CategoryCard } from './cards/CategorySummaryCards';
+export { DepartmentBreakdownCards as DepartmentCard } from './cards/DepartmentBreakdownCards';
 
-// Utilities
-export { useDashboardData } from './useDashboardData';
-export { KPI_CATEGORIES, MONTHS } from './constants';
+// Table exports
+export { CategorySummaryTable as CategoryTable } from './tables/CategorySummaryTable';
+export { CategoryDetailsTable as DepartmentTable } from './tables/CategoryDetailsTable';
+
+// Constants
+export * from './constants';

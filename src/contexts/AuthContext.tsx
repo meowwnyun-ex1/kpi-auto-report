@@ -200,9 +200,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    const cleanup = createSessionTimeoutChecker(onTimeout);
+    const sessionChecker = createSessionTimeoutChecker(onTimeout);
+    sessionChecker.start();
 
-    return cleanup;
+    return () => {
+      sessionChecker.stop();
+    };
   }, [isAuthenticated]);
 
   const login = async (username: string, password: string) => {

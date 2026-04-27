@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useFiscalYear } from '@/contexts/FiscalYearContext';
+import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
 import { storage } from '@/shared/utils';
 import {
   Category,
   YearlyTarget,
   MonthlyTarget,
   Stats,
-  useCalculateTotalTargetValues,
+  deriveCategoryValuesFromStats,
 } from '../shared';
 
 export function useMonthlyTargetsData() {
   const { user } = useAuth();
-  const { fiscalYear, setFiscalYear, availableYears } = useFiscalYear();
+  const { fiscalYear, setFiscalYear, availableYears } = useFiscalYearSelector();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [cat, setCat] = useState('');
@@ -27,9 +27,9 @@ export function useMonthlyTargetsData() {
   const [selectedMonth, setSelectedMonth] = useState<'all' | number>('all');
   const [categoryTargetValues, setCategoryTargetValues] = useState<Record<string, number>>({});
   const [categoryTargetCounts, setCategoryTargetCounts] = useState<Record<string, number>>({});
+  const [categoryActualCounts, setCategoryActualCounts] = useState<Record<string, number>>({});
 
   const canEdit = ['manager', 'admin', 'superadmin'].includes(user?.role ?? '');
-  const calculateTotalTargetValues = useCalculateTotalTargetValues(categories);
 
   const filteredYearlyTargets = useMemo(() => {
     if (!searchQuery.trim()) return yearlyTargets;
@@ -49,6 +49,28 @@ export function useMonthlyTargetsData() {
     }
   }, [depts]);
 
+  const calculateActualCounts = useCallback(() => {
+    const counts: Record<string, number> = {};
+    yearlyTargets.forEach((target) => {
+      // Find the category for this target
+      const category = categories.find((cat) => cat.id === target.category_id);
+      if (category) {
+        // Check if any month has a target value
+        const hasTarget = monthlyTargets.some(
+          (mt) =>
+            mt.yearly_target_id === target.id &&
+            mt.target !== null &&
+            mt.target !== undefined &&
+            mt.target !== 0
+        );
+        if (hasTarget) {
+          counts[category.key] = (counts[category.key] || 0) + 1;
+        }
+      }
+    });
+    setCategoryActualCounts(counts);
+  }, [yearlyTargets, monthlyTargets, categories]);
+
   useEffect(() => {
     if (dept && fiscalYear) loadStats();
   }, [dept, fiscalYear]);
@@ -58,15 +80,17 @@ export function useMonthlyTargetsData() {
       loadMonthlyTargets().then(() => loadYearlyTargets());
     }
   }, [cat, dept, fiscalYear]);
+  useEffect(() => {
+    calculateActualCounts();
+  }, [yearlyTargets, monthlyTargets, calculateActualCounts]);
 
   useEffect(() => {
     if (dept && fiscalYear && categories.length > 0) {
-      calculateTotalTargetValues(String(dept), String(fiscalYear)).then(({ values, counts }) => {
-        setCategoryTargetValues(values);
-        setCategoryTargetCounts(counts);
-      });
+      const { values, counts } = deriveCategoryValuesFromStats(stats);
+      setCategoryTargetValues(values);
+      setCategoryTargetCounts(counts);
     }
-  }, [dept, fiscalYear, categories, calculateTotalTargetValues]);
+  }, [dept, fiscalYear, categories, stats]);
 
   const loadCategories = async () => {
     try {
@@ -124,7 +148,7 @@ export function useMonthlyTargetsData() {
           return {
             ...target,
             used_quota: monthlyUsed,
-            remaining_quota: target.total_target - monthlyUsed,
+            remaining_quota: (target.total_target || 0) - monthlyUsed,
           };
         });
         setYearlyTargets(targets);
@@ -170,11 +194,9 @@ export function useMonthlyTargetsData() {
       if (toast) {
         toast({ title: 'Target Saved', description: `Target set to ${target.toLocaleString()}` });
       }
+      // Refresh data immediately for real-time updates
       loadStats();
       loadMonthlyTargets().then(() => loadYearlyTargets());
-      calculateTotalTargetValues(String(dept), String(fiscalYear)).then((ct) =>
-        setCategoryTargetValues(ct)
-      );
     } catch (e: any) {
       if (toast) {
         toast({
@@ -194,22 +216,25 @@ export function useMonthlyTargetsData() {
 
   const fillAllMonths = async (yearlyTargetId: number, target: number, toast?: any) => {
     try {
-      const monthlyData = [];
-      for (let month = 4; month <= 12; month++) {
-        monthlyData.push({
-          yearly_target_id: yearlyTargetId,
-          month,
-          target,
-          comment: null,
-        });
-      }
-      for (let month = 1; month <= 3; month++) {
-        monthlyData.push({
-          yearly_target_id: yearlyTargetId,
-          month,
-          target,
-          comment: null,
-        });
+      const yearlyTarget = yearlyTargets.find((yt) => yt.id === yearlyTargetId);
+      // Only fill months that don't already have a target set
+      const entries = [];
+      const FY_MONTHS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
+      for (const month of FY_MONTHS) {
+        const existing = monthlyTargets.find(
+          (mt) => mt.yearly_target_id === yearlyTargetId && mt.month === month && mt.target
+        );
+        if (!existing) {
+          entries.push({
+            yearly_target_id: yearlyTargetId,
+            department_id: dept,
+            category_id: yearlyTarget?.category_id ?? null,
+            fiscal_year: fiscalYear,
+            month,
+            target,
+            comment: null,
+          });
+        }
       }
 
       const res = await fetch(`/api/kpi-forms/monthly/batch`, {
@@ -218,7 +243,7 @@ export function useMonthlyTargetsData() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${storage.getAuthToken()}`,
         },
-        body: JSON.stringify({ monthly_data: monthlyData }),
+        body: JSON.stringify({ entries }),
       });
       const d = await res.json();
       if (!d.success) throw new Error(d.message);
@@ -231,9 +256,6 @@ export function useMonthlyTargetsData() {
       }
       loadStats();
       loadMonthlyTargets().then(() => loadYearlyTargets());
-      calculateTotalTargetValues(String(dept), String(fiscalYear)).then((ct) =>
-        setCategoryTargetValues(ct)
-      );
     } catch (e: any) {
       if (toast) {
         toast({
@@ -289,9 +311,6 @@ export function useMonthlyTargetsData() {
     if (cat) {
       loadMonthlyTargets().then(() => loadYearlyTargets());
     }
-    calculateTotalTargetValues(String(dept), String(fiscalYear)).then((ct) =>
-      setCategoryTargetValues(ct)
-    );
   };
 
   return {
@@ -314,6 +333,7 @@ export function useMonthlyTargetsData() {
     setSearchQuery,
     categoryTargetValues,
     categoryTargetCounts,
+    categoryActualCounts,
     canEdit,
     filteredYearlyTargets,
     saveMonthlyTarget,

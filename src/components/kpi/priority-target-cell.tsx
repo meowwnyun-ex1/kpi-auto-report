@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { PriorityValue, PriorityDiff, PriorityTargetStatus } from '@/components/ui/priority-text';
-import { TextPriority } from '@/constants/text-priority-colors';
+import { TextPriority } from '@/shared/constants/text-priority-colors';
 
 // ============================================
 // TARGET VALUE CELL
@@ -377,4 +377,4 @@ export function TargetSummaryCell({
 // QUICK EXPORTS
 // ============================================
 
-export { TextPriority } from '@/constants/text-priority-colors';
+export { TextPriority } from '@/shared/constants/text-priority-colors';

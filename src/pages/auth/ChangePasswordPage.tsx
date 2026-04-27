@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShellLayout } from '@/features/shell';
+import { ShellLayout } from '@/components/layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/shared/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { storage } from '@/shared/utils';
 import { KeyRound, Loader2, Mail, ArrowLeft } from 'lucide-react';

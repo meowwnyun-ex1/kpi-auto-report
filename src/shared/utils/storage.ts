@@ -77,4 +77,41 @@ export const storage = {
   removeAuthToken(): void {
     this.remove('auth_token');
   },
+
+  /**
+   * Get user data from localStorage
+   */
+  getUserData(): any | null {
+    return this.get<any>('user_data');
+  },
+
+  /**
+   * Set user data in localStorage
+   */
+  setUserData(userData: any): void {
+    this.set('user_data', userData);
+  },
+
+  /**
+   * Clear all authentication data
+   */
+  clearAuthData(): void {
+    this.remove('auth_token');
+    this.remove('user_data');
+    this.remove('login_time');
+  },
+
+  /**
+   * Set login time
+   */
+  setLoginTime(): void {
+    this.set('login_time', Date.now());
+  },
+
+  /**
+   * Extend session by updating login time
+   */
+  extendSession(): void {
+    this.setLoginTime();
+  },
 };

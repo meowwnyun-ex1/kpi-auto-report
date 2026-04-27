@@ -1,5 +1,5 @@
 import React from 'react';
-import { TableContainer } from '@/components/shared/TableContainer';
+import { TableContainer } from '@/shared/components/TableContainer';
 import {
   Table,
   TableBody,

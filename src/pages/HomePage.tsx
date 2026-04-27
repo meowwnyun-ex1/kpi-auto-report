@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShellLayout } from '@/features/shell';
+import { ShellLayout } from '@/components/layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,9 +32,9 @@ import {
 } from 'lucide-react';
 import { KPI_CATEGORIES, MONTHS } from '@/pages/dashboard/constants';
 import { useAuth } from '@/contexts/AuthContext';
-import { useFiscalYear } from '@/contexts/FiscalYearContext';
-import { StandardPageLayout } from '@/components/shared/StandardPageLayout';
-import { TableContainer } from '@/components/shared/TableContainer';
+import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
+import { StandardPageLayout } from '@/shared/components/StandardPageLayout';
+import { TableContainer } from '@/shared/components/TableContainer';
 import { storage } from '@/shared/utils/storage';
 
 interface CategoryStats {
@@ -53,7 +53,7 @@ interface CategoryStats {
 export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { fiscalYear } = useFiscalYear();
+  const { fiscalYear } = useFiscalYearSelector();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<CategoryStats[]>([]);
   const [selectedDept, setSelectedDept] = useState('all');

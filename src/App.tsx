@@ -3,29 +3,27 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoadingProvider, useInitialLoading } from './contexts/LoadingContext';
 import { RefreshProvider } from './contexts/RefreshContext';
-import { FiscalYearProvider } from './contexts/FiscalYearContext';
-import { ErrorBoundary } from './components/features/ErrorBoundary';
+import { ErrorBoundary } from '@/shared';
 import { Toaster } from './components/ui/toaster';
 import { UnifiedError } from './components/ui/unified-error';
-import ErrorTestPage from './pages/test/ErrorTestPage';
 import { HomePage, LoginPage } from './pages';
-import { MainDashboard, CategoryDashboard } from './pages/dashboard';
+import { MainDashboard, CompactDashboard, CategoryDashboard } from './pages/dashboard/index';
 import {
   YearlyTargetsPage,
   MonthlyTargetsPage,
   MonthlyResultPage,
   ActionPlansPage,
-} from './pages/kpi';
+} from './pages/kpi/index';
 import {
   AdminDashboardPage,
   AdminUsersPage,
   AdminEmployeesPage,
   AdminSettingsPage,
   AdminKPICategoriesPage,
-} from './pages/admin';
+} from './pages/admin/index';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 import InitialLoading from './components/ui/initial-loading';
-import { ShellLayout } from '@/features/shell';
+import { ShellLayout } from '@/components/layout';
 
 // KPI Categories
 const KPI_CATEGORIES = [
@@ -88,6 +86,7 @@ const AppContent: React.FC = () => {
 
           {/* Dashboard Routes - Accessible by all users */}
           <Route path="/dashboard" element={<MainDashboard />} />
+          <Route path="/dashboard-compact" element={<CompactDashboard />} />
           {KPI_CATEGORIES.map((category) => (
             <Route
               key={category}
@@ -185,16 +184,6 @@ const AppContent: React.FC = () => {
             }
           />
 
-          {/* Test Page - Accessible to all users but appears in admin menu */}
-          <Route
-            path="/test-errors"
-            element={
-              <ProtectedRoute>
-                <ErrorTestPage />
-              </ProtectedRoute>
-            }
-          />
-
           {/* 404 - Full page error with consistent layout */}
           <Route path="*" element={<UnifiedError type="404" useShellLayout={true} />} />
         </Routes>
@@ -207,12 +196,10 @@ function App() {
   return (
     <LoadingProvider>
       <AuthProvider>
-        <FiscalYearProvider>
-          <ErrorBoundary>
-            <AppContent />
-          </ErrorBoundary>
-          <Toaster />
-        </FiscalYearProvider>
+        <ErrorBoundary>
+          <AppContent />
+        </ErrorBoundary>
+        <Toaster />
       </AuthProvider>
     </LoadingProvider>
   );

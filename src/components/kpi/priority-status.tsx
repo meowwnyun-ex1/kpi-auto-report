@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { PriorityBadge, PriorityChip, PriorityIndicator } from '@/components/ui/priority-badge';
-import { KPI_STATUS_PRIORITIES, getStatusPriorityColor } from '@/constants/priority-colors';
+import { KPI_STATUS_PRIORITIES, getStatusPriorityColor } from '@/shared/constants/priority-colors';
 
 interface PriorityStatusProps {
   status: string;
@@ -232,4 +232,4 @@ export function PriorityStatusList({
 // QUICK EXPORTS
 // ============================================
 
-export { KPI_STATUS_PRIORITIES, KPI_STATUS_LABELS } from '@/constants/priority-colors';
+export { KPI_STATUS_PRIORITIES, KPI_STATUS_LABELS } from '@/shared/constants/priority-colors';

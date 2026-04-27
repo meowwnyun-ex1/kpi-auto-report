@@ -1,17 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useFiscalYear } from '@/contexts/FiscalYearContext';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/shared/hooks/use-toast';
 import { storage } from '@/shared/utils';
-import { Category, YearlyTarget, Stats, useCalculateTotalTargetValues } from '../shared';
+import { Category, YearlyTarget, Stats, deriveCategoryValuesFromStats } from '../shared';
 
 export type { YearlyTarget };
 import { Attachment } from '@/components/kpi/AttachmentPanel';
 
-export function useYearlyTargetsData() {
+export function useYearlyTargetsData(fiscalYear?: number, setFiscalYear?: (year: number) => void) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { fiscalYear, setFiscalYear, availableYears } = useFiscalYear();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [cat, setCat] = useState('');
@@ -31,7 +29,6 @@ export function useYearlyTargetsData() {
   const [categoryTargetCounts, setCategoryTargetCounts] = useState<Record<string, number>>({});
 
   const canEdit = ['manager', 'admin', 'superadmin'].includes(user?.role ?? '');
-  const calculateTotalTargetValues = useCalculateTotalTargetValues(categories);
 
   const filteredRows = useMemo(() => {
     if (!searchQuery.trim()) return rows;
@@ -59,12 +56,11 @@ export function useYearlyTargetsData() {
   }, [cat, dept, String(fiscalYear)]);
   useEffect(() => {
     if (dept && fiscalYear && categories.length > 0) {
-      calculateTotalTargetValues(String(dept), String(fiscalYear)).then(({ values, counts }) => {
-        setCategoryTargetValues(values);
-        setCategoryTargetCounts(counts);
-      });
+      const { values, counts } = deriveCategoryValuesFromStats(stats);
+      setCategoryTargetValues(values);
+      setCategoryTargetCounts(counts);
     }
-  }, [dept, String(fiscalYear), categories, calculateTotalTargetValues]);
+  }, [dept, String(fiscalYear), categories, stats]);
 
   const loadCategories = async () => {
     try {
@@ -164,10 +160,6 @@ export function useYearlyTargetsData() {
       });
       loadRows();
       loadStats();
-      calculateTotalTargetValues(String(dept), String(fiscalYear)).then(({ values, counts }) => {
-        setCategoryTargetValues(values);
-        setCategoryTargetCounts(counts);
-      });
     } catch (e: any) {
       toast({
         title: 'Error',
@@ -196,17 +188,10 @@ export function useYearlyTargetsData() {
   const refreshData = () => {
     loadStats();
     if (cat) loadRows();
-    calculateTotalTargetValues(String(dept), String(fiscalYear)).then(({ values, counts }) => {
-      setCategoryTargetValues(values);
-      setCategoryTargetCounts(counts);
-    });
   };
 
   return {
     user,
-    fiscalYear,
-    setFiscalYear,
-    availableYears,
     categories,
     cat,
     setCat,
@@ -224,6 +209,7 @@ export function useYearlyTargetsData() {
     selectedMonth,
     setSelectedMonth,
     drafts,
+    setDrafts,
     categoryTargetValues,
     categoryTargetCounts,
     canEdit,

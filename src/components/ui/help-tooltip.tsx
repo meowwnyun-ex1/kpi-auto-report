@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { HelpCircle, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils';
 import { Button } from './button';
 
 interface HelpTooltipProps {
