@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/shared/hooks/use-toast';
-import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
+import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 import { storage } from '@/shared/utils';
 
 interface AddTargetModalProps {

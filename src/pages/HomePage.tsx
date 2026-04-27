@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { KPI_CATEGORIES, MONTHS } from '@/pages/dashboard/constants';
 import { useAuth } from '@/contexts/AuthContext';
-import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
+import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 import { StandardPageLayout } from '@/shared/components/StandardPageLayout';
 import { TableContainer } from '@/shared/components/TableContainer';
 import { storage } from '@/shared/utils/storage';
