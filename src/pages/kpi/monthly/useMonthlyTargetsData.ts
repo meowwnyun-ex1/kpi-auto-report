@@ -141,17 +141,7 @@ export function useMonthlyTargetsData() {
       });
       const d = await r.json();
       if (d.success) {
-        const targets = d.data.map((target: YearlyTarget) => {
-          const monthlyUsed = monthlyTargets
-            .filter((mt) => mt.yearly_target_id === target.id)
-            .reduce((sum, mt) => sum + (mt.target || 0), 0);
-          return {
-            ...target,
-            used_quota: monthlyUsed,
-            remaining_quota: (target.total_target || 0) - monthlyUsed,
-          };
-        });
-        setYearlyTargets(targets);
+        setYearlyTargets(d.data);
       }
     } catch {
       /* silent */

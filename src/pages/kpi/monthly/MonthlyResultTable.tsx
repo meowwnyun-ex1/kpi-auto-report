@@ -144,7 +144,7 @@ export function MonthlyResultTable({
                   </p>
                 </TableCell>
                 <TableCell className="text-right py-2 bg-emerald-50/50 min-w-[100px] flex-shrink-0">
-                  <div className={`font-mono text-sm font-bold text-cyan-600`}>
+                  <div className={`font-mono text-sm font-bold text-red-600`}>
                     {row.fy_target?.toLocaleString() || '---'}
                   </div>
                 </TableCell>
@@ -187,7 +187,7 @@ export function MonthlyResultTable({
                               className={`font-mono text-[10px] px-2 py-1 rounded min-w-[60px] ${
                                 monthData?.target === 0 || !monthData?.target
                                   ? 'text-gray-400 bg-gray-50'
-                                  : 'text-cyan-600 bg-cyan-50'
+                                  : 'text-red-600 bg-red-50'
                               }`}>
                               {monthData?.target?.toLocaleString() || '---'}
                             </div>

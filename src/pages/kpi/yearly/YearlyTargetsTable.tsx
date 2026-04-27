@@ -237,7 +237,7 @@ export function YearlyTargetsTable({
                       </TableCell>
                       <TableCell className="text-right py-2 bg-gray-50/30 min-w-[100px] flex-shrink-0">
                         <div className="text-right">
-                          <div className="font-mono text-sm font-bold text-indigo-700">
+                          <div className="font-mono text-sm font-bold text-red-600">
                             {row.total_target.toLocaleString()}
                           </div>
                         </div>

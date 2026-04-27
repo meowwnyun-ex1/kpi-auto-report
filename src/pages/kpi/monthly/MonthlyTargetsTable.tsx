@@ -188,7 +188,7 @@ export function MonthlyTargetsTable({
                   <TableCell
                     className={`text-right py-2 ${TABLE_COLORS.cell.alternate} min-w-[100px] flex-shrink-0`}>
                     <div className="text-right">
-                      <div className={`font-mono text-sm font-bold text-cyan-600`}>
+                      <div className={`font-mono text-sm font-bold text-red-600`}>
                         {row.total_target.toLocaleString()}
                       </div>
                     </div>
@@ -280,7 +280,7 @@ export function MonthlyTargetsTable({
                               className={`font-mono text-xs font-bold px-2 py-1 rounded min-h-[32px] flex items-center justify-center ${
                                 mt?.target === 0 || !mt?.target
                                   ? 'text-gray-400 bg-gray-50'
-                                  : 'text-cyan-600 bg-cyan-50'
+                                  : 'text-red-600 bg-red-50'
                               }`}>
                               {mt?.target?.toLocaleString() || '---'}
                             </div>
