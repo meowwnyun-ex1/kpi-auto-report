@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoadingProvider, useInitialLoading } from './contexts/LoadingContext';
 import { RefreshProvider } from './contexts/RefreshContext';
+import { FiscalYearProvider } from './contexts/FiscalYearContext';
 import { ErrorBoundary } from '@/shared';
 import { Toaster } from './components/ui/toaster';
 import { UnifiedError } from './components/ui/unified-error';
@@ -196,10 +197,12 @@ function App() {
   return (
     <LoadingProvider>
       <AuthProvider>
-        <ErrorBoundary>
-          <AppContent />
-        </ErrorBoundary>
-        <Toaster />
+        <FiscalYearProvider>
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
+          <Toaster />
+        </FiscalYearProvider>
       </AuthProvider>
     </LoadingProvider>
   );

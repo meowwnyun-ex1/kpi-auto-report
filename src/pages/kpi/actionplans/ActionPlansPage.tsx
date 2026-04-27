@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
+import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 import { useActionPlansData } from './useActionPlansData';
 import { Shield, RefreshCw, AlertCircle, GanttChart } from 'lucide-react';
 import { CategorySelector } from '@/components/kpi/CategorySelector';

@@ -177,47 +177,26 @@ export function CatCard({
             <div
               className="flex items-center justify-center text-lg font-normal whitespace-nowrap"
               style={{ color: colors.border }}>
-              {window.location.pathname.includes('result') ? (
-                <>
-                  {catStats.count > 0 && <span className="text-xs text-gray-400">Result</span>}
-                  <span className="mx-3">
-                    {catStats.count === 0 ? (
-                      <span className="text-gray-400">No target</span>
-                    ) : (
-                      <>
-                        <span className={`${resultCount === 0 ? 'text-gray-400' : ''}`}>
-                          {resultCount}
-                        </span>
-                        <span className="text-black">/</span>
-                        <span
-                          className={`text-red-600 ${catStats.count === 0 ? 'text-gray-400' : ''}`}>
-                          {catStats.count}
-                        </span>
-                      </>
-                    )}
-                  </span>
-                  {catStats.count > 0 && <span className="text-xs text-gray-400">Target</span>}
-                </>
-              ) : (
-                <>
-                  <span className="mx-3">
-                    {catStats.count === 0 ? (
-                      <span className="text-gray-400">No target</span>
-                    ) : (
-                      <>
-                        <span className={`${resultCount === 0 ? 'text-gray-400' : ''}`}>
-                          {resultCount}
-                        </span>
-                        <span className="text-black">/</span>
-                        <span
-                          className={`text-red-600 ${catStats.count === 0 ? 'text-gray-400' : ''}`}>
-                          {catStats.count}
-                        </span>
-                      </>
-                    )}
-                  </span>
-                </>
-              )}
+              <>
+                <span className="text-xs text-gray-400">Results</span>
+                <span className="mx-3">
+                  {catStats.count === 0 ? (
+                    <span className="text-gray-400">No targets</span>
+                  ) : (
+                    <>
+                      <span className={`${resultCount === 0 ? 'text-gray-400' : ''}`}>
+                        {resultCount}
+                      </span>
+                      <span className="text-black">/</span>
+                      <span
+                        className={`text-red-600 ${catStats.count === 0 ? 'text-gray-400' : ''}`}>
+                        {catStats.count}
+                      </span>
+                    </>
+                  )}
+                </span>
+                <span className="text-xs text-gray-400">Targets</span>
+              </>
             </div>
             {!window.location.pathname.includes('result') && catStats.count > 0 && (
               <div className="text-xs text-gray-400 text-center mt-2">Target</div>
@@ -353,45 +332,25 @@ export function CatCard({
           <div
             className="flex items-center justify-center text-lg font-normal whitespace-nowrap"
             style={{ color: colors.border }}>
-            {window.location.pathname.includes('result') ? (
-              <>
-                {targetCount > 0 && <span className="text-xs text-gray-400">Result</span>}
-                <span className="mx-3">
-                  {targetCount === 0 ? (
-                    <span className="text-gray-400">No target</span>
-                  ) : (
-                    <>
-                      <span className={`${actualCount === 0 ? 'text-gray-400' : ''}`}>
-                        {actualCount}
-                      </span>
-                      <span className="text-black">/</span>
-                      <span className={`text-red-600 ${targetCount === 0 ? 'text-gray-400' : ''}`}>
-                        {targetCount}
-                      </span>
-                    </>
-                  )}
-                </span>
-                {targetCount > 0 && <span className="text-xs text-gray-400">Target</span>}
-              </>
-            ) : (
-              <>
-                <span className="mx-3">
-                  {targetCount === 0 ? (
-                    <span className="text-gray-400">No target</span>
-                  ) : (
-                    <>
-                      <span className={`${actualCount === 0 ? 'text-gray-400' : ''}`}>
-                        {actualCount}
-                      </span>
-                      <span className="text-black">/</span>
-                      <span className={`text-red-600 ${targetCount === 0 ? 'text-gray-400' : ''}`}>
-                        {targetCount}
-                      </span>
-                    </>
-                  )}
-                </span>
-              </>
-            )}
+            <>
+              <span className="text-xs text-gray-400">Results</span>
+              <span className="mx-3">
+                {targetCount === 0 ? (
+                  <span className="text-gray-400">No targets</span>
+                ) : (
+                  <>
+                    <span className={`${actualCount === 0 ? 'text-gray-400' : ''}`}>
+                      {actualCount}
+                    </span>
+                    <span className="text-black">/</span>
+                    <span className={`text-red-600 ${targetCount === 0 ? 'text-gray-400' : ''}`}>
+                      {targetCount}
+                    </span>
+                  </>
+                )}
+              </span>
+              <span className="text-xs text-gray-400">Targets</span>
+            </>
           </div>
           {!window.location.pathname.includes('result') && targetCount > 0 && (
             <div className="text-xs text-gray-400 text-center mt-2">Target</div>

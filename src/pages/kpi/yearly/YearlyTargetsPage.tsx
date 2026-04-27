@@ -8,7 +8,7 @@ import { BaseSection, BaseGrid } from '@/components/base/BaseComponent';
 import { useToast } from '@/shared/hooks/use-toast';
 import { COLORS } from '@/shared/constants/colors';
 import { useYearlyTargetsData } from './useYearlyTargetsData';
-import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
+import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 
 export default function YearlyTargetsPage() {
   const toast = useToast();

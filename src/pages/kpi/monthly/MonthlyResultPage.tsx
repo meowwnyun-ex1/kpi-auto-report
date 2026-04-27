@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Target } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
-import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
+import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 import { COLORS } from '@/shared/constants/colors';
 import { StandardPageLayout } from '@/shared/components/StandardPageLayout';
 import { ShellLayout } from '@/components/layout';

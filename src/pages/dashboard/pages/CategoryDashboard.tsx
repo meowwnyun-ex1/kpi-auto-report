@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { KPI_CATEGORIES, MONTHS } from '../constants';
-import { useFiscalYearSelector } from '@/shared/hooks/useFiscalYearSelector';
+import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 import { storage } from '@/shared/utils';
 import { CategorySummaryCards } from '../cards/CategorySummaryCards';
 import { DepartmentBreakdownCards } from '../cards/DepartmentBreakdownCards';
