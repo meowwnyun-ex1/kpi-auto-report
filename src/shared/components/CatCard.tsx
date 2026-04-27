@@ -208,14 +208,11 @@ export function CatCard({
                         <span className="text-red-600">{catStats.count}</span>
                       )}
                     </span>
-                    {catStats.count > 0 && <span className="text-xs text-gray-400">Targets</span>}
+                    {catStats.count > 0 && <div className="text-xs text-gray-400">Targets</div>}
                   </>
                 )}
               </>
             </div>
-            {!window.location.pathname.includes('result') && catStats.count > 0 && (
-              <div className="text-xs text-gray-400 text-center mt-2">Target</div>
-            )}
           </div>
 
           {/* Progress Bar */}
@@ -378,14 +375,11 @@ export function CatCard({
                       <span className="text-red-600">{targetCount}</span>
                     )}
                   </span>
-                  {targetCount > 0 && <span className="text-xs text-gray-400">Targets</span>}
+                  {targetCount > 0 && <div className="text-xs text-gray-400">Targets</div>}
                 </>
               )}
             </>
           </div>
-          {!window.location.pathname.includes('result') && targetCount > 0 && (
-            <div className="text-xs text-gray-400 text-center mt-2">Target</div>
-          )}
         </div>
 
         {/* Progress Bar */}
