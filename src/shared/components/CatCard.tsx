@@ -200,16 +200,12 @@ export function CatCard({
                     {catStats.count > 0 && <span className="text-xs text-gray-400">Targets</span>}
                   </>
                 ) : (
-                  <>
-                    <span className="mx-3">
-                      {catStats.count === 0 ? (
-                        <span className="text-gray-400">No targets</span>
-                      ) : (
-                        <span className="text-red-600">{catStats.count}</span>
-                      )}
+                  <div className="flex flex-col items-center">
+                    <span className={catStats.count === 0 ? 'text-gray-400' : 'text-red-600'}>
+                      {catStats.count === 0 ? 'No targets' : catStats.count}
                     </span>
-                    {catStats.count > 0 && <div className="text-xs text-gray-400">Targets</div>}
-                  </>
+                    {catStats.count > 0 && <span className="text-xs text-gray-400">Targets</span>}
+                  </div>
                 )}
               </>
             </div>
@@ -367,16 +363,12 @@ export function CatCard({
                   {targetCount > 0 && <span className="text-xs text-gray-400">Targets</span>}
                 </>
               ) : (
-                <>
-                  <span className="mx-3">
-                    {targetCount === 0 ? (
-                      <span className="text-gray-400">No targets</span>
-                    ) : (
-                      <span className="text-red-600">{targetCount}</span>
-                    )}
+                <div className="flex flex-col items-center">
+                  <span className={targetCount === 0 ? 'text-gray-400' : 'text-red-600'}>
+                    {targetCount === 0 ? 'No targets' : targetCount}
                   </span>
-                  {targetCount > 0 && <div className="text-xs text-gray-400">Targets</div>}
-                </>
+                  {targetCount > 0 && <span className="text-xs text-gray-400">Targets</span>}
+                </div>
               )}
             </>
           </div>
