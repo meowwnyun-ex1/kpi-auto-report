@@ -125,6 +125,9 @@ export function MonthlyTargetsTable({
                   Measurement
                 </div>
               </TableHead>
+              <TableHead className="min-w-[120px] text-xs font-bold text-blue-700 bg-blue-100 py-2">
+                Subcategory
+              </TableHead>
               <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-red-600 bg-blue-100 py-2">
                 <div className="flex items-center justify-end gap-1">
                   <CalendarDays className="w-3 h-3" />
@@ -175,6 +178,11 @@ export function MonthlyTargetsTable({
                   <TableCell className={`py-2 ${TABLE_COLORS.cell.data} min-w-[150px]`}>
                     <p className={`text-sm ${TABLE_COLORS.text.measurement} leading-tight`}>
                       {row.measurement ?? '---'}
+                    </p>
+                  </TableCell>
+                  <TableCell className={`py-2 ${TABLE_COLORS.cell.data} min-w-[120px]`}>
+                    <p className="text-sm text-blue-600 leading-tight">
+                      {row.sub_category_name ?? '---'}
                     </p>
                   </TableCell>
                   <TableCell

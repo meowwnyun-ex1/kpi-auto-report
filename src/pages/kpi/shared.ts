@@ -92,6 +92,8 @@ export interface YearlyTarget {
   description_of_target: string | null;
   category_name: string | null;
   category_key: string | null;
+  sub_category_id: number | null;
+  sub_category_name: string | null;
   department_name?: string;
   main_relate_display?: string;
   sort_order?: number;
@@ -128,6 +130,8 @@ export interface MonthlyTarget {
   approved_at: string | null;
   category_name?: string | null;
   category_key?: string | null;
+  sub_category_id?: number | null;
+  sub_category_name?: string | null;
   total_target?: number | null;
   dept_target?: number | null;
   fy_target?: number | null;
@@ -138,6 +142,8 @@ export interface MonthlyTarget {
 export interface YearlyTargetWithMonths {
   yearly_target_id: number;
   category_id?: number | null;
+  sub_category_id?: number | null;
+  sub_category_name?: string | null;
   measurement: string | null;
   unit: string | null;
   main: string | null;

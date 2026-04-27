@@ -91,6 +91,9 @@ export function MonthlyResultTable({
                   Measurement
                 </div>
               </TableHead>
+              <TableHead className="min-w-[120px] text-xs font-bold text-emerald-700 bg-emerald-100 py-2">
+                Subcategory
+              </TableHead>
               <TableHead className="min-w-[100px] flex-shrink-0 text-right text-xs font-bold text-red-600 bg-emerald-100 py-2">
                 <div className="flex items-center justify-end gap-1">
                   <CalendarDays className="w-3 h-3" />
@@ -134,6 +137,11 @@ export function MonthlyResultTable({
                 </TableCell>
                 <TableCell className="py-2 min-w-[150px]">
                   <p className="text-sm text-gray-700 leading-tight">{row.measurement ?? '---'}</p>
+                </TableCell>
+                <TableCell className="py-2 bg-emerald-50/50 min-w-[120px] flex-shrink-0">
+                  <p className="text-sm text-emerald-600 leading-tight">
+                    {row.sub_category_name || '---'}
+                  </p>
                 </TableCell>
                 <TableCell className="text-right py-2 bg-emerald-50/50 min-w-[100px] flex-shrink-0">
                   <div className={`font-mono text-sm font-bold text-cyan-600`}>

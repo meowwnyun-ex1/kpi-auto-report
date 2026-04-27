@@ -121,13 +121,16 @@ router.get('/yearly/:department_id/:fiscal_year', async (req, res) => {
         ISNULL(yt.total_quota, 0) - ISNULL(yt.used_quota, 0) as remaining_quota,
         yt.dept_quota as dept_target, yt.target_type, yt.main_relate,
         yt.metric_no, yt.measurement, yt.unit, yt.main, yt.description_of_target,
-        kc.name as category_name, kc.[key] as category_key
+        kc.name as category_name, kc.[key] as category_key,
+        sc.id as sub_category_id, sc.name as sub_category_name
       FROM kpi_yearly_targets yt
       LEFT JOIN kpi_categories kc ON yt.category_id = kc.id
+      LEFT JOIN kpi_measurements m ON yt.metric_id = m.id
+      LEFT JOIN kpi_measurement_sub_categories sc ON m.sub_category_id = sc.id
       WHERE (yt.department_id = @department_id OR yt.main_relate LIKE '%' + @department_id + '%')
         AND yt.fiscal_year = @fiscal_year
         ${categoryFilter}
-      ORDER BY kc.sort_order, yt.metric_no
+      ORDER BY kc.sort_order, sc.sort_order, yt.metric_no
     `);
 
     // Resolve main_relate codes → dept names
@@ -466,11 +469,14 @@ router.get('/yearly/all/:fiscal_year', async (req, res) => {
           yt.metric_no, yt.measurement, yt.unit, yt.main, yt.description_of_target,
           ISNULL(yt.total_quota, 0) as total_target,
           ISNULL(yt.used_quota, 0) as used_quota,
-          kc.name as category_name, kc.[key] as category_key
+          kc.name as category_name, kc.[key] as category_key,
+          sc.id as sub_category_id, sc.name as sub_category_name
         FROM kpi_yearly_targets yt
         LEFT JOIN kpi_categories kc ON yt.category_id = kc.id
+        LEFT JOIN kpi_measurements m ON yt.metric_id = m.id
+        LEFT JOIN kpi_measurement_sub_categories sc ON m.sub_category_id = sc.id
         WHERE yt.fiscal_year = @fiscal_year
-        ORDER BY yt.department_id, kc.sort_order, yt.metric_no
+        ORDER BY yt.department_id, kc.sort_order, sc.sort_order, yt.metric_no
       `);
 
     const data = result.recordset.map((r: any) => {
@@ -511,12 +517,15 @@ router.get('/yearly/pending/:fiscal_year', async (req, res) => {
           yt.fiscal_year, yt.fy_target, yt.fy_target_text, yt.key_actions, yt.main_pic,
           yt.president_approved, yt.vp_approved, yt.dept_head_approved, yt.created_at,
           yt.metric_no, yt.measurement,
-          kc.name as category_name
+          kc.name as category_name,
+          sc.id as sub_category_id, sc.name as sub_category_name
         FROM kpi_yearly_targets yt
         LEFT JOIN kpi_categories kc ON yt.category_id = kc.id
+        LEFT JOIN kpi_measurements m ON yt.metric_id = m.id
+        LEFT JOIN kpi_measurement_sub_categories sc ON m.sub_category_id = sc.id
         WHERE yt.fiscal_year = @fiscal_year AND yt.fy_target IS NOT NULL
         ORDER BY yt.president_approved ASC, yt.vp_approved ASC, yt.dept_head_approved ASC,
-                 yt.department_id, kc.sort_order
+                 yt.department_id, kc.sort_order, sc.sort_order
       `);
 
     const data = result.recordset.map((r: any) => {

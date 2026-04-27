@@ -45,7 +45,6 @@ export default function MonthlyResultPage() {
     <ShellLayout>
       <StandardPageLayout
         title={cat ? selectedCatName : 'Monthly Results'}
-        subtitle={undefined}
         icon={cat && selectedCatCfg ? selectedCatCfg.icon : Target}
         iconColor={cat && selectedCatCfg ? selectedCatCfg.color : COLORS.success[600]}
         showBackButton={!!cat}

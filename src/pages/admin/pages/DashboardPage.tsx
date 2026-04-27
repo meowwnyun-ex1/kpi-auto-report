@@ -120,7 +120,6 @@ export default function AdminDashboardPage() {
     <ShellLayout>
       <StandardPageLayout
         title="Admin Dashboard"
-        subtitle="System management and administration"
         icon={Settings}
         iconColor="text-purple-600"
         fiscalYear={parseInt(selectedYear)}

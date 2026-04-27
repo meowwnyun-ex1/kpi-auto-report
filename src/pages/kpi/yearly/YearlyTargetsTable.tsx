@@ -184,6 +184,9 @@ export function YearlyTargetsTable({
                     Measurement
                   </div>
                 </TableHead>
+                <TableHead className="text-xs font-bold text-blue-700 bg-gray-50 py-2 min-w-[120px] flex-shrink-0">
+                  Subcategory
+                </TableHead>
                 <TableHead className="text-right text-xs font-bold text-gray-700 bg-gray-50 py-2 min-w-[100px] flex-shrink-0">
                   <div className="flex items-center justify-end gap-1">
                     <TrendingUp className="w-3 h-3" />
@@ -225,6 +228,11 @@ export function YearlyTargetsTable({
                       <TableCell className="py-2 bg-white min-w-[150px]">
                         <p className="text-sm font-bold text-gray-900 leading-tight">
                           {row.measurement ?? '---'}
+                        </p>
+                      </TableCell>
+                      <TableCell className="py-2 bg-gray-50/30 min-w-[120px] flex-shrink-0">
+                        <p className="text-sm text-blue-600 leading-tight">
+                          {row.sub_category_name ?? '---'}
                         </p>
                       </TableCell>
                       <TableCell className="text-right py-2 bg-gray-50/30 min-w-[100px] flex-shrink-0">

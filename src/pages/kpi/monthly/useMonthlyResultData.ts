@@ -175,6 +175,8 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
         return {
           yearly_target_id: yearly.id,
           category_id: yearly.category_id,
+          sub_category_id: yearly.sub_category_id,
+          sub_category_name: yearly.sub_category_name,
           measurement: yearly.measurement,
           unit: yearly.unit,
           main: yearly.main,

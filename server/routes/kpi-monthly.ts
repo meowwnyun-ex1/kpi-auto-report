@@ -100,6 +100,8 @@ router.get('/monthly/:department_id/:fiscal_year/:month', async (req, res) => {
         kc.name        as category_name,
         kc.[key]       as category_key,
         kc.sort_order  as cat_sort,
+        sc.id          as sub_category_id,
+        sc.name        as sub_category_name,
         me.id          as monthly_id,
         me.target,
         me.result,
@@ -111,6 +113,8 @@ router.get('/monthly/:department_id/:fiscal_year/:month', async (req, res) => {
         me.reason
       FROM kpi_yearly_targets yt
       INNER JOIN kpi_categories kc ON yt.category_id = kc.id
+      LEFT  JOIN kpi_measurements mm ON yt.metric_id = mm.id
+      LEFT  JOIN kpi_measurement_sub_categories sc ON mm.sub_category_id = sc.id
       LEFT  JOIN kpi_monthly_targets me
              ON  me.yearly_target_id = yt.id
              AND me.fiscal_year      = @fiscal_year
@@ -119,7 +123,7 @@ router.get('/monthly/:department_id/:fiscal_year/:month', async (req, res) => {
       WHERE (yt.department_id = @department_id OR yt.main_relate LIKE '%'+@department_id+'%')
         AND yt.fiscal_year = @fiscal_year
         ${categoryFilter}
-      ORDER BY kc.sort_order, yt.id
+      ORDER BY kc.sort_order, sc.sort_order, yt.metric_no
     `);
 
     const deptMap = await loadDeptMap(spoPool);

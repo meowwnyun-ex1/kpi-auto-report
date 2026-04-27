@@ -107,7 +107,6 @@ interface TableContainerProps {
   icon: React.ComponentType<{ className?: string }>;
   iconColor?: string;
   title: string;
-  subtitle?: string;
   badge?: string | number;
   totalCount?: number;
   countUnit?: string;
@@ -149,7 +148,6 @@ export function TableContainer({
   icon: Icon,
   iconColor,
   title,
-  subtitle,
   badge,
   totalCount,
   countUnit,
@@ -222,7 +220,6 @@ export function TableContainer({
                 </span>
               )}
             </div>
-            {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-4">
             {badge !== undefined && (

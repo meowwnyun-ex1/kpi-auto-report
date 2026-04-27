@@ -43,7 +43,6 @@ export default function MonthlyTargetsPage() {
     <ShellLayout>
       <StandardPageLayout
         title={cat ? selectedCatName : 'Monthly Targets'}
-        subtitle={cat ? 'Set and manage monthly KPI targets' : undefined}
         icon={cat && selectedCatCfg ? selectedCatCfg.icon : Target}
         iconColor={cat && selectedCatCfg ? selectedCatCfg.color : COLORS.primary[600]}
         showBackButton={!!cat}

@@ -6,7 +6,6 @@ import { BaseSection, BaseGrid } from '@/components/base/BaseComponent';
 interface KpiPageLayoutProps {
   children: React.ReactNode;
   title: string;
-  subtitle?: string;
   icon: React.ComponentType<{ className?: string }>;
   iconColor?: string;
   theme?: 'blue' | 'emerald' | 'gray' | 'purple';
@@ -36,7 +35,6 @@ interface KpiPageLayoutProps {
 export function KpiPageLayout({
   children,
   title,
-  subtitle,
   icon: Icon,
   iconColor,
   theme = 'blue',
@@ -85,7 +83,6 @@ export function KpiPageLayout({
   return (
     <StandardPageLayout
       title={title}
-      subtitle={subtitle}
       icon={Icon}
       iconColor={iconColor}
       showBackButton={showBackButton}

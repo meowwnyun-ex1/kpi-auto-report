@@ -36,17 +36,15 @@ export function BaseComponent({ children, className = '', testId }: BaseComponen
 
 interface BasePageProps extends BaseComponentProps {
   title: string;
-  subtitle?: string;
   pageName: keyof typeof import('@/constants/system-standards').PAGE_THEMES;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
-export function BasePage({ children, title, subtitle, className = '', testId }: BasePageProps) {
+export function BasePage({ children, title, className = '', testId }: BasePageProps) {
   return (
     <div className={`p-6 ${className}`} data-testid={testId}>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-        {subtitle && <p className="text-gray-600 mt-1">{subtitle}</p>}
       </div>
 
       {children}

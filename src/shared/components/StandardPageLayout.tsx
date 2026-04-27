@@ -15,7 +15,6 @@ const EMPTY_YEARS: number[] = [];
 
 interface StandardPageLayoutProps {
   title: string;
-  subtitle?: string;
   icon: React.ComponentType<{ className?: string }>;
   iconColor?: string;
   showBackButton?: boolean;
@@ -35,7 +34,6 @@ interface StandardPageLayoutProps {
 
 export function StandardPageLayout({
   title,
-  subtitle,
   icon: Icon,
   iconColor = 'text-blue-600',
   showBackButton = false,
@@ -142,7 +140,6 @@ export function StandardPageLayout({
                   </Badge>
                 )}
               </div>
-              {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
             </div>
           </div>
 
