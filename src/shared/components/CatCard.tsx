@@ -38,7 +38,7 @@ interface CatCardProps {
   c: Category;
   categoryTargetValues?: Record<string, number>;
   categoryTargetCounts?: Record<string, number>;
-  categoryActualCounts?: Record<string, number>;
+  categoryResultCounts?: Record<string, number>;
   statsLoading?: boolean;
   onClick?: () => void;
   catColor?: string;
@@ -50,6 +50,7 @@ interface CatCardProps {
   };
   selectedCategory?: string;
   navigateTo?: (categoryId: string) => void;
+  isYearlyTargets?: boolean; // New prop to identify Yearly Targets page
 }
 
 // Category configuration
@@ -68,13 +69,14 @@ export function CatCard({
   c,
   categoryTargetValues,
   categoryTargetCounts,
-  categoryActualCounts,
+  categoryResultCounts,
   statsLoading = false,
   onClick,
   catColor,
   calculateCategoryStats,
   selectedCategory = 'all',
   navigateTo,
+  isYearlyTargets = false,
 }: CatCardProps) {
   const cfg = CAT[c.key] ?? { color: catColor || '#6B7280', icon: Target };
   const Icon = cfg.icon;
@@ -216,7 +218,7 @@ export function CatCard({
             <div className="flex justify-between items-center">
               <span className="text-xs font-medium text-gray-600">Progress</span>
               <span className="text-xs font-bold" style={{ color: colors.border }}>
-                {achievement.toFixed(0)}%
+                {achievement.toFixed(2)}%
               </span>
             </div>
             <Progress
@@ -244,10 +246,10 @@ export function CatCard({
 
   // Monthly pages use case - move variables inside component
   const targetCount = categoryTargetCounts?.[c.key] || 0;
-  const actualCount = categoryActualCounts?.[c.key] || 0;
+  const resultCount = categoryResultCounts?.[c.key] || 0;
 
   // Calculate achievement percentage
-  const achievement = targetCount > 0 ? (actualCount / targetCount) * 100 : 0;
+  const achievement = targetCount > 0 ? (resultCount / targetCount) * 100 : 0;
 
   const getTrendIcon = (achievement: number) => {
     if (achievement >= 100) return <TrendingUp className="w-4 h-4 text-green-500" />;
@@ -341,16 +343,29 @@ export function CatCard({
             className="flex items-center justify-center text-lg font-normal whitespace-nowrap"
             style={{ color: colors.border }}>
             <>
-              {window.location.pathname.includes('result') ? (
+              {isYearlyTargets ? (
+                // Yearly Targets: Show only total targets (single number)
                 <>
-                  {targetCount > 0 && <span className="text-xs text-gray-400">Results</span>}
+                  {targetCount === 0 ? (
+                    <span className="text-gray-400">No targets</span>
+                  ) : (
+                    <>
+                      <span className="text-red-600">{targetCount}</span>
+                      <span className="ml-2 text-xs text-gray-400">Targets</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                // Monthly pages: Show filled/total (X/Y format)
+                <>
+                  {targetCount > 0 && <span className="text-xs text-gray-400">Filled</span>}
                   <span className="mx-3">
                     {targetCount === 0 ? (
                       <span className="text-gray-400">No targets</span>
                     ) : (
                       <>
-                        <span className={`${actualCount === 0 ? 'text-gray-400' : ''}`}>
-                          {actualCount}
+                        <span className={`${resultCount === 0 ? 'text-gray-400' : ''}`}>
+                          {resultCount}
                         </span>
                         <span className="text-black">/</span>
                         <span
@@ -362,13 +377,6 @@ export function CatCard({
                   </span>
                   {targetCount > 0 && <span className="text-xs text-gray-400">Targets</span>}
                 </>
-              ) : (
-                <div className="flex flex-col items-center">
-                  <span className={targetCount === 0 ? 'text-gray-400' : 'text-red-600'}>
-                    {targetCount === 0 ? 'No targets' : targetCount}
-                  </span>
-                  {targetCount > 0 && <span className="text-xs text-gray-400">Targets</span>}
-                </div>
               )}
             </>
           </div>
@@ -379,7 +387,7 @@ export function CatCard({
           <div className="flex justify-between items-center">
             <span className="text-xs font-medium text-gray-600">Progress</span>
             <span className="text-xs font-bold" style={{ color: colors.border }}>
-              {achievement.toFixed(0)}%
+              {achievement.toFixed(2)}%
             </span>
           </div>
           <Progress

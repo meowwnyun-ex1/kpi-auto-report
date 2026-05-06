@@ -17,7 +17,9 @@ import {
   Edit,
   Trash2,
   ChevronDown,
+  ChevronRight,
   MoreHorizontal,
+  Layers,
 } from 'lucide-react';
 import { TableContainer, TABLE_STYLES } from '@/shared/components/TableContainer';
 
@@ -72,6 +74,108 @@ export function KPIOverview({
     meas.measurement?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Group measurements by category and subcategory for hierarchy view
+  const groupedHierarchy = React.useMemo(() => {
+    const grouped: any = {};
+
+    categories.forEach((cat) => {
+      grouped[cat.id] = {
+        category: cat,
+        subcategories: {},
+      };
+    });
+
+    subcategories.forEach((sub) => {
+      if (grouped[sub.category_id]) {
+        grouped[sub.category_id].subcategories[sub.id] = {
+          subcategory: sub,
+          measurements: [],
+        };
+      }
+    });
+
+    measurements.forEach((meas) => {
+      if (grouped[meas.category_id]) {
+        const subId = meas.sub_category_id;
+        if (subId && grouped[meas.category_id].subcategories[subId]) {
+          grouped[meas.category_id].subcategories[subId].measurements.push(meas);
+        } else {
+          // Measurements without subcategory
+          if (!grouped[meas.category_id].subcategories['none']) {
+            grouped[meas.category_id].subcategories['none'] = {
+              subcategory: null,
+              measurements: [],
+            };
+          }
+          grouped[meas.category_id].subcategories['none'].measurements.push(meas);
+        }
+      }
+    });
+
+    return grouped;
+  }, [categories, subcategories, measurements]);
+
+  // Flatten hierarchy for table display
+  const flattenedHierarchy = React.useMemo(() => {
+    const flat: any[] = [];
+    let rowNumber = 0;
+
+    Object.values(groupedHierarchy).forEach((catGroup: any) => {
+      const cat = catGroup.category;
+
+      // Add category row
+      flat.push({
+        type: 'category',
+        data: cat,
+        rowNumber: ++rowNumber,
+      });
+
+      Object.values(catGroup.subcategories).forEach((subGroup: any) => {
+        const sub = subGroup.subcategory;
+
+        // Add subcategory row
+        flat.push({
+          type: 'subcategory',
+          data: sub,
+          parentCategory: cat,
+          rowNumber: ++rowNumber,
+        });
+
+        // Add measurements
+        subGroup.measurements.forEach((meas: any) => {
+          flat.push({
+            type: 'measurement',
+            data: meas,
+            parentCategory: cat,
+            parentSubcategory: sub,
+            rowNumber: ++rowNumber,
+          });
+        });
+      });
+    });
+
+    return flat;
+  }, [groupedHierarchy]);
+
+  // Filter hierarchy based on search
+  const filteredHierarchy = React.useMemo(() => {
+    if (!searchTerm) return flattenedHierarchy;
+
+    return flattenedHierarchy.filter((item: any) => {
+      if (item.type === 'category') {
+        return item.data.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      } else if (item.type === 'subcategory') {
+        return item.data?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      } else {
+        return (
+          item.data.measurement?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.parentCategory?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.parentSubcategory?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+    });
+  }, [flattenedHierarchy, searchTerm]);
+
   // Get current data based on active tab
   const getCurrentData = () => {
     switch (activeTab) {
@@ -123,6 +227,23 @@ export function KPIOverview({
             { key: 'actions', label: 'Actions', width: 'w-24', align: 'text-center' },
           ],
         };
+      case 'hierarchy':
+        return {
+          data: filteredHierarchy,
+          total: filteredHierarchy.length,
+          icon: Layers,
+          title: 'KPI Hierarchy View',
+          theme: 'indigo' as const,
+          columns: [
+            { key: 'no', label: '#', width: 'w-12', align: 'text-center' },
+            { key: 'name', label: 'Name', width: 'w-80', align: 'text-left' },
+            { key: 'type', label: 'Type', width: 'w-32', align: 'text-center' },
+            { key: 'category', label: 'Category', width: 'w-40', align: 'text-left' },
+            { key: 'subcategory', label: 'Subcategory', width: 'w-40', align: 'text-left' },
+            { key: 'unit', label: 'Unit', width: 'w-24', align: 'text-center' },
+            { key: 'actions', label: 'Actions', width: 'w-24', align: 'text-center' },
+          ],
+        };
       default:
         return {
           data: [],
@@ -141,11 +262,12 @@ export function KPIOverview({
 
   const { data, total, icon: Icon, title, theme, columns } = getCurrentData();
 
-  // Pagination
-  const totalPages = Math.ceil(total / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedData = data.slice(startIndex, endIndex);
+  // Pagination for hierarchy view (disable pagination for hierarchy)
+  const shouldPaginate = activeTab !== 'hierarchy';
+  const totalPages = shouldPaginate ? Math.ceil(total / itemsPerPage) : 1;
+  const startIndex = shouldPaginate ? (currentPage - 1) * itemsPerPage : 0;
+  const endIndex = shouldPaginate ? startIndex + itemsPerPage : total;
+  const paginatedData = shouldPaginate ? data.slice(startIndex, endIndex) : data;
 
   // Render row based on active tab
   const renderRow = (item: any, index: number) => {
@@ -261,6 +383,120 @@ export function KPIOverview({
           </>
         );
 
+      case 'hierarchy':
+        return (
+          <>
+            <TableCell
+              className={`text-center py-3 px-2 font-medium text-gray-600 ${isEvenRow ? 'bg-indigo-50/30' : 'bg-white'}`}>
+              {rowNumber}
+            </TableCell>
+            <TableCell
+              className={`py-3 px-4 font-medium text-gray-900 ${isEvenRow ? 'bg-indigo-50/30' : 'bg-white'}`}>
+              <div className="flex items-center gap-2">
+                {item.type === 'category' && <Tag className="w-4 h-4 text-blue-500" />}
+                {item.type === 'subcategory' && (
+                  <ChevronRight className="w-4 h-4 text-purple-500 ml-4" />
+                )}
+                {item.type === 'measurement' && (
+                  <Target className="w-4 h-4 text-emerald-500 ml-8" />
+                )}
+                <div
+                  className={`font-semibold ${
+                    item.type === 'category'
+                      ? 'text-lg'
+                      : item.type === 'subcategory'
+                        ? 'text-base ml-2'
+                        : 'text-sm ml-4'
+                  }`}>
+                  {item.type === 'category'
+                    ? item.data.name
+                    : item.type === 'subcategory'
+                      ? item.data?.name || 'Uncategorized'
+                      : item.data.measurement || item.data.name}
+                </div>
+              </div>
+            </TableCell>
+            <TableCell
+              className={`text-center py-3 px-3 ${isEvenRow ? 'bg-indigo-50/30' : 'bg-white'}`}>
+              <Badge
+                variant="outline"
+                className={`text-xs px-2 py-1 ${
+                  item.type === 'category'
+                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                    : item.type === 'subcategory'
+                      ? 'bg-purple-100 text-purple-800 border-purple-200'
+                      : 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                }`}>
+                {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+              </Badge>
+            </TableCell>
+            <TableCell className={`py-3 px-4 ${isEvenRow ? 'bg-indigo-50/30' : 'bg-white'}`}>
+              {item.type === 'category' ? (
+                <Badge variant="outline" className="text-xs px-2 py-1">
+                  {item.data.name}
+                </Badge>
+              ) : item.type === 'subcategory' ? (
+                <Badge variant="outline" className="text-xs px-2 py-1">
+                  {item.parentCategory?.name || 'N/A'}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs px-2 py-1">
+                  {item.parentCategory?.name || 'N/A'}
+                </Badge>
+              )}
+            </TableCell>
+            <TableCell className={`py-3 px-4 ${isEvenRow ? 'bg-indigo-50/30' : 'bg-white'}`}>
+              {item.type === 'category' ? (
+                <span className="text-gray-400">-</span>
+              ) : item.type === 'subcategory' ? (
+                <Badge variant="outline" className="text-xs px-2 py-1">
+                  {item.data?.name || 'N/A'}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs px-2 py-1">
+                  {item.parentSubcategory?.name || 'N/A'}
+                </Badge>
+              )}
+            </TableCell>
+            <TableCell
+              className={`text-center py-3 px-3 ${isEvenRow ? 'bg-indigo-50/30' : 'bg-white'}`}>
+              {item.type === 'measurement' ? (
+                <Badge variant="outline" className="font-mono text-xs px-2 py-1">
+                  {item.data.unit || '-'}
+                </Badge>
+              ) : (
+                <span className="text-gray-400">-</span>
+              )}
+            </TableCell>
+            <TableCell
+              className={`text-center py-3 px-2 ${isEvenRow ? 'bg-indigo-50/30' : 'bg-white'}`}>
+              <div className="flex items-center justify-center gap-1">
+                {canEdit && item.type === 'measurement' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-indigo-50 text-indigo-600"
+                    onClick={() => onEdit('measurement')}>
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                )}
+                {canEdit && item.type !== 'measurement' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-indigo-50 text-indigo-600"
+                    onClick={() => onEdit(item.type as any)}>
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-50">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </div>
+            </TableCell>
+          </>
+        );
+
       case 'measurement':
         return (
           <>
@@ -321,6 +557,8 @@ export function KPIOverview({
         return 'bg-gradient-to-r from-purple-50 to-violet-100';
       case 'emerald':
         return 'bg-gradient-to-r from-emerald-50 to-green-100';
+      case 'indigo':
+        return 'bg-gradient-to-r from-indigo-50 to-purple-100';
       default:
         return 'bg-gradient-to-r from-gray-50 to-slate-100';
     }
@@ -334,6 +572,8 @@ export function KPIOverview({
         return 'bg-purple-50';
       case 'emerald':
         return 'bg-emerald-50';
+      case 'indigo':
+        return 'bg-indigo-50';
       default:
         return 'bg-gray-50';
     }
@@ -347,6 +587,8 @@ export function KPIOverview({
         return 'hover:bg-purple-50/30';
       case 'emerald':
         return 'hover:bg-emerald-50/30';
+      case 'indigo':
+        return 'hover:bg-indigo-50/30';
       default:
         return 'hover:bg-gray-50/30';
     }
@@ -363,8 +605,11 @@ export function KPIOverview({
     <TableContainer
       icon={Icon}
       title={title}
+      theme={theme}
       searchValue={searchTerm}
       onSearchChange={setSearchTerm}
+      totalCount={data.length}
+      countUnit="item"
       searchPlaceholder={`Search ${title.toLowerCase()}...`}
       searchActions={
         <Button
@@ -386,7 +631,6 @@ export function KPIOverview({
         onPageChange: setCurrentPage,
         onItemsPerPageChange: setItemsPerPage,
       }}
-      theme={theme}
       loading={loading}
       empty={total === 0}
       emptyTitle={`No ${title.toLowerCase()} found`}

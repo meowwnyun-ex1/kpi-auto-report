@@ -396,8 +396,8 @@ export const formatTargetStatusWithPriority = (
   return {
     actual: actualFormatted,
     target: targetFormatted,
-    achievement: achievement.toFixed(1),
-    diff: diff.toFixed(1),
+    achievement: achievement.toFixed(2),
+    diff: diff.toFixed(2),
     priority,
     status,
     color: colors.text,
@@ -413,8 +413,8 @@ export const formatTargetStatusWithPriority = (
     display: {
       actual: actualFormatted,
       target: targetFormatted,
-      percentage: options?.showPercentage ? `${achievement.toFixed(1)}%` : undefined,
-      diff: options?.showDiff ? diff.toFixed(1) : undefined,
+      percentage: options?.showPercentage ? `${achievement.toFixed(2)}%` : undefined,
+      diff: options?.showDiff ? diff.toFixed(2) : undefined,
     },
   };
 };

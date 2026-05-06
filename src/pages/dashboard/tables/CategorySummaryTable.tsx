@@ -9,7 +9,10 @@ interface CategorySummaryTableProps {
   selectedCategory?: string;
 }
 
-export function CategorySummaryTable({ calculateCategoryStats, selectedCategory = 'all' }: CategorySummaryTableProps) {
+export function CategorySummaryTable({
+  calculateCategoryStats,
+  selectedCategory = 'all',
+}: CategorySummaryTableProps) {
   // Filter categories based on selection
   const categoriesToShow =
     selectedCategory === 'all'
@@ -17,9 +20,14 @@ export function CategorySummaryTable({ calculateCategoryStats, selectedCategory 
       : KPI_CATEGORIES.filter((cat) => cat.id === selectedCategory);
 
   const getPerformanceBadge = (achievement: number) => {
-    if (achievement >= 95) return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Excellent</Badge>;
-    if (achievement >= 80) return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Good</Badge>;
-    if (achievement >= 60) return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Fair</Badge>;
+    if (achievement >= 95)
+      return (
+        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Excellent</Badge>
+      );
+    if (achievement >= 80)
+      return <Badge className="bg-blue-100 text-blue-700 border-blue-200">Good</Badge>;
+    if (achievement >= 60)
+      return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Fair</Badge>;
     return <Badge className="bg-red-100 text-red-700 border-red-200">Needs Work</Badge>;
   };
 
@@ -52,24 +60,24 @@ export function CategorySummaryTable({ calculateCategoryStats, selectedCategory 
                       <div className="flex items-center gap-2">
                         <div
                           className="w-4 h-4 rounded"
-                          style={{ backgroundColor: cat.color }}
-                        ></div>
+                          style={{ backgroundColor: cat.color }}></div>
                         <span className="font-medium">{cat.name}</span>
                       </div>
                     </td>
                     <td className="text-center py-3 px-4">{stats.count}</td>
-                    <td className="text-right py-3 px-4 font-mono">{stats.target.toLocaleString()}</td>
+                    <td className="text-right py-3 px-4 font-mono">
+                      {stats.target.toLocaleString()}
+                    </td>
                     <td className="text-right py-3 px-4 font-mono" style={{ color: cat.color }}>
                       {stats.result.toLocaleString()}
                     </td>
                     <td className="text-right py-3 px-4">
-                      <span className={`font-mono font-medium ${achievement >= 95 ? 'text-green-600' : achievement >= 75 ? 'text-blue-600' : achievement >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
-                        {achievement.toFixed(1)}%
+                      <span
+                        className={`font-mono font-medium ${achievement >= 95 ? 'text-green-600' : achievement >= 75 ? 'text-blue-600' : achievement >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                        {achievement.toFixed(2)}%
                       </span>
                     </td>
-                    <td className="text-center py-3 px-4">
-                      {getPerformanceBadge(achievement)}
-                    </td>
+                    <td className="text-center py-3 px-4">{getPerformanceBadge(achievement)}</td>
                   </tr>
                 );
               })}

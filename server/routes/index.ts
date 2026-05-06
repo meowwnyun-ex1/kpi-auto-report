@@ -5,6 +5,7 @@
 
 export * from './admin-categories';
 export * from './admin-users';
+export * from './approval';
 export * from './auth';
 export * from './departments';
 export * from './export';

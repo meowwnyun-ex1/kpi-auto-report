@@ -39,6 +39,7 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
+  Mail,
 } from 'lucide-react';
 import { StandardPageLayout } from '@/shared/components/StandardPageLayout';
 import { TableContainer, TABLE_STYLES } from '@/shared/components/TableContainer';
@@ -108,8 +109,7 @@ export default function AdminEmployeesPage() {
           (e) =>
             e.employee_id.toLowerCase().includes(query) ||
             e.name_en?.toLowerCase().includes(query) ||
-            e.name?.toLowerCase().includes(query) ||
-            e.department_name?.toLowerCase().includes(query)
+            e.name?.toLowerCase().includes(query)
         )
       );
     }
@@ -209,7 +209,8 @@ export default function AdminEmployeesPage() {
           description: `${selectedEmployee.name_en} has been added as a manager.`,
         });
         setShowAddDialog(false);
-        setEmployees(employees.filter((e) => e.employee_id !== selectedEmployee.employee_id));
+        // Refresh the entire employee list to get updated data from server
+        fetchAllEmployees();
       } else {
         toast({
           title: 'Failed to Add Manager',
@@ -256,9 +257,11 @@ export default function AdminEmployeesPage() {
             icon={UserPlus}
             title="Employee List"
             theme="emerald"
+            totalCount={filteredEmployees.length}
+            countUnit="employee"
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
-            searchPlaceholder="Search by associate ID, name, or department..."
+            searchPlaceholder="Search by associate ID or name..."
             searchActions={
               <Button
                 size="sm"
@@ -275,9 +278,11 @@ export default function AdminEmployeesPage() {
             icon={UserPlus}
             title="Employee List"
             theme="emerald"
+            totalCount={filteredEmployees.length}
+            countUnit="employee"
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
-            searchPlaceholder="Search by associate ID, name, or department..."
+            searchPlaceholder="Search by associate ID or name..."
             searchActions={
               <Button
                 size="sm"
@@ -321,10 +326,6 @@ export default function AdminEmployeesPage() {
                       Email
                     </TableHead>
                     <TableHead
-                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[150px] flex-shrink-0`}>
-                      Department
-                    </TableHead>
-                    <TableHead
                       className={`flex-shrink-0 w-24 bg-emerald-50 ${TABLE_STYLES.headerCell} pr-6`}>
                       Action
                     </TableHead>
@@ -340,17 +341,26 @@ export default function AdminEmployeesPage() {
                         className={`${TABLE_STYLES.rowNumber} bg-emerald-50/50 flex-shrink-0 w-12`}>
                         {(currentPage - 1) * itemsPerPage + idx + 1}
                       </TableCell>
-                      <TableCell className="font-mono text-sm py-4 bg-white min-w-[120px] flex-shrink-0">
+                      <TableCell className="font-mono text-sm py-4 bg-gray-50/30 min-w-[120px] flex-shrink-0">
                         {emp.employee_id}
                       </TableCell>
                       <TableCell className="font-medium py-4 bg-gray-50/30 min-w-[150px] flex-shrink-0">
-                        {emp.name_en}
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-8 h-8 rounded flex items-center justify-center"
+                            style={{ backgroundColor: '#10B98118' }}>
+                            <span className="text-sm font-semibold" style={{ color: '#10B981' }}>
+                              {emp.name_en.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span>{emp.name_en}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm py-4 bg-white min-w-[200px] flex-shrink-0">
-                        {emp.email}
-                      </TableCell>
-                      <TableCell className="text-sm py-4 bg-gray-50/30 min-w-[150px] flex-shrink-0">
-                        <div>{emp.department_name}</div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          <span>{emp.email}</span>
+                        </div>
                       </TableCell>
                       <TableCell
                         className={`${TABLE_STYLES.actionCell} bg-white flex-shrink-0 w-24`}>
@@ -375,9 +385,11 @@ export default function AdminEmployeesPage() {
             icon={UserPlus}
             title="Employee List"
             theme="emerald"
+            totalCount={filteredEmployees.length}
+            countUnit="employee"
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
-            searchPlaceholder="Search by associate ID, name, or department..."
+            searchPlaceholder="Search by associate ID or name..."
             searchActions={
               <Button
                 size="sm"
@@ -416,10 +428,6 @@ export default function AdminEmployeesPage() {
                       Email
                     </TableHead>
                     <TableHead
-                      className={`bg-emerald-50 ${TABLE_STYLES.headerCell} min-w-[150px] flex-shrink-0`}>
-                      Department
-                    </TableHead>
-                    <TableHead
                       className={`flex-shrink-0 w-24 bg-emerald-50 ${TABLE_STYLES.headerCell} pr-6`}>
                       Action
                     </TableHead>
@@ -435,17 +443,26 @@ export default function AdminEmployeesPage() {
                         className={`${TABLE_STYLES.rowNumber} bg-emerald-50/50 flex-shrink-0 w-12`}>
                         {(currentPage - 1) * itemsPerPage + idx + 1}
                       </TableCell>
-                      <TableCell className="font-mono text-sm py-4 bg-white min-w-[120px] flex-shrink-0">
+                      <TableCell className="font-mono text-sm py-4 bg-gray-50/30 min-w-[120px] flex-shrink-0">
                         {emp.employee_id}
                       </TableCell>
                       <TableCell className="font-medium py-4 bg-gray-50/30 min-w-[150px] flex-shrink-0">
-                        {emp.name_en}
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-8 h-8 rounded flex items-center justify-center"
+                            style={{ backgroundColor: '#10B98118' }}>
+                            <span className="text-sm font-semibold" style={{ color: '#10B981' }}>
+                              {emp.name_en.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span>{emp.name_en}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm py-4 bg-white min-w-[200px] flex-shrink-0">
-                        {emp.email}
-                      </TableCell>
-                      <TableCell className="text-sm py-4 bg-gray-50/30 min-w-[150px] flex-shrink-0">
-                        <div>{emp.department_name}</div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          <span>{emp.email}</span>
+                        </div>
                       </TableCell>
                       <TableCell
                         className={`${TABLE_STYLES.actionCell} bg-white flex-shrink-0 w-24`}>

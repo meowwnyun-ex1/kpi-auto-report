@@ -170,26 +170,118 @@ const initializeDatabasePools = async (): Promise<void> => {
 };
 
 const ensureSchema = async (db: sql.ConnectionPool): Promise<void> => {
-  logger.info('Verifying database schema...');
+  logger.info('Checking schema...');
 
-  // Auto-migrate missing columns (only columns actually used by route queries)
+  // Create approval system tables if they don't exist
+  const tableMigrations = [
+    {
+      name: 'kpi_department_approvers',
+      sql: `
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'kpi_department_approvers')
+        CREATE TABLE kpi_department_approvers (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            department_id INT NOT NULL,
+            department_name NVARCHAR(200) NOT NULL,
+            hos_approvers NVARCHAR(MAX),
+            hod_approvers NVARCHAR(MAX),
+            is_active BIT DEFAULT 1,
+            created_at DATETIME DEFAULT GETDATE(),
+            updated_at DATETIME DEFAULT GETDATE()
+        )
+      `,
+    },
+    {
+      name: 'kpi_approval_logs',
+      sql: `
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'kpi_approval_logs')
+        CREATE TABLE kpi_approval_logs (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            entity_type NVARCHAR(50) NOT NULL,
+            entity_id INT NOT NULL,
+            approval_level NVARCHAR(50) NOT NULL,
+            approver_id INT,
+            action NVARCHAR(20) NOT NULL,
+            comments NVARCHAR(MAX),
+            created_at DATETIME DEFAULT GETDATE()
+        )
+      `,
+    },
+    {
+      name: 'kpi_result_declarations',
+      sql: `
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'kpi_result_declarations')
+        CREATE TABLE kpi_result_declarations (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            monthly_result_id INT NOT NULL,
+            declaration_text NVARCHAR(MAX) NOT NULL,
+            attachment_url NVARCHAR(500),
+            created_at DATETIME DEFAULT GETDATE()
+        )
+      `,
+    },
+    {
+      name: 'kpi_notifications',
+      sql: `
+        IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'kpi_notifications')
+        CREATE TABLE kpi_notifications (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            user_id INT NOT NULL,
+            notification_type NVARCHAR(50) NOT NULL,
+            entity_type NVARCHAR(50) NOT NULL,
+            entity_id INT NOT NULL,
+            title NVARCHAR(200) NOT NULL,
+            message NVARCHAR(MAX) NOT NULL,
+            is_read BIT DEFAULT 0,
+            created_at DATETIME DEFAULT GETDATE()
+        )
+      `,
+    },
+  ];
+
+  for (const table of tableMigrations) {
+    try {
+      await db.request().query(table.sql);
+      logger.info(`Checked/created table: ${table.name}`);
+    } catch (err) {
+      logger.warn(`Could not create table ${table.name}:`, err);
+    }
+  }
+
   const migrations: { table: string; column: string; type: string; default?: string }[] = [
     // ── kpi_categories ──
     { table: 'kpi_categories', column: 'color', type: 'NVARCHAR(20)' },
+    { table: 'kpi_categories', column: 'sort_order', type: 'INT', default: '0' },
+    { table: 'kpi_categories', column: 'is_active', type: 'BIT', default: '1' },
     // ── kpi_yearly_targets ──
+    { table: 'kpi_yearly_targets', column: 'measurement_id', type: 'INT' },
+    { table: 'kpi_yearly_targets', column: 'company_policy', type: 'NVARCHAR(MAX)' },
+    { table: 'kpi_yearly_targets', column: 'department_policy', type: 'NVARCHAR(MAX)' },
+    { table: 'kpi_yearly_targets', column: 'key_actions', type: 'NVARCHAR(MAX)' },
+    { table: 'kpi_yearly_targets', column: 'fy_target_text', type: 'NVARCHAR(500)' },
+    { table: 'kpi_yearly_targets', column: 'main_pic', type: 'NVARCHAR(200)' },
+    { table: 'kpi_yearly_targets', column: 'main_support', type: 'NVARCHAR(200)' },
+    { table: 'kpi_yearly_targets', column: 'president_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_yearly_targets', column: 'vp_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_yearly_targets', column: 'dept_head_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_yearly_targets', column: 'remaining_kadai', type: 'NVARCHAR(MAX)' },
+    { table: 'kpi_yearly_targets', column: 'environment_changes', type: 'NVARCHAR(MAX)' },
+    { table: 'kpi_yearly_targets', column: 'support_sdm', type: 'NVARCHAR(MAX)' },
+    { table: 'kpi_yearly_targets', column: 'support_skd', type: 'NVARCHAR(MAX)' },
     { table: 'kpi_yearly_targets', column: 'total_quota', type: 'DECIMAL(18,4)', default: '0' },
     { table: 'kpi_yearly_targets', column: 'used_quota', type: 'DECIMAL(18,4)', default: '0' },
     { table: 'kpi_yearly_targets', column: 'dept_quota', type: 'DECIMAL(18,4)', default: '0' },
     { table: 'kpi_yearly_targets', column: 'target_type', type: 'NVARCHAR(50)' },
     { table: 'kpi_yearly_targets', column: 'main_relate', type: 'NVARCHAR(255)' },
-    { table: 'kpi_yearly_targets', column: 'metric_no', type: 'NVARCHAR(20)' },
     { table: 'kpi_yearly_targets', column: 'measurement', type: 'NVARCHAR(500)' },
     { table: 'kpi_yearly_targets', column: 'unit', type: 'NVARCHAR(50)' },
     { table: 'kpi_yearly_targets', column: 'main', type: 'NVARCHAR(50)' },
-    { table: 'kpi_yearly_targets', column: 'fy_target_text', type: 'NVARCHAR(500)' },
     { table: 'kpi_yearly_targets', column: 'description_of_target', type: 'NVARCHAR(MAX)' },
     { table: 'kpi_yearly_targets', column: 'sort_order', type: 'INT', default: '0' },
     // ── kpi_monthly_targets ──
+    { table: 'kpi_monthly_targets', column: 'measurement', type: 'NVARCHAR(500)' },
+    { table: 'kpi_monthly_targets', column: 'unit', type: 'NVARCHAR(50)' },
+    { table: 'kpi_monthly_targets', column: 'main', type: 'NVARCHAR(50)' },
+    { table: 'kpi_monthly_targets', column: 'main_relate', type: 'NVARCHAR(255)' },
     { table: 'kpi_monthly_targets', column: 'ev', type: 'NVARCHAR(10)' },
     { table: 'kpi_monthly_targets', column: 'accu_target', type: 'DECIMAL(18,4)' },
     { table: 'kpi_monthly_targets', column: 'accu_result', type: 'DECIMAL(18,4)' },
@@ -200,7 +292,67 @@ const ensureSchema = async (db: sql.ConnectionPool): Promise<void> => {
     { table: 'kpi_monthly_targets', column: 'comment', type: 'NVARCHAR(MAX)' },
     { table: 'kpi_monthly_targets', column: 'image_url', type: 'NVARCHAR(500)' },
     { table: 'kpi_monthly_targets', column: 'image_caption', type: 'NVARCHAR(500)' },
+    { table: 'kpi_monthly_targets', column: 'dept_head_approved', type: 'BIT', default: '0' },
     { table: 'kpi_monthly_targets', column: 'approved_by', type: 'INT' },
+    { table: 'kpi_monthly_targets', column: 'approved_at', type: 'DATETIME' },
+    { table: 'kpi_monthly_targets', column: 'total_quota', type: 'DECIMAL(18,4)' },
+    { table: 'kpi_monthly_targets', column: 'dept_quota', type: 'DECIMAL(18,4)' },
+    { table: 'kpi_monthly_targets', column: 'target_type', type: 'NVARCHAR(50)' },
+    // ── kpi_measurements ──
+    { table: 'kpi_measurements', column: 'main', type: 'NVARCHAR(50)' },
+    { table: 'kpi_measurements', column: 'main_relate', type: 'NVARCHAR(255)' },
+    { table: 'kpi_measurements', column: 'description_of_target', type: 'NVARCHAR(MAX)' },
+    // ── kpi_department_mapping ──
+    { table: 'kpi_department_mapping', column: 'company', type: 'NVARCHAR(100)' },
+    { table: 'kpi_department_mapping', column: 'is_active', type: 'BIT', default: '1' },
+    // ── Approval System: yearly_targets ──
+    {
+      table: 'kpi_yearly_targets',
+      column: 'approval_status',
+      type: 'NVARCHAR(50)',
+      default: "'pending'",
+    },
+    { table: 'kpi_yearly_targets', column: 'hos_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_yearly_targets', column: 'hod_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_yearly_targets', column: 'approval_version', type: 'INT', default: '1' },
+    // ── Approval System: monthly_targets ──
+    {
+      table: 'kpi_monthly_targets',
+      column: 'approval_status',
+      type: 'NVARCHAR(50)',
+      default: "'pending'",
+    },
+    { table: 'kpi_monthly_targets', column: 'hos_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_monthly_targets', column: 'hod_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_monthly_targets', column: 'approval_version', type: 'INT', default: '1' },
+    {
+      table: 'kpi_monthly_targets',
+      column: 'result_approval_status',
+      type: 'NVARCHAR(50)',
+      default: "'pending'",
+    },
+    { table: 'kpi_monthly_targets', column: 'result_hos_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_monthly_targets', column: 'result_hod_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_monthly_targets', column: 'result_admin_approved', type: 'BIT', default: '0' },
+    { table: 'kpi_monthly_targets', column: 'is_incomplete', type: 'BIT', default: '0' },
+    // ── Approval System: additional columns for yearly_targets ──
+    { table: 'kpi_yearly_targets', column: 'hos_approved_by', type: 'INT' },
+    { table: 'kpi_yearly_targets', column: 'hod_approved_by', type: 'INT' },
+    { table: 'kpi_yearly_targets', column: 'hos_approved_at', type: 'DATETIME' },
+    { table: 'kpi_yearly_targets', column: 'hod_approved_at', type: 'DATETIME' },
+    // ── Approval System: additional columns for monthly_targets (approval) ──
+    { table: 'kpi_monthly_targets', column: 'hos_approved_by', type: 'INT' },
+    { table: 'kpi_monthly_targets', column: 'hod_approved_by', type: 'INT' },
+    { table: 'kpi_monthly_targets', column: 'hos_approved_at', type: 'DATETIME' },
+    { table: 'kpi_monthly_targets', column: 'hod_approved_at', type: 'DATETIME' },
+    // ── Approval System: additional columns for monthly_targets (result approval) ──
+    { table: 'kpi_monthly_targets', column: 'result_hos_approved_by', type: 'INT' },
+    { table: 'kpi_monthly_targets', column: 'result_hod_approved_by', type: 'INT' },
+    { table: 'kpi_monthly_targets', column: 'result_admin_approved_by', type: 'INT' },
+    { table: 'kpi_monthly_targets', column: 'result_hos_approved_at', type: 'DATETIME' },
+    { table: 'kpi_monthly_targets', column: 'result_hod_approved_at', type: 'DATETIME' },
+    { table: 'kpi_monthly_targets', column: 'result_admin_approved_at', type: 'DATETIME' },
+    { table: 'kpi_monthly_targets', column: 'result_approval_version', type: 'INT', default: '1' },
   ];
 
   try {

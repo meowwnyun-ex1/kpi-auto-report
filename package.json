@@ -26,6 +26,10 @@
     "db:seed-departments": "tsx server/scripts/seed-spo-departments.ts",
     "db:migrate:dept-master": "tsx server/scripts/migrate-to-dept-master.ts",
     "db:seed-dept-mapping": "tsx server/scripts/seed-department-mapping.ts",
+    "db:migrate:measurement-id": "tsx server/scripts/migrate-metric-to-measurement-id.ts",
+    "db:seed:fy25-data": "tsx server/scripts/seed-fy25-kpi-data.ts",
+    "db:seed:monthly-targets": "tsx server/scripts/seed-monthly-targets.ts",
+    "db:drop:metric-no": "tsx server/scripts/drop-metric-no-column.ts",
     "api-docs": "echo \"📄 API Documentation available at: http://localhost:3007/redoc\" && echo \"📃 Alternative routes: /docs, /api-docs, /swagger, /status\" && pnpm dev:frontend"
   },
   "dependencies": {

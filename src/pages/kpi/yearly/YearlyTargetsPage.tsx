@@ -10,7 +10,7 @@ import { COLORS } from '@/shared/constants/colors';
 import { useYearlyTargetsData } from './useYearlyTargetsData';
 import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 
-export default function YearlyTargetsPage() {
+export function YearlyTargetsPage() {
   const toast = useToast();
   const { fiscalYear, setFiscalYear, availableYears } = useFiscalYearSelector();
 
@@ -29,6 +29,7 @@ export default function YearlyTargetsPage() {
     drafts,
     categoryTargetValues,
     categoryTargetCounts,
+    categoryResultCounts,
     canEdit,
     filteredRows,
     onChange,
@@ -77,10 +78,11 @@ export default function YearlyTargetsPage() {
                     c={c}
                     categoryTargetValues={categoryTargetValues}
                     categoryTargetCounts={categoryTargetCounts}
-                    categoryActualCounts={{}}
+                    categoryResultCounts={categoryResultCounts}
                     statsLoading={statsLoading}
                     onClick={() => setCat(c.key)}
                     catColor={CAT[c.key]?.color}
+                    isYearlyTargets={true}
                   />
                 ))}
             </BaseGrid>

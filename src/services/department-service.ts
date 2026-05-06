@@ -30,27 +30,26 @@ export interface DepartmentSubCategory {
   sort_order: number;
 }
 
-export interface DepartmentMetric {
+export interface DepartmentMeasurement {
   id: number;
-  no: string | null;
   measurement: string;
   unit: string | null;
   fy25_target: string | null;
   main: string | null;
   main_relate: string | null;
   description_of_target: string | null;
-  sub_category_id: number;
-  sub_category_name: string;
-  sub_category_key: string;
+  sub_category_id: number | null;
+  sub_category_name: string | null;
+  sub_category_key: string | null;
   department_id: string | null;
   department_name: string | null;
 }
 
-export interface DepartmentWithMetrics {
+export interface DepartmentWithMeasurements {
   dept_id: string;
   name_en: string;
-  has_metrics: boolean;
-  metric_count: number;
+  has_measurements: boolean;
+  measurement_count: number;
   filled_count: number;
 }
 
@@ -59,10 +58,10 @@ export const DepartmentService = {
   getDepartments: () =>
     ApiService.get<{ success: boolean; data: Department[]; source: string }>('/departments'),
 
-  // Get departments with metrics for a specific category
-  getDepartmentsWithMetrics: (category: string) =>
-    ApiService.get<{ success: boolean; data: DepartmentWithMetrics[] }>(
-      `/departments/with-metrics/${category}`
+  // Get departments with measurements for a specific category
+  getDepartmentsWithMeasurements: (category: string) =>
+    ApiService.get<{ success: boolean; data: DepartmentWithMeasurements[] }>(
+      `/departments/with-measurements/${category}`
     ),
 
   // Get categories for a department
@@ -77,12 +76,12 @@ export const DepartmentService = {
       `/departments/${deptId}/sub-categories/${category}`
     ),
 
-  // Get metrics for a department, category, and optionally sub-category
-  getDepartmentMetrics: (deptId: string, category: string, subCategory?: string) => {
+  // Get measurements for a department, category, and optionally sub-category
+  getDepartmentMeasurements: (deptId: string, category: string, subCategory?: string) => {
     const path = subCategory
-      ? `/departments/${deptId}/metrics/${category}/${subCategory}`
-      : `/departments/${deptId}/metrics/${category}`;
-    return ApiService.get<{ success: boolean; data: DepartmentMetric[] }>(path);
+      ? `/departments/${deptId}/measurements/${category}/${subCategory}`
+      : `/departments/${deptId}/measurements/${category}`;
+    return ApiService.get<{ success: boolean; data: DepartmentMeasurement[] }>(path);
   },
 };
 

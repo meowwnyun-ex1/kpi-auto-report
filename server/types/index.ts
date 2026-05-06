@@ -33,8 +33,7 @@ export interface KPICategory {
 export interface YearlyTarget {
   id?: number;
   category_id: number;
-  metric_id?: number;
-  metric_no: string;
+  measurement_id?: number;
   measurement: string;
   unit?: string;
   main?: string;
@@ -55,8 +54,7 @@ export interface MonthlyEntry {
   id?: number;
   yearly_target_id?: number;
   category_id: number;
-  metric_id?: number;
-  metric_no: string;
+  measurement_id?: number;
   measurement: string;
   unit?: string;
   main?: string;
@@ -81,8 +79,7 @@ export interface ActionPlan {
   id?: number;
   department_id: string;
   category_id: number;
-  metric_id?: number;
-  metric_no: string;
+  measurement_id?: number;
   measurement: string;
   fiscal_year: number;
   action_plan?: string;
@@ -99,7 +96,6 @@ export interface ActionPlan {
 export interface DepartmentMapping {
   kpi_code: string;
   spo_dept_id: string;
-  spo_dept_name?: string;
   description?: string;
 }
 

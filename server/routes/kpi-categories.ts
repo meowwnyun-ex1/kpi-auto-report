@@ -60,18 +60,18 @@ router.get('/measurements/:category', async (req, res) => {
     const result = await request.query(`
       SELECT DISTINCT
         yt.id,
-        yt.metric_no as no,
-        yt.measurement,
-        yt.unit,
-        yt.main,
-        yt.main_relate,
-        yt.description_of_target,
+        mm.measurement,
+        mm.unit,
+        mm.main,
+        mm.main_relate,
+        mm.description_of_target,
         yt.fy_target as fy25_target,
         yt.sort_order
       FROM kpi_yearly_targets yt
+      LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
       WHERE yt.category_id = @category_id
         ${deptFilter}
-      ORDER BY yt.sort_order, yt.metric_no
+      ORDER BY yt.sort_order, mm.id
     `);
 
     res.json({
@@ -87,9 +87,9 @@ router.get('/measurements/:category', async (req, res) => {
 });
 
 /**
- * GET /api/kpi-forms/metrics/:category/:department_id
+ * GET /api/kpi-forms/measurements/:category/:department_id
  */
-router.get('/metrics/:category/:department_id', async (req, res) => {
+router.get('/measurements/:category/:department_id', async (req, res) => {
   try {
     const { category, department_id } = req.params;
     const pool = await getKpiDb();
@@ -110,21 +110,21 @@ router.get('/metrics/:category/:department_id', async (req, res) => {
       .input('category_id', sql.Int, categoryId).query(`
         SELECT
           yt.id,
-          yt.metric_no as no,
-          yt.measurement,
-          yt.unit,
+          mm.measurement,
+          mm.unit,
           yt.fy_target,
           yt.department_id
         FROM kpi_yearly_targets yt
+        LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
         WHERE yt.department_id = @department_id
           AND yt.category_id = @category_id
-        ORDER BY yt.metric_no
+        ORDER BY mm.id
       `);
 
     res.json({ success: true, data: result.recordset });
   } catch (error) {
-    logger.error('Error fetching metrics', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch metrics' });
+    logger.error('Error fetching measurements', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch measurements' });
   }
 });
 

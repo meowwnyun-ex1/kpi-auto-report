@@ -82,12 +82,12 @@ export const InitialLoading: React.FC = () => {
       }
     };
 
-    // Start immediately instead of 800ms delay
+    // Start after a delay to allow backend to fully initialize
     const initTimer = setTimeout(() => {
       if (!hasError) {
         initializeApp();
       }
-    }, 200); // Reduced from 800ms to 200ms
+    }, 1500); // Increased to 1500ms to allow backend startup
 
     return () => clearTimeout(initTimer);
   }, [completeInitialLoading, setInitialError, hasError]);

@@ -25,7 +25,7 @@ export interface YearlyTarget {
   department: string;
   fy: string;
   target_value: number;
-  actual_value?: number;
+  result_value?: number;
   achievement_percentage?: number;
   created_at?: string;
   updated_at?: string;
@@ -37,7 +37,7 @@ export interface MonthlyTarget {
   yearly_target_id: number;
   month: string;
   target_value: number;
-  actual_value?: number;
+  result_value?: number;
   achievement_percentage?: number;
   created_at?: string;
   updated_at?: string;
@@ -50,7 +50,7 @@ export interface YearlyTargetWithMonths extends YearlyTarget {
 export interface Stats {
   total_categories: number;
   total_targets: number;
-  total_actual: number;
+  total_result: number;
   overall_achievement: number;
 }
 

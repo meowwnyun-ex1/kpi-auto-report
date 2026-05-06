@@ -9,8 +9,8 @@ import { useMonthlyTargetsData } from './useMonthlyTargetsData';
 import { MonthlyTargetsTable } from './MonthlyTargetsTable';
 import { BaseSection, BaseGrid } from '@/components/base/BaseComponent';
 
-export default function MonthlyTargetsPage() {
-  const toast = useToast();
+export function MonthlyTargetsPage() {
+  const { toast } = useToast();
   const {
     categories,
     cat,
@@ -70,7 +70,7 @@ export default function MonthlyTargetsPage() {
                   c={c}
                   categoryTargetValues={categoryTargetValues}
                   categoryTargetCounts={categoryTargetCounts}
-                  categoryActualCounts={categoryActualCounts}
+                  categoryResultCounts={categoryResultCounts}
                   statsLoading={statsLoading}
                   onClick={() => setCat(c.key)}
                   catColor={CAT[c.key]?.color}

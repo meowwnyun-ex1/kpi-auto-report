@@ -51,7 +51,7 @@ export function DepartmentsTab({ departmentData }: DepartmentsTabProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-green-600 font-medium">Average Performance</p>
-                <p className="text-2xl font-bold text-green-900">{avgRate.toFixed(1)}%</p>
+                <p className="text-2xl font-bold text-green-900">{avgRate.toFixed(2)}%</p>
               </div>
               <Award className="w-8 h-8 text-green-500" />
             </div>
@@ -65,7 +65,7 @@ export function DepartmentsTab({ departmentData }: DepartmentsTabProps) {
                 <div>
                   <p className="text-sm text-purple-600 font-medium">Top Performer</p>
                   <p className="text-lg font-bold text-purple-900">{topPerformer.name}</p>
-                  <p className="text-sm text-purple-700">{topPerformer.rate.toFixed(1)}%</p>
+                  <p className="text-sm text-purple-700">{topPerformer.rate.toFixed(2)}%</p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-purple-500" />
               </div>
@@ -112,7 +112,7 @@ export function DepartmentsTab({ departmentData }: DepartmentsTabProps) {
                         </h3>
                         <div className="flex items-center gap-1">
                           {getPerformanceIcon(dept.rate)}
-                          <span className="text-xs text-gray-500">{dept.rate.toFixed(1)}%</span>
+                          <span className="text-xs text-gray-500">{dept.rate.toFixed(2)}%</span>
                         </div>
                       </div>
                     </div>

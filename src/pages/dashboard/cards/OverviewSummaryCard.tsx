@@ -29,13 +29,13 @@ export function OverviewSummaryCard({ overallStats }: OverviewSummaryCardProps) 
           </div>
           <div className="text-right">
             <div className="text-5xl font-black text-gray-900 mb-1">
-              {overallStats.overallRate.toFixed(1)}%
+              {overallStats.overallRate.toFixed(2)}%
             </div>
             <div className="text-gray-600 text-sm font-medium">Overall Achievement</div>
           </div>
         </div>
 
-        {/* Key Metrics Grid */}
+        {/* Key Measurements Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-gray-50/80 rounded-2xl p-6 border border-gray-200 hover:bg-gray-100/80 transition-all">
             <div className="flex items-center gap-3 mb-3">
@@ -60,7 +60,7 @@ export function OverviewSummaryCard({ overallStats }: OverviewSummaryCardProps) 
             <div className="text-3xl font-black text-emerald-700">
               {overallStats.totalResult.toLocaleString()}
             </div>
-            <div className="text-emerald-600 text-xs mt-1">Achieved metrics</div>
+            <div className="text-emerald-600 text-xs mt-1">Achieved measurements</div>
           </div>
 
           <div className="bg-gray-50/80 rounded-2xl p-6 border border-gray-200 hover:bg-gray-100/80 transition-all">

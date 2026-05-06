@@ -278,7 +278,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
           return BarChart3;
         case 'charts':
           return BarChart3;
-        case 'metrics':
+        case 'measurements':
           return TrendingUp;
         case 'tools':
           return Wrench;
@@ -660,7 +660,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
         reports: 'Reports',
         statistics: 'Statistics',
         charts: 'Charts',
-        metrics: 'Metrics',
+        measurements: 'Measurements',
         tools: 'Tools',
         utilities: 'Utilities',
         maintenance: 'Maintenance',
@@ -672,22 +672,23 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
         permissions: 'Permissions',
         roles: 'Roles',
         access: 'Access',
-        overview: 'KPI Overview',
-        'yearly-targets': 'Yearly Targets',
-        'monthly-targets': 'Monthly Targets',
-        'monthly-result': 'Monthly Results',
-        'action-plans': 'Action Plans',
+        overview: 'KPI',
+        'yearly-targets': 'Yearly',
+        'monthly-targets': 'Monthly',
+        'monthly-result': 'Results',
+        'action-plans': 'Actions',
         employees: 'Employees',
-        'kpi-items': 'KPI Measurements',
+        'kpi-items': 'Measurements',
+        'approval-routes': 'Approval',
       },
       user: {
         home: 'Home',
-        store: 'KPI Report',
-        overview: 'KPI Overview',
-        'yearly-targets': 'Yearly Targets',
-        'monthly-targets': 'Monthly Targets',
-        'monthly-result': 'Monthly Results',
-        'action-plans': 'Action Plans',
+        store: 'Report',
+        overview: 'KPI',
+        'yearly-targets': 'Yearly',
+        'monthly-targets': 'Monthly',
+        'monthly-result': 'Results',
+        'action-plans': 'Actions',
         dashboard: 'Dashboard',
         safety: 'Safety',
         quality: 'Quality',

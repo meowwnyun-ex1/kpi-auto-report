@@ -81,6 +81,6 @@ export interface KPIItem {
   categoryId: number;
   category?: KPICategory;
   targetValue?: number;
-  actualValue?: number;
+  resultValue?: number;
   achievementRate?: number;
 }

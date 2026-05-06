@@ -110,7 +110,7 @@ router.get('/yearly/:department_id/:fiscal_year', async (req, res) => {
 
     const result = await request.query(`
       SELECT
-        yt.id, yt.department_id, yt.category_id, yt.metric_id,
+        yt.id, yt.department_id, yt.category_id, yt.measurement_id,
         yt.fiscal_year, yt.company_policy, yt.department_policy,
         yt.key_actions, yt.remaining_kadai, yt.environment_changes,
         yt.fy_target, yt.fy_target_text, yt.main_pic, yt.main_support,
@@ -120,17 +120,17 @@ router.get('/yearly/:department_id/:fiscal_year', async (req, res) => {
         ISNULL(yt.used_quota, 0) as used_quota,
         ISNULL(yt.total_quota, 0) - ISNULL(yt.used_quota, 0) as remaining_quota,
         yt.dept_quota as dept_target, yt.target_type, yt.main_relate,
-        yt.metric_no, yt.measurement, yt.unit, yt.main, yt.description_of_target,
+        m.measurement, m.unit, m.main, m.description_of_target,
         kc.name as category_name, kc.[key] as category_key,
         sc.id as sub_category_id, sc.name as sub_category_name
       FROM kpi_yearly_targets yt
       LEFT JOIN kpi_categories kc ON yt.category_id = kc.id
-      LEFT JOIN kpi_measurements m ON yt.metric_id = m.id
+      LEFT JOIN kpi_measurements m ON yt.measurement_id = m.id
       LEFT JOIN kpi_measurement_sub_categories sc ON m.sub_category_id = sc.id
       WHERE (yt.department_id = @department_id OR yt.main_relate LIKE '%' + @department_id + '%')
         AND yt.fiscal_year = @fiscal_year
         ${categoryFilter}
-      ORDER BY kc.sort_order, sc.sort_order, yt.metric_no
+      ORDER BY kc.sort_order, sc.sort_order, m.id
     `);
 
     // Resolve main_relate codes → dept names
@@ -143,7 +143,13 @@ router.get('/yearly/:department_id/:fiscal_year', async (req, res) => {
 
     res.json({ success: true, data });
   } catch (error: any) {
-    logger.error('Error fetching yearly targets', { message: error.message, stack: error.stack });
+    logger.error('Error fetching yearly targets', {
+      message: error.message,
+      stack: error.stack,
+      department_id,
+      fiscal_year,
+      category,
+    });
     res.status(500).json({
       success: false,
       message: 'Failed to fetch yearly targets',
@@ -189,7 +195,7 @@ router.post('/yearly', requireManager, async (req, res) => {
     const {
       department_id,
       category_id,
-      metric_id,
+      measurement_id,
       fiscal_year,
       company_policy,
       department_policy,
@@ -210,7 +216,7 @@ router.post('/yearly', requireManager, async (req, res) => {
       .request()
       .input('department_id', sql.NVarChar, department_id)
       .input('category_id', sql.Int, category_id)
-      .input('metric_id', sql.Int, metric_id || null)
+      .input('measurement_id', sql.Int, measurement_id || null)
       .input('fiscal_year', sql.Int, fiscal_year)
       .input('company_policy', sql.NVarChar(sql.MAX), company_policy)
       .input('department_policy', sql.NVarChar(sql.MAX), department_policy)
@@ -226,19 +232,20 @@ router.post('/yearly', requireManager, async (req, res) => {
       .input('created_by', sql.Int, userId).query(`
         MERGE INTO kpi_yearly_targets AS target
         USING (SELECT @department_id as department_id, @category_id as category_id,
-                      @metric_id as metric_id, @fiscal_year as fiscal_year) AS source
+                      @measurement_id as measurement_id, @fiscal_year as fiscal_year) AS source
         ON target.department_id = source.department_id AND target.category_id = source.category_id
-           AND ISNULL(target.metric_id, 0) = ISNULL(source.metric_id, 0)
+           AND ISNULL(target.measurement_id, 0) = ISNULL(source.measurement_id, 0)
            AND target.fiscal_year = source.fiscal_year
         WHEN MATCHED THEN
           UPDATE SET company_policy=@company_policy, department_policy=@department_policy,
             key_actions=@key_actions, remaining_kadai=@remaining_kadai, environment_changes=@environment_changes,
             fy_target=@fy_target, fy_target_text=@fy_target_text, main_pic=@main_pic,
-            main_support=@main_support, support_sdm=@support_sdm, support_skd=@support_skd, updated_at=GETDATE()
+            main_support=@main_support, support_sdm=@support_sdm, support_skd=@support_skd, updated_at=GETDATE(),
+            approval_status='pending', hos_approved=0, hod_approved=0
         WHEN NOT MATCHED THEN
-          INSERT (department_id,category_id,metric_id,fiscal_year,company_policy,department_policy,key_actions,
+          INSERT (department_id,category_id,measurement_id,fiscal_year,company_policy,department_policy,key_actions,
                   remaining_kadai,environment_changes,fy_target,fy_target_text,main_pic,main_support,support_sdm,support_skd,created_by)
-          VALUES (@department_id,@category_id,@metric_id,@fiscal_year,@company_policy,@department_policy,@key_actions,
+          VALUES (@department_id,@category_id,@measurement_id,@fiscal_year,@company_policy,@department_policy,@key_actions,
                   @remaining_kadai,@environment_changes,@fy_target,@fy_target_text,@main_pic,@main_support,@support_sdm,@support_skd,@created_by)
         OUTPUT INSERTED.id;
       `);
@@ -274,7 +281,7 @@ router.post('/yearly/measurement', requireManager, async (req, res) => {
     const pool = await getKpiDb();
     const userId = (req as any).user?.id;
 
-    // Get metric_id from kpi_measurements table or create new one
+    // Get measurement_id from kpi_measurements table or create new one
     let metricId: number;
     const existingMetric = await pool
       .request()
@@ -305,7 +312,7 @@ router.post('/yearly/measurement', requireManager, async (req, res) => {
     const result = await pool
       .request()
       .input('category_id', sql.Int, category_id)
-      .input('metric_id', sql.Int, metricId)
+      .input('measurement_id', sql.Int, metricId)
       .input('measurement', sql.NVarChar, measurement)
       .input('unit', sql.NVarChar, unit || null)
       .input('main', sql.NVarChar, main || null)
@@ -315,12 +322,12 @@ router.post('/yearly/measurement', requireManager, async (req, res) => {
       .input('main_relate', sql.NVarChar, main_relate || null)
       .input('created_by', sql.Int, userId).query(`
         INSERT INTO kpi_yearly_targets (
-          category_id, metric_id, measurement, unit, main, fy_target,
+          category_id, measurement_id, measurement, unit, main, fy_target,
           total_target, description_of_target, main_relate, created_by
         )
         OUTPUT INSERTED.id, INSERTED.*
         VALUES (
-          @category_id, @metric_id, @measurement, @unit, @main, @fy_target,
+          @category_id, @measurement_id, @measurement, @unit, @main, @fy_target,
           @total_target, @description_of_target, @main_relate, @created_by
         )
       `);
@@ -360,7 +367,7 @@ router.post('/yearly/batch', requireManager, async (req, res) => {
           .request()
           .input('department_id', sql.NVarChar, t.department_id)
           .input('category_id', sql.Int, t.category_id)
-          .input('metric_id', sql.Int, t.metric_id || null)
+          .input('measurement_id', sql.Int, t.measurement_id || null)
           .input('fiscal_year', sql.Int, t.fiscal_year)
           .input('company_policy', sql.NVarChar(sql.MAX), t.company_policy || '')
           .input('department_policy', sql.NVarChar(sql.MAX), t.department_policy || '')
@@ -376,7 +383,6 @@ router.post('/yearly/batch', requireManager, async (req, res) => {
           .input('total_quota', sql.Decimal(18, 4), t.total_quota || null)
           .input('dept_quota', sql.Decimal(18, 4), t.dept_quota || null)
           .input('target_type', sql.NVarChar(20), t.target_type || null)
-          .input('metric_no', sql.NVarChar(20), t.metric_no || null)
           .input('measurement', sql.NVarChar(500), t.measurement || null)
           .input('unit', sql.NVarChar(50), t.unit || null)
           .input('main', sql.NVarChar(50), t.main || null)
@@ -385,9 +391,9 @@ router.post('/yearly/batch', requireManager, async (req, res) => {
           .input('created_by', sql.Int, userId).query(`
             MERGE INTO kpi_yearly_targets AS target
             USING (SELECT @department_id as department_id, @category_id as category_id,
-                          @metric_id as metric_id, @fiscal_year as fiscal_year) AS source
+                          @measurement_id as measurement_id, @fiscal_year as fiscal_year) AS source
             ON target.department_id = source.department_id AND target.category_id = source.category_id
-               AND ISNULL(target.metric_id, 0) = ISNULL(source.metric_id, 0)
+               AND ISNULL(target.measurement_id, 0) = ISNULL(source.measurement_id, 0)
                AND target.fiscal_year = source.fiscal_year
             WHEN MATCHED THEN
               UPDATE SET company_policy=@company_policy,department_policy=@department_policy,
@@ -395,18 +401,18 @@ router.post('/yearly/batch', requireManager, async (req, res) => {
                 fy_target=@fy_target,fy_target_text=@fy_target_text,main_pic=@main_pic,
                 main_support=@main_support,support_sdm=@support_sdm,support_skd=@support_skd,
                 total_quota=@total_quota,dept_quota=@dept_quota,target_type=@target_type,
-                metric_no=@metric_no,measurement=@measurement,unit=@unit,main=@main,
+                measurement=@measurement,unit=@unit,main=@main,
                 main_relate=@main_relate,description_of_target=@description_of_target,updated_at=GETDATE()
             WHEN NOT MATCHED THEN
-              INSERT (department_id,category_id,metric_id,fiscal_year,company_policy,department_policy,key_actions,
+              INSERT (department_id,category_id,measurement_id,fiscal_year,company_policy,department_policy,key_actions,
                       remaining_kadai,environment_changes,fy_target,fy_target_text,main_pic,main_support,support_sdm,support_skd,
-                      total_quota,dept_quota,target_type,metric_no,measurement,unit,main,main_relate,description_of_target,created_by)
-              VALUES (@department_id,@category_id,@metric_id,@fiscal_year,@company_policy,@department_policy,@key_actions,
+                      total_quota,dept_quota,target_type,measurement,unit,main,main_relate,description_of_target,created_by)
+              VALUES (@department_id,@category_id,@measurement_id,@fiscal_year,@company_policy,@department_policy,@key_actions,
                       @remaining_kadai,@environment_changes,@fy_target,@fy_target_text,@main_pic,@main_support,@support_sdm,@support_skd,
-                      @total_quota,@dept_quota,@target_type,@metric_no,@measurement,@unit,@main,@main_relate,@description_of_target,@created_by)
+                      @total_quota,@dept_quota,@target_type,@measurement,@unit,@main,@main_relate,@description_of_target,@created_by)
             OUTPUT INSERTED.id;
           `);
-        results.push({ metric_id: t.metric_id, id: r.recordset[0]?.id });
+        results.push({ measurement_id: t.measurement_id, id: r.recordset[0]?.id });
       }
       await transaction.commit();
       res.json({ success: true, message: `${results.length} yearly targets saved`, data: results });
@@ -466,17 +472,17 @@ router.get('/yearly/all/:fiscal_year', async (req, res) => {
           yt.fiscal_year, yt.company_policy, yt.department_policy,
           yt.key_actions, yt.fy_target, yt.fy_target_text,
           yt.main_pic, yt.main_support, yt.main_relate,
-          yt.metric_no, yt.measurement, yt.unit, yt.main, yt.description_of_target,
+          m.measurement, m.unit, m.main, m.description_of_target,
           ISNULL(yt.total_quota, 0) as total_target,
           ISNULL(yt.used_quota, 0) as used_quota,
           kc.name as category_name, kc.[key] as category_key,
           sc.id as sub_category_id, sc.name as sub_category_name
         FROM kpi_yearly_targets yt
         LEFT JOIN kpi_categories kc ON yt.category_id = kc.id
-        LEFT JOIN kpi_measurements m ON yt.metric_id = m.id
+        LEFT JOIN kpi_measurements m ON yt.measurement_id = m.id
         LEFT JOIN kpi_measurement_sub_categories sc ON m.sub_category_id = sc.id
         WHERE yt.fiscal_year = @fiscal_year
-        ORDER BY yt.department_id, kc.sort_order, sc.sort_order, yt.metric_no
+        ORDER BY yt.department_id, kc.sort_order, sc.sort_order, m.id
       `);
 
     const data = result.recordset.map((r: any) => {
@@ -516,16 +522,16 @@ router.get('/yearly/pending/:fiscal_year', async (req, res) => {
           yt.id, yt.department_id, yt.category_id,
           yt.fiscal_year, yt.fy_target, yt.fy_target_text, yt.key_actions, yt.main_pic,
           yt.president_approved, yt.vp_approved, yt.dept_head_approved, yt.created_at,
-          yt.metric_no, yt.measurement,
+          m.measurement,
           kc.name as category_name,
           sc.id as sub_category_id, sc.name as sub_category_name
         FROM kpi_yearly_targets yt
         LEFT JOIN kpi_categories kc ON yt.category_id = kc.id
-        LEFT JOIN kpi_measurements m ON yt.metric_id = m.id
+        LEFT JOIN kpi_measurements m ON yt.measurement_id = m.id
         LEFT JOIN kpi_measurement_sub_categories sc ON m.sub_category_id = sc.id
         WHERE yt.fiscal_year = @fiscal_year AND yt.fy_target IS NOT NULL
         ORDER BY yt.president_approved ASC, yt.vp_approved ASC, yt.dept_head_approved ASC,
-                 yt.department_id, kc.sort_order, sc.sort_order
+                 yt.department_id, kc.sort_order, sc.sort_order, m.id
       `);
 
     const data = result.recordset.map((r: any) => {

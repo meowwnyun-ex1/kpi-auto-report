@@ -115,7 +115,7 @@ export function CategoryCharts({ catStats, deptBreakdown, catColor }: CategoryCh
               </div>
               <p className="mt-4 text-sm text-gray-500">
                 {catStats.totalTargets > 0
-                  ? `${catStats.resultRate.toFixed(1)}% achievement across ${catStats.totalTargets} targets`
+                  ? `${catStats.resultRate.toFixed(2)}% achievement across ${catStats.totalTargets} targets`
                   : 'No data available'}
               </p>
             </div>

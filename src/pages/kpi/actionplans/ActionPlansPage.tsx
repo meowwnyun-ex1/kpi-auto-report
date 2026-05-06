@@ -14,7 +14,7 @@ import { GanttChartView } from './GanttChartView';
 import { SavedPlansTable } from './SavedPlansTable';
 import { CATEGORY_CONFIG, STATUS_OPTIONS, ActionPlan } from './ActionPlansTypes';
 
-export default function ActionPlansPage() {
+export function ActionPlansPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { fiscalYear, setFiscalYear, availableYears } = useFiscalYearSelector();

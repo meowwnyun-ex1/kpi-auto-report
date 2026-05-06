@@ -114,8 +114,8 @@ export function useDashboardData(initialCategory?: string) {
     kpiStatus.forEach((s: any) => {
       const existing = deptMap.get(s.department_name) || { target: 0, result: 0 };
       deptMap.set(s.department_name, {
-        target: existing.target + s.total_metrics,
-        result: existing.result + s.filled_metrics,
+        target: existing.target + s.total_measurements,
+        result: existing.result + s.filled_measurements,
       });
     });
     return Array.from(deptMap.entries()).map(([name, data]) => ({
@@ -225,10 +225,26 @@ export function useDashboardData(initialCategory?: string) {
   // Calculate category statistics
   const calculateCategoryStats = (categoryId: number) => {
     const catData = kpiData.filter((item: any) => item.category_id === categoryId);
-    const target = catData.reduce((sum: number, item: any) => sum + (item.total_target || 0), 0);
-    const result = catData.reduce((sum: number, item: any) => sum + (item.used_quota || 0), 0);
-    const resultCount = catData.filter((item: any) => (item.used_quota || 0) > 0).length;
-    return { target, result, count: catData.length, resultCount };
+    // Count by number of items, not values
+    const targetCount = catData.length; // Total items in this category
+    const resultCount = catData.filter((item: any) => (item.accu_result || 0) > 0).length; // Items with results
+    // Keep total values for reference
+    const targetValue = catData.reduce(
+      (sum: number, item: any) => sum + (item.total_target || 0),
+      0
+    );
+    const resultValue = catData.reduce(
+      (sum: number, item: any) => sum + (item.accu_result || 0),
+      0
+    );
+    return {
+      target: targetCount,
+      result: resultCount,
+      count: catData.length,
+      resultCount,
+      targetValue,
+      resultValue,
+    };
   };
 
   const handleSort = (field: SortField) => {

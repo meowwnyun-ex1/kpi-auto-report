@@ -21,6 +21,7 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
   const [categories, setCategories] = useState<Category[]>([]);
   const [cat, setCat] = useState('');
   const [rows, setRows] = useState<MonthlyResultRow[]>([]);
+  const [allRows, setAllRows] = useState<MonthlyResultRow[]>([]); // Store all rows for accurate counts
   const [depts, setDepts] = useState<{ dept_id: string }[]>([]);
   const [dept, setDept] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryTargetValues, setCategoryTargetValues] = useState<Record<string, number>>({});
   const [categoryTargetCounts, setCategoryTargetCounts] = useState<Record<string, number>>({});
-  const [categoryActualCounts, setCategoryActualCounts] = useState<Record<string, number>>({});
+  const [categoryResultCounts, setCategoryResultCounts] = useState<Record<string, number>>({});
 
   const canEdit = ['manager', 'admin', 'superadmin'].includes(user?.role ?? '');
 
@@ -51,53 +52,136 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
     }
   }, [depts]);
 
-  useEffect(() => {
-    if (dept && fiscalYear) loadStats();
+  const loadAllRows = useCallback(async () => {
+    try {
+      const yearlyRes = await fetch(`/api/kpi-forms/yearly/${dept}/${fiscalYear}`, {
+        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
+      });
+      const yearlyData = await yearlyRes.json();
+      if (!yearlyData.success) return;
+
+      const monthlyRes = await fetch(`/api/kpi-forms/monthly/${dept}/${fiscalYear}`, {
+        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
+      });
+      const monthlyData = await monthlyRes.json();
+      if (!monthlyData.success) return;
+
+      const combinedData = yearlyData.data.map((yearly: any) => {
+        const monthlyEntries = monthlyData.data.filter(
+          (m: any) => m.yearly_target_id === yearly.id
+        );
+        const months: Record<number, any> = {};
+        monthlyEntries.forEach((m: any) => {
+          months[m.month] = {
+            id: m.id,
+            target: m.target,
+            result: m.result,
+            comment: m.comment,
+            image_url: m.image_url,
+            image_caption: m.image_caption,
+          };
+        });
+        // For Monthly Results page, calculate usage from results, not targets
+        const usedQuota = Object.values(months).reduce(
+          (sum: number, month: any) => sum + (parseFloat(month.result) || 0),
+          0
+        );
+        return {
+          yearly_target_id: yearly.id,
+          category_id: yearly.category_id,
+          category_key: yearly.category_key,
+          sub_category_id: yearly.sub_category_id,
+          sub_category_name: yearly.sub_category_name,
+          measurement: yearly.measurement,
+          unit: yearly.unit,
+          main: yearly.main,
+          main_relate_display: yearly.main_relate_display,
+          fy_target: yearly.fy_target,
+          total_target: yearly.total_target,
+          used_quota: usedQuota,
+          remaining_quota: (yearly.total_target || 0) - usedQuota,
+          months,
+        };
+      });
+      setAllRows(combinedData);
+    } catch {
+      /* silent */
+    }
   }, [dept, fiscalYear]);
+
+  useEffect(() => {
+    if (dept && fiscalYear) {
+      loadStats();
+      loadAllRows();
+    }
+  }, [dept, fiscalYear, loadAllRows]);
+
   useEffect(() => {
     if (cat && dept && fiscalYear) loadRows();
   }, [cat, dept, fiscalYear]);
 
-  const calculateActualCounts = useCallback(() => {
+  const calculateResultCounts = useCallback(() => {
     const counts: Record<string, number> = {};
-    rows.forEach((row) => {
-      // Find the category for this row
-      const category = categories.find((cat) => cat.id === row.category_id);
-      if (category) {
+    allRows.forEach((row) => {
+      // Use category_key from row if available, otherwise find by category_id
+      const categoryKey = row.category_key;
+      if (categoryKey) {
         // Check if any month has a result
         const hasResult = Object.values(row.months).some(
           (month) => month.result !== null && month.result !== undefined && month.result !== 0
         );
         if (hasResult) {
-          counts[category.key] = (counts[category.key] || 0) + 1;
+          counts[categoryKey] = (counts[categoryKey] || 0) + 1;
+        }
+      } else {
+        // Fallback: find category by category_id
+        const category = categories.find((cat) => cat.id === row.category_id);
+        if (category) {
+          const hasResult = Object.values(row.months).some(
+            (month) => month.result !== null && month.result !== undefined && month.result !== 0
+          );
+          if (hasResult) {
+            counts[category.key] = (counts[category.key] || 0) + 1;
+          }
         }
       }
     });
-    setCategoryActualCounts(counts);
-  }, [rows, categories]);
+    setCategoryResultCounts(counts);
+  }, [allRows, categories]);
 
   useEffect(() => {
-    calculateActualCounts();
-  }, [rows, calculateActualCounts]);
+    calculateResultCounts();
+  }, [allRows, calculateResultCounts]);
   useEffect(() => {
-    if (dept && fiscalYear && categories.length > 0) {
+    if (dept && fiscalYear && categories.length > 0 && allRows.length > 0) {
       const { values, counts } = deriveCategoryValuesFromStats(stats);
       setCategoryTargetValues(values);
-      setCategoryTargetCounts(counts);
-    }
-  }, [dept, fiscalYear, categories, stats]);
 
-  const loadCategories = async () => {
+      // Calculate target counts from all rows data instead of stats
+      const targetCounts: Record<string, number> = {};
+      categories.forEach((cat) => {
+        const categoryRows = allRows.filter((row) => row.category_key === cat.key);
+        targetCounts[cat.key] = categoryRows.length;
+      });
+      setCategoryTargetCounts(targetCounts);
+    }
+  }, [dept, fiscalYear, categories, stats, allRows]);
+
+  const loadCategories = async (retryCount = 0) => {
     try {
       const r = await fetch('/api/kpi-forms/categories');
       const d = await r.json();
       if (d.success) setCategories(d.data);
-    } catch {
-      /* silent */
+    } catch (error) {
+      // Retry with exponential backoff for transient errors (max 3 retries)
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        setTimeout(() => loadCategories(retryCount + 1), delay);
+      }
     }
   };
 
-  const loadDepts = async () => {
+  const loadDepts = async (retryCount = 0) => {
     try {
       const r = await fetch('/api/departments');
       const d = await r.json();
@@ -108,8 +192,12 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
             : d.data;
         setDepts(filteredDepts);
       }
-    } catch {
-      /* silent */
+    } catch (error) {
+      // Retry with exponential backoff for transient errors (max 3 retries)
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        setTimeout(() => loadDepts(retryCount + 1), delay);
+      }
     }
   };
 
@@ -175,6 +263,7 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
         return {
           yearly_target_id: yearly.id,
           category_id: yearly.category_id,
+          category_key: yearly.category_key, // Add category_key for proper counting
           sub_category_id: yearly.sub_category_id,
           sub_category_name: yearly.sub_category_name,
           measurement: yearly.measurement,
@@ -321,7 +410,10 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
 
       // Refresh data from server for consistency
       loadStats();
-      loadRows(); // Reload rows to get latest data
+      loadAllRows(); // Update all rows for accurate counts
+      if (cat) {
+        loadRows(); // Reload filtered rows for current category
+      }
     } catch (e: any) {
       toast({
         title: 'Error',
@@ -342,10 +434,11 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
     }
   };
 
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     loadStats();
+    loadAllRows(); // Refresh all rows for accurate counts
     if (cat) loadRows();
-  };
+  }, [loadStats, loadAllRows, cat]);
 
   return {
     user,
@@ -363,7 +456,7 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
     setSearchQuery,
     categoryTargetValues,
     categoryTargetCounts,
-    categoryActualCounts,
+    categoryResultCounts,
     canEdit,
     filteredRows,
     onChangeResult,

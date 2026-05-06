@@ -19,9 +19,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 import { storage } from '@/shared/utils';
+import { Layers, FolderOpen, Target, ChevronRight, Plus } from 'lucide-react';
 
 interface AddTargetModalProps {
   open: boolean;
@@ -1091,77 +1093,81 @@ export function AddTargetModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="text-lg font-bold">Add New KPI Target</span>
-            <span className="text-sm text-gray-500">
-              - {categoryName} FY{fiscalYear}
-            </span>
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <Target className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-bold text-gray-900">
+                Add New KPI Target
+              </DialogTitle>
+              <DialogDescription className="text-sm text-gray-500">
+                {categoryName} • FY{fiscalYear}
+              </DialogDescription>
+            </div>
           </DialogTitle>
-          <DialogDescription>
-            Create a new KPI target with structured data selection
-          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information Section */}
-          <div className="space-y-4">
-            <div className="text-sm font-semibold text-gray-700 border-b pb-2">
-              Basic Information
+        <form onSubmit={handleSubmit} className="space-y-6 py-4">
+          {/* Hierarchy Visualization */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+            <div className="flex items-center gap-2 text-sm font-medium text-blue-700 mb-3">
+              <Layers className="w-4 h-4" />
+              KPI Hierarchy
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* FY Target */}
-              <div className="space-y-2">
-                <Label htmlFor="fyTarget">FY Target</Label>
-                <Select value={fyTarget} onValueChange={setFyTarget}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select FY Target" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FY25">FY25</SelectItem>
-                    <SelectItem value="FY26">FY26</SelectItem>
-                    <SelectItem value="FY27">FY27</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Target */}
-              <div className="space-y-2">
-                <Label htmlFor="totalTarget">Target</Label>
-                <Input
-                  id="totalTarget"
-                  type="number"
-                  step="any"
-                  placeholder="Enter target value"
-                  value={totalTarget}
-                  onChange={(e) => setTotalTarget(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Badge variant="outline" className="bg-white border-blue-300 text-blue-700">
+                {categoryName}
+              </Badge>
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              {subcategory && subcategory !== 'other' ? (
+                <Badge variant="outline" className="bg-white border-purple-300 text-purple-700">
+                  {availableSubcategories.find((s) => s.key === subcategory)?.name || 'Subcategory'}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="bg-white border-gray-300 text-gray-600">
+                  {customMeasurement || !subcategory ? 'Custom' : 'Select Subcategory'}
+                </Badge>
+              )}
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <Badge variant="outline" className="bg-white border-emerald-300 text-emerald-700">
+                {measurement || 'Select Measurement'}
+              </Badge>
             </div>
           </div>
 
           {/* KPI Structure Section */}
           <div className="space-y-4">
-            <div className="text-sm font-semibold text-gray-700 border-b pb-2">KPI Structure</div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
+              <FolderOpen className="w-4 h-4" />
+              KPI Structure
+            </div>
 
             {/* Subcategory */}
             <div className="space-y-2">
-              <Label htmlFor="subcategory">Subcategory</Label>
+              <Label htmlFor="subcategory" className="text-sm font-medium text-gray-700">
+                Subcategory <span className="text-red-500">*</span>
+              </Label>
               <Select value={subcategory} onValueChange={handleSubcategoryChange}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select subcategory" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableSubcategories.map((sub) => (
                     <SelectItem key={sub.key} value={sub.key}>
-                      {sub.name}
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="w-4 h-4 text-purple-500" />
+                        {sub.name}
+                      </div>
                     </SelectItem>
                   ))}
                   <SelectItem value="other" onSelect={handleCustomMeasurement}>
-                    Other (Custom)
+                    <div className="flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-gray-500" />
+                      Other (Custom)
+                    </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -1170,56 +1176,120 @@ export function AddTargetModal({
             {/* Measurement */}
             {subcategory && subcategory !== 'other' && (
               <div className="space-y-2">
-                <Label htmlFor="measurement">Measurement</Label>
+                <Label htmlFor="measurement" className="text-sm font-medium text-gray-700">
+                  Measurement <span className="text-red-500">*</span>
+                </Label>
                 <Select value={measurement} onValueChange={handleMeasurementChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11">
                     <SelectValue placeholder="Select measurement" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableMeasurements.map((m: any) => (
                       <SelectItem key={m.id} value={m.id.toString()}>
                         <div className="flex flex-col">
-                          <span>{m.measurement}</span>
-                          <span className="text-xs text-gray-500">
+                          <div className="flex items-center gap-2 font-medium">
+                            <Target className="w-4 h-4 text-emerald-500" />
+                            {m.measurement}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
                             Unit: {m.unit} | Main: {m.main}
-                          </span>
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
                     <SelectItem value="custom" onSelect={handleCustomMeasurement}>
-                      Other (Custom Measurement)
+                      <div className="flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-gray-500" />
+                        Other (Custom Measurement)
+                      </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
+          </div>
+
+          {/* Target Information Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
+              <Target className="w-4 h-4" />
+              Target Information
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* FY Target */}
+              <div className="space-y-2">
+                <Label htmlFor="fyTarget" className="text-sm font-medium text-gray-700">
+                  FY Target <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="fyTarget"
+                  type="number"
+                  step="any"
+                  placeholder="Enter FY target"
+                  value={fyTarget}
+                  onChange={(e) => setFyTarget(e.target.value)}
+                  required
+                  className="h-11"
+                />
+              </div>
+
+              {/* Target */}
+              <div className="space-y-2">
+                <Label htmlFor="totalTarget" className="text-sm font-medium text-gray-700">
+                  Total Target <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="totalTarget"
+                  type="number"
+                  step="any"
+                  placeholder="Enter total target"
+                  value={totalTarget}
+                  onChange={(e) => setTotalTarget(e.target.value)}
+                  required
+                  className="h-11"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Details Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
+              Additional Details
+            </div>
 
             {/* Custom Measurement Input */}
             {(customMeasurement || subcategory === 'other') && (
               <div className="space-y-2">
-                <Label htmlFor="customMeasurement">Custom Measurement</Label>
+                <Label htmlFor="customMeasurement" className="text-sm font-medium text-gray-700">
+                  Custom Measurement <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="customMeasurement"
                   placeholder="Enter custom measurement"
                   value={measurement}
                   onChange={(e) => setMeasurement(e.target.value)}
                   required
+                  className="h-11"
                 />
               </div>
             )}
 
             {/* Unit */}
             <div className="space-y-2">
-              <Label htmlFor="unit">Unit</Label>
+              <Label htmlFor="unit" className="text-sm font-medium text-gray-700">
+                Unit <span className="text-red-500">*</span>
+              </Label>
               <Select value={unit} onValueChange={setUnit}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(UNIT_DEFINITIONS).map(([unitCode, definition]) => (
                     <SelectItem key={unitCode} value={unitCode}>
                       <div className="flex flex-col">
-                        <span>{unitCode}</span>
+                        <span className="font-medium">{unitCode}</span>
                         <span className="text-xs text-gray-500">{definition.description}</span>
                       </div>
                     </SelectItem>
@@ -1235,9 +1305,11 @@ export function AddTargetModal({
 
             {/* Main KPI */}
             <div className="space-y-2">
-              <Label htmlFor="main">Main KPI</Label>
+              <Label htmlFor="main" className="text-sm font-medium text-gray-700">
+                Main KPI <span className="text-red-500">*</span>
+              </Label>
               <Select value={main} onValueChange={setMain}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select main KPI" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1250,7 +1322,7 @@ export function AddTargetModal({
                   ).map((dept) => (
                     <SelectItem key={dept.code} value={dept.code}>
                       <div className="flex flex-col">
-                        <span>{dept.code}</span>
+                        <span className="font-medium">{dept.code}</span>
                         <span className="text-xs text-gray-500">{dept.name}</span>
                       </div>
                     </SelectItem>
@@ -1262,13 +1334,15 @@ export function AddTargetModal({
 
           {/* Related Departments Section */}
           <div className="space-y-4">
-            <div className="text-sm font-semibold text-gray-700 border-b pb-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
               Related Departments
             </div>
 
             <div className="space-y-2">
-              <Label>Select Related Departments</Label>
-              <div className="grid grid-cols-3 gap-3 max-h-40 overflow-y-auto p-2 border rounded-md">
+              <Label className="text-sm font-medium text-gray-700">
+                Select Related Departments
+              </Label>
+              <div className="grid grid-cols-3 gap-3 max-h-40 overflow-y-auto p-2 border rounded-md bg-gray-50">
                 {(departments.length > 0
                   ? departments.map((dept: any) => ({
                       code: dept.dept_id,
@@ -1288,50 +1362,40 @@ export function AddTargetModal({
                         }
                       }}
                     />
-                    <Label htmlFor={dept.code} className="text-sm cursor-pointer">
-                      <div className="flex flex-col">
-                        <span>{dept.code}</span>
-                        <span className="text-xs text-gray-500">{dept.name}</span>
-                      </div>
-                    </Label>
+                    <label
+                      htmlFor={dept.code}
+                      className="text-sm text-gray-700 cursor-pointer select-none">
+                      {dept.name || dept.code}
+                    </label>
                   </div>
                 ))}
               </div>
-              {relatedDepartments.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {relatedDepartments.map((dept: any) => (
-                    <span
-                      key={dept}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                      {dept}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Description Section */}
-          <div className="space-y-4">
-            <div className="text-sm font-semibold text-gray-700 border-b pb-2">Description</div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description of Target</Label>
-              <Textarea
-                id="description"
-                placeholder="Enter target description (optional)"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+              Description
+            </Label>
+            <Textarea
+              id="description"
+              placeholder="Enter description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+            />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="min-w-[120px]">
               {loading ? 'Creating...' : 'Create Target'}
             </Button>
           </DialogFooter>

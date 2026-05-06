@@ -37,7 +37,7 @@ export function CategoriesTab({ categoryChartData }: CategoriesTabProps) {
                     </div>
                     <span className="font-medium text-sm">{category.name}</span>
                   </div>
-                  <div className="text-xs text-gray-500">{category.completionRate.toFixed(1)}%</div>
+                  <div className="text-xs text-gray-500">{category.completionRate.toFixed(2)}%</div>
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs">

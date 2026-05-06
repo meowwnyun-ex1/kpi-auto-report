@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
 
     // Get KPI department mapping first
     const mappingResult = await kpiDb.request().query(`
-      SELECT kpi_code, spo_dept_id, spo_dept_name, description
+      SELECT kpi_code, spo_dept_id, description
       FROM kpi_department_mapping
       ORDER BY kpi_code
     `);
@@ -58,9 +58,9 @@ router.get('/', async (req, res) => {
       const spoDept = spoDepts.find((d: any) => d.dept_id === mapping.spo_dept_id);
 
       combinedDepts.push({
-        dept_id: mapping.kpi_code, // Use KPI code as the ID (matches main/main_relate in metrics)
+        dept_id: mapping.kpi_code, // Use KPI code as the ID (matches main/main_relate in measurements)
         name_en: `${mapping.kpi_code}: ${mapping.description || mapping.kpi_code}`,
-        name_th: mapping.spo_dept_name || mapping.description,
+        name_th: mapping.description,
         kpi_code: mapping.kpi_code,
         spo_dept_id: mapping.spo_dept_id,
         company: spoDept?.company || null,
@@ -95,17 +95,17 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * GET /api/departments/with-metrics/:category
- * Get all departments that have metrics for a specific category, with their fill status
+ * GET /api/departments/with-measurements/:category
+ * Get all departments that have measurements for a specific category, with their fill status
  */
-router.get('/with-metrics/:category', async (req, res) => {
+router.get('/with-measurements/:category', async (req, res) => {
   try {
     const { category } = req.params;
     const kpiDb = await getKpiDb();
 
     // Get KPI department mapping as primary source
     const mappingResult = await kpiDb.request().query(`
-      SELECT kpi_code, spo_dept_id, spo_dept_name, description
+      SELECT kpi_code, spo_dept_id, description
       FROM kpi_department_mapping
       ORDER BY kpi_code
     `);
@@ -123,7 +123,7 @@ router.get('/with-metrics/:category', async (req, res) => {
       spoDepts = result.recordset;
     } catch (spoError: unknown) {
       logger.warn(
-        'SPO_Dev database unavailable for with-metrics, using KPI mapping only',
+        'SPO_Dev database unavailable for with-measurements, using KPI mapping only',
         spoError as Record<string, unknown>
       );
     }
@@ -141,23 +141,23 @@ router.get('/with-metrics/:category', async (req, res) => {
     const categoryId = catResult.recordset[0].id;
     const currentYear = new Date().getFullYear();
 
-    // For each KPI department, get metric count
-    const departmentsWithMetrics = await Promise.all(
+    // For each KPI department, get measurement count
+    const departmentsWithMeasurements = await Promise.all(
       mappingResult.recordset.map(async (mapping: any) => {
         const spoDept = spoDepts.find((d: any) => d.dept_id === mapping.spo_dept_id);
         const deptId = mapping.kpi_code;
 
-        const metricResult = await kpiDb
+        const measurementResult = await kpiDb
           .request()
           .input('dept_id', sql.NVarChar, deptId)
           .input('category_id', sql.Int, categoryId)
           .input('year', sql.Int, currentYear).query(`
-            SELECT 
-              COUNT(DISTINCT yt.id) as metric_count,
+            SELECT
+              COUNT(DISTINCT yt.id) as measurement_count,
               COUNT(DISTINCT CASE WHEN me.id IS NOT NULL THEN yt.id END) as filled_count
             FROM kpi_yearly_targets yt
-            LEFT JOIN kpi_monthly_targets me 
-              ON me.yearly_target_id = yt.id 
+            LEFT JOIN kpi_monthly_targets me
+              ON me.yearly_target_id = yt.id
               AND me.fiscal_year = @year
               AND me.month = MONTH(GETDATE())
             WHERE yt.category_id = @category_id
@@ -175,23 +175,23 @@ router.get('/with-metrics/:category', async (req, res) => {
           pa_id: spoDept?.pa_id || null,
           is_active: spoDept?.is_active || 1,
           updated_at: spoDept?.updated_at || null,
-          has_metrics: true,
-          metric_count: metricResult.recordset[0]?.metric_count || 0,
-          filled_count: metricResult.recordset[0]?.filled_count || 0,
+          has_measurements: true,
+          measurement_count: measurementResult.recordset[0]?.measurement_count || 0,
+          filled_count: measurementResult.recordset[0]?.filled_count || 0,
         };
       })
     );
 
     res.json({
       success: true,
-      data: departmentsWithMetrics.filter((d) => d.metric_count > 0),
+      data: departmentsWithMeasurements.filter((d) => d.measurement_count > 0),
     });
   } catch (error) {
-    logger.error('Error fetching departments with metrics', error);
+    logger.error('Error fetching departments with measurements', error);
     res.status(500).json({
       success: false,
       error: 'DATABASE_ERROR',
-      message: 'Failed to fetch departments with metrics',
+      message: 'Failed to fetch departments with measurements',
     });
   }
 });
@@ -205,7 +205,7 @@ router.get('/:dept_id/categories', async (req, res) => {
     const { dept_id } = req.params;
     const kpiDb = await getKpiDb();
 
-    // Get categories that have metrics for this department (using main field)
+    // Get categories that have measurements for this department (using main field)
     const result = await kpiDb.request().input('dept_id', sql.NVarChar, dept_id).query(`
       SELECT DISTINCT
         kc.id, kc.name, kc.[key], kc.sort_order
@@ -237,7 +237,7 @@ router.get('/:dept_id/sub-categories/:category', async (req, res) => {
     const { dept_id, category } = req.params;
     const kpiDb = await getKpiDb();
 
-    // Get sub-categories with metrics for this department (using main field)
+    // Get sub-categories with measurements for this department (using main field)
     // Sub-categories are no longer used - return empty array
     const result = await kpiDb.request().query(`
       SELECT TOP 0 id, name_en, name_th, [key], sort_order
@@ -260,10 +260,10 @@ router.get('/:dept_id/sub-categories/:category', async (req, res) => {
 });
 
 /**
- * GET /api/departments/:dept_id/metrics/:category/:sub_category?
- * Get metrics for a specific department, category, and optionally sub-category
+ * GET /api/departments/:dept_id/measurements/:category/:sub_category?
+ * Get measurements for a specific department, category, and optionally sub-category
  */
-router.get('/:dept_id/metrics/:category/:sub_category?', async (req, res) => {
+router.get('/:dept_id/measurements/:category/:sub_category?', async (req, res) => {
   try {
     const { dept_id, category } = req.params;
     const sub_category = (req.params as any).sub_category;
@@ -280,25 +280,20 @@ router.get('/:dept_id/metrics/:category/:sub_category?', async (req, res) => {
       deptName = deptResult.recordset[0]?.name_en || dept_id;
     } catch (spoError: unknown) {
       logger.warn(
-        'SPO_Dev database unavailable for metrics, using KPI mapping for dept name',
+        'SPO_Dev database unavailable for measurements, using KPI mapping for dept name',
         spoError as Record<string, unknown>
       );
       // Fallback: get name from kpi_department_mapping
       const mappingResult = await kpiDb
         .request()
         .input('kpi_code', sql.NVarChar, dept_id)
-        .query(
-          `SELECT description, spo_dept_name FROM kpi_department_mapping WHERE kpi_code = @kpi_code`
-        );
+        .query(`SELECT description FROM kpi_department_mapping WHERE kpi_code = @kpi_code`);
       if (mappingResult.recordset.length > 0) {
-        deptName =
-          mappingResult.recordset[0].spo_dept_name ||
-          mappingResult.recordset[0].description ||
-          dept_id;
+        deptName = mappingResult.recordset[0].description || dept_id;
       }
     }
 
-    // Metrics are now in kpi_yearly_targets, not category-specific tables
+    // Measurements are now in kpi_yearly_targets, not category-specific tables
     // Get category ID first
     const catResult = await kpiDb.request().input('category', sql.NVarChar, category).query(`
       SELECT id FROM kpi_categories WHERE [key] = @category
@@ -316,15 +311,18 @@ router.get('/:dept_id/metrics/:category/:sub_category?', async (req, res) => {
 
     let query = `
       SELECT 
-        yt.id, yt.metric_no, yt.measurement, yt.unit, yt.fy_target as fy25_target, 
-        yt.main, yt.main_relate,
-        yt.description_of_target,
-        NULL as sub_category_id,
-        NULL as sub_category_name,
-        NULL as sub_category_key
+        yt.id, mm.measurement, mm.unit, yt.fy_target as fy25_target, 
+        mm.main, mm.main_relate,
+        mm.description_of_target,
+        sc.id as sub_category_id,
+        sc.name as sub_category_name,
+        kc.[key] as sub_category_key
       FROM kpi_yearly_targets yt
+      LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
+      LEFT JOIN kpi_measurement_sub_categories sc ON mm.sub_category_id = sc.id
+      LEFT JOIN kpi_categories kc ON mm.category_id = kc.id
       WHERE yt.category_id = @category_id
-        AND (yt.main = @dept_id OR yt.main_relate LIKE '%' + @dept_id + '%')
+        AND (mm.main = @dept_id OR mm.main_relate LIKE '%' + @dept_id + '%')
     `;
 
     const request = kpiDb
@@ -341,7 +339,7 @@ router.get('/:dept_id/metrics/:category/:sub_category?', async (req, res) => {
       });
     }
 
-    query += ` ORDER BY yt.metric_no`;
+    query += ` ORDER BY mm.id`;
 
     const result = await request.query(query);
 
@@ -356,11 +354,11 @@ router.get('/:dept_id/metrics/:category/:sub_category?', async (req, res) => {
       data: dataWithDeptName,
     });
   } catch (error) {
-    logger.error('Error fetching department metrics', error);
+    logger.error('Error fetching department measurements', error);
     res.status(500).json({
       success: false,
       error: 'DATABASE_ERROR',
-      message: 'Failed to fetch department metrics',
+      message: 'Failed to fetch department measurements',
     });
   }
 });

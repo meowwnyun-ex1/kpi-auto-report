@@ -24,8 +24,16 @@ router.get('/employees', async (req: Request, res: Response, next: NextFunction)
   try {
     try {
       const casDb = await getCasDb();
+      const kpiDb = await getKpiDb();
 
-      const result = await casDb.request().query(`
+      // Get existing usernames from KPI database to exclude
+      const existingUsersResult = await kpiDb.request().query(`
+        SELECT username FROM users WHERE role IN ('manager', 'admin', 'superadmin', 'user')
+      `);
+      const existingUsernames = existingUsersResult.recordset.map((u: any) => u.username);
+
+      const request = casDb.request();
+      let query = `
         SELECT 
           employee_id,
           name,
@@ -48,8 +56,18 @@ router.get('/employees', async (req: Request, res: Response, next: NextFunction)
           division_name
         FROM employees
         WHERE is_active = 1
-        ORDER BY department_name, name_en
-      `);
+      `;
+
+      if (existingUsernames.length > 0) {
+        query += ` AND employee_id NOT IN (${existingUsernames.map((_, i) => `@username${i}`).join(',')})`;
+        existingUsernames.forEach((username, i) => {
+          request.input(`username${i}`, sql.NVarChar, username);
+        });
+      }
+
+      query += ` ORDER BY department_name, name_en`;
+
+      const result = await request.query(query);
 
       res.json({ success: true, data: result.recordset });
     } catch (dbError: unknown) {
@@ -58,7 +76,7 @@ router.get('/employees', async (req: Request, res: Response, next: NextFunction)
         dbError as Record<string, unknown>
       );
 
-      // Fallback to users table in KPI database
+      // Fallback to users table in KPI database - only show associates without system accounts
       try {
         const kpiDb = await getKpiDb();
         const result = await kpiDb.request().query(`
@@ -83,7 +101,7 @@ router.get('/employees', async (req: Request, res: Response, next: NextFunction)
             NULL as company_name,
             NULL as division_name
           FROM users
-          WHERE is_active = 1
+          WHERE is_active = 1 AND (role IS NULL OR role = 'associate' OR role = '')
           ORDER BY department_name, full_name
         `);
         res.json({ success: true, data: result.recordset, source: 'users' });
@@ -751,22 +769,23 @@ router.get('/kpi-items', async (req: Request, res: Response, next: NextFunction)
       let query = `
         SELECT 
           yt.id,
-          yt.metric_no as no,
-          yt.measurement,
-          yt.unit,
-          yt.main,
-          yt.main_relate,
-          yt.description_of_target,
+          mm.measurement,
+          mm.unit,
+          mm.main,
+          mm.main_relate,
+          mm.description_of_target,
           yt.fy_target as fy25_target,
-          NULL as sub_category_id,
+          sc.id as sub_category_id,
           yt.sort_order,
           yt.created_at,
           yt.updated_at,
-          NULL as sub_category_name,
+          sc.name as sub_category_name,
           @categoryId as category_id,
           @categoryName as category_name,
           @catKey as category_key
         FROM kpi_yearly_targets yt
+        LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
+        LEFT JOIN kpi_measurement_sub_categories sc ON mm.sub_category_id = sc.id
       `;
 
       const request = kpiDb
@@ -776,11 +795,11 @@ router.get('/kpi-items', async (req: Request, res: Response, next: NextFunction)
         .input('catKey', sql.NVarChar, cat);
 
       if (filterDept) {
-        query += ` WHERE yt.main = @filterDept OR yt.main_relate LIKE '%' + @filterDept + '%'`;
+        query += ` WHERE mm.main = @filterDept OR mm.main_relate LIKE '%' + @filterDept + '%'`;
         request.input('filterDept', sql.NVarChar, filterDept);
       }
 
-      query += ` ORDER BY yt.sort_order, yt.metric_no`;
+      query += ` ORDER BY yt.sort_order, mm.id`;
 
       const result = await request.query(query);
 
@@ -995,13 +1014,13 @@ router.get('/kpi-templates', async (req: Request, res: Response, next: NextFunct
       const result = await kpiDb.request().input('categoryId', sql.Int, categoryId).query(`
           SELECT 
             yt.id,
-            yt.metric_no,
-            yt.measurement as metric_name,
-            yt.unit,
+            mm.measurement as metric_name,
+            mm.unit,
             yt.is_active
           FROM kpi_yearly_targets yt
+          LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
           WHERE yt.category_id = @categoryId
-          ORDER BY yt.sort_order, yt.metric_no
+          ORDER BY yt.sort_order, mm.id
         `);
 
       for (const row of result.recordset) {

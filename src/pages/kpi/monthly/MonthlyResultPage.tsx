@@ -10,7 +10,7 @@ import { useMonthlyResultData } from './useMonthlyResultData';
 import { MonthlyResultTable } from './MonthlyResultTable';
 import { BaseSection, BaseGrid } from '@/components/base/BaseComponent';
 
-export default function MonthlyResultPage() {
+export function MonthlyResultPage() {
   const { toast } = useToast();
   const { fiscalYear, setFiscalYear, availableYears } = useFiscalYearSelector();
 
@@ -72,7 +72,7 @@ export default function MonthlyResultPage() {
                   c={c}
                   categoryTargetValues={categoryTargetValues}
                   categoryTargetCounts={categoryTargetCounts}
-                  categoryActualCounts={categoryActualCounts}
+                  categoryResultCounts={categoryResultCounts}
                   statsLoading={statsLoading}
                   onClick={() => setCat(c.key)}
                   catColor={CAT[c.key]?.color}

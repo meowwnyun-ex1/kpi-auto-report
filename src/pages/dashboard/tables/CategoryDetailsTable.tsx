@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { LucideIcon } from 'lucide-react';
+import { formatNumber, formatPercent } from '@/shared/utils';
 
 interface CategoryDetailsTableProps {
   details: any[];
@@ -22,10 +23,22 @@ interface CategoryDetailsTableProps {
   loading: boolean;
 }
 
-export function CategoryDetailsTable({ details, catColor, CatIcon, catConfig, loading }: CategoryDetailsTableProps) {
+export function CategoryDetailsTable({
+  details,
+  catColor,
+  CatIcon,
+  catConfig,
+  loading,
+}: CategoryDetailsTableProps) {
   const getStatusBadge = (ev: string | null, result: any) => {
-    if (result == null) return <Badge variant="outline" className="text-gray-500 border-gray-300">Pending</Badge>;
-    if (ev === 'O') return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Achieved</Badge>;
+    if (result == null)
+      return (
+        <Badge variant="outline" className="text-gray-500 border-gray-300">
+          Pending
+        </Badge>
+      );
+    if (ev === 'O')
+      return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Achieved</Badge>;
     if (ev === 'X') return <Badge className="bg-red-100 text-red-700 border-red-200">Missed</Badge>;
     return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Partial</Badge>;
   };
@@ -61,8 +74,11 @@ export function CategoryDetailsTable({ details, catColor, CatIcon, catConfig, lo
                 Measurement
               </TableHead>
               <TableHead
-                className="min-w-[80px] py-2"
+                className="min-w-[120px] py-2"
                 style={{ backgroundColor: `${catColor}08` }}>
+                Subcategory
+              </TableHead>
+              <TableHead className="min-w-[80px] py-2" style={{ backgroundColor: `${catColor}08` }}>
                 Unit
               </TableHead>
               <TableHead
@@ -90,7 +106,7 @@ export function CategoryDetailsTable({ details, catColor, CatIcon, catConfig, lo
           <TableBody>
             {details.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-gray-400">
+                <TableCell colSpan={9} className="text-center py-8 text-gray-400">
                   No measurements found for this period
                 </TableCell>
               </TableRow>
@@ -102,24 +118,33 @@ export function CategoryDetailsTable({ details, catColor, CatIcon, catConfig, lo
                     key={`${row.department_id}-${row.measurement}-${idx}`}
                     className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                     <TableCell className="text-xs text-gray-400 py-3 pl-6">{idx + 1}</TableCell>
-                    <TableCell className="font-medium py-3 text-sm">{row.department_name || row.department_id}</TableCell>
+                    <TableCell className="font-medium py-3 text-sm">
+                      {row.department_name || row.department_id}
+                    </TableCell>
                     <TableCell className="py-3 text-sm">
                       <div className="font-medium">{row.measurement || '-'}</div>
                     </TableCell>
+                    <TableCell className="py-3 text-sm">
+                      <div className="text-sm text-gray-600">{row.sub_category_name || '-'}</div>
+                    </TableCell>
                     <TableCell className="py-3 text-sm text-gray-500">{row.unit || '-'}</TableCell>
-                    <TableCell className="text-right py-3 font-mono text-sm">{row.target?.toLocaleString() || '-'}</TableCell>
+                    <TableCell className="text-right py-3 font-mono text-sm">
+                      {formatNumber(row.target, 2)}
+                    </TableCell>
                     <TableCell
                       className="text-right py-3 font-mono text-sm font-semibold"
                       style={{ color: catColor }}>
-                      {row.result?.toLocaleString() || '-'}
+                      {formatNumber(row.result, 2)}
                     </TableCell>
                     <TableCell className="text-right py-3 text-sm">
                       <span
                         className={`font-mono font-medium ${rate >= 95 ? 'text-green-600' : rate >= 75 ? 'text-blue-600' : rate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
-                        {row.target > 0 ? `${rate.toFixed(1)}%` : '-'}
+                        {row.target > 0 ? formatPercent(rate) : '-'}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center py-3">{getStatusBadge(row.ev, row.result)}</TableCell>
+                    <TableCell className="text-center py-3">
+                      {getStatusBadge(row.ev, row.result)}
+                    </TableCell>
                   </TableRow>
                 );
               })

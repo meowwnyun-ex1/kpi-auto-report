@@ -112,7 +112,7 @@ export function NavUser({
               <Shield className="mr-2 h-4 w-4 text-indigo-600" />
               <div className="flex flex-col gap-0.5">
                 <span className="font-medium">Dashboard</span>
-                <span className="text-xs text-zinc-500">Overview &amp; metrics</span>
+                <span className="text-xs text-zinc-500">Overview &amp; measurements</span>
               </div>
             </DropdownMenuItem>
             <DropdownMenuItem

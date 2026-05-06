@@ -21,6 +21,7 @@ import {
   AdminEmployeesPage,
   AdminSettingsPage,
   AdminKPICategoriesPage,
+  AdminApprovalRoutesPage,
 } from './pages/admin/index';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 import InitialLoading from './components/ui/initial-loading';
@@ -160,6 +161,14 @@ const AppContent: React.FC = () => {
             element={
               <AdminRoute>
                 <AdminKPICategoriesPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/approval-routes"
+            element={
+              <AdminRoute>
+                <AdminApprovalRoutesPage />
               </AdminRoute>
             }
           />

@@ -26,8 +26,8 @@ router.get('/timeline/:fiscal_year/:month', async (req, res) => {
       SELECT 
         me.department_id as "Department",
         kc.name as "Category",
-        yt.measurement as "Measurement",
-        yt.unit as "Unit",
+        mm.measurement as "Measurement",
+        mm.unit as "Unit",
         yt.fy_target as "FY Target",
         me.target as "Target",
         me.result as "Result",
@@ -37,6 +37,7 @@ router.get('/timeline/:fiscal_year/:month', async (req, res) => {
       FROM kpi_monthly_targets me
       LEFT JOIN kpi_categories kc ON me.category_id = kc.id
       LEFT JOIN kpi_yearly_targets yt ON yt.id = me.yearly_target_id
+      LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
       WHERE me.fiscal_year = @fiscal_year AND me.month = @month
     `;
 
@@ -109,8 +110,8 @@ router.get('/yearly/:fiscal_year', async (req, res) => {
       SELECT 
         yt.department_id as "Department",
         kc.name as "Category",
-        yt.measurement as "Measurement",
-        yt.unit as "Unit",
+        mm.measurement as "Measurement",
+        mm.unit as "Unit",
         yt.fy_target as "FY Target",
         yt.fy_target_text as "FY Target (Text)",
         yt.key_actions as "Key Actions",
@@ -121,6 +122,7 @@ router.get('/yearly/:fiscal_year', async (req, res) => {
         CASE WHEN yt.dept_head_approved = 1 THEN 'Approved' ELSE 'Pending' END as "Dept Head Approval"
       FROM kpi_yearly_targets yt
       LEFT JOIN kpi_categories kc ON yt.category_id = kc.id
+      LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
       WHERE yt.fiscal_year = @fiscal_year
     `;
 
@@ -258,8 +260,8 @@ router.get('/summary/:fiscal_year', async (req, res) => {
       SELECT 
         me.department_id as "Department",
         kc.name as "Category",
-        yt.measurement as "Measurement",
-        yt.unit as "Unit",
+        mm.measurement as "Measurement",
+        mm.unit as "Unit",
         yt.fy_target as "FY Target",
         me.month as "Month",
         me.target as "Monthly Target",
@@ -273,6 +275,7 @@ router.get('/summary/:fiscal_year', async (req, res) => {
       FROM kpi_monthly_targets me
       LEFT JOIN kpi_categories kc ON me.category_id = kc.id
       LEFT JOIN kpi_yearly_targets yt ON yt.id = me.yearly_target_id
+      LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
       WHERE me.fiscal_year = @fiscal_year
     `;
 

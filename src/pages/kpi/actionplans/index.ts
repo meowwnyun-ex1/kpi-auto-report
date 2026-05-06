@@ -1,2 +1,2 @@
-export { default as ActionPlansPage } from './ActionPlansPage';
+export { ActionPlansPage } from './ActionPlansPage';
 export { useActionPlansData } from './useActionPlansData';

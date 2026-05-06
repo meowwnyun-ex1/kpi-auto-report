@@ -58,6 +58,7 @@ import adminUsersRoutes from './routes/admin-users';
 import exportRoutes from './routes/export';
 import measurementsRoutes from './routes/measurements';
 import adminCategoriesRoutes from './routes/admin-categories';
+import approvalRoutes from './routes/approval';
 
 const app = express();
 const PORT = parseInt(process.env.API_PORT!);
@@ -251,6 +252,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 app.use('/api/export', exportRoutes);
 app.use('/api/measurements', measurementsRoutes);
 app.use('/api/admin/categories', adminCategoriesRoutes);
+app.use('/api/approval', approvalRoutes);
 // app.use('/api/visitor-tracking', visitorTrackingRoutes); // Temporarily disabled
 
 // ============================================

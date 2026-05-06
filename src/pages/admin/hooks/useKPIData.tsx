@@ -838,15 +838,15 @@ export function useKPIData(categories: any[], subcategories: any[], measurements
       if (category) {
         const categorySubcategories = subcategories.filter((sc) => sc.category_id === category.id);
         const categoryMeasurements = measurements.filter((m) =>
-          categorySubcategories.some((sc) => sc.id === m.subcategory_id)
+          categorySubcategories.some((sc) => sc.id === m.sub_category_id)
         );
 
         return {
           ...category,
           subcategories: categorySubcategories.reduce((acc, sc) => {
-            acc[sc.key] = {
+            acc[sc.name] = {
               ...sc,
-              measurements: categoryMeasurements.filter((m) => m.subcategory_id === sc.id),
+              measurements: categoryMeasurements.filter((m) => m.sub_category_id === sc.id),
             };
             return acc;
           }, {} as any),

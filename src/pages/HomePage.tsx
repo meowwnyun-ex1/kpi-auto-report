@@ -304,7 +304,7 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-        {/* Metrics Table */}
+        {/* Measurements Table */}
         <TableContainer
           icon={BarChart3}
           title="Measurement Summary by Category"

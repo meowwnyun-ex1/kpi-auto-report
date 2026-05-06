@@ -7,7 +7,7 @@ export const COLORS = {
   // Primary brand color (blue)
   primary: {
     50: '#eff6ff',
-    100: '#dbeafe', 
+    100: '#dbeafe',
     200: '#bfdbfe',
     300: '#93c5fd',
     400: '#60a5fa',
@@ -22,7 +22,7 @@ export const COLORS = {
   success: {
     50: '#f0fdf4',
     100: '#dcfce7',
-    200: '#bbf7d0', 
+    200: '#bbf7d0',
     300: '#86efac',
     400: '#4ade80',
     500: '#22c55e',
@@ -36,7 +36,7 @@ export const COLORS = {
     50: '#fffbeb',
     100: '#fef3c7',
     200: '#fde68a',
-    300: '#fcd34d', 
+    300: '#fcd34d',
     400: '#fbbf24',
     500: '#f59e0b',
     600: '#d97706',
@@ -74,25 +74,25 @@ export const COLORS = {
 
   // Accent colors for data types
   data: {
-    target: '#2563eb',      // Blue - primary data
-    result: '#16a34a',     // Green - results/achievements
-    usage: '#d97706',       // Orange - consumption/usage
-    remaining: '#059669',  // Emerald - remaining/balance
-    unit: '#7c3aed',       // Purple - units/metrics
+    target: '#2563eb', // Blue - primary data
+    result: '#16a34a', // Green - results/achievements
+    usage: '#d97706', // Orange - consumption/usage
+    remaining: '#059669', // Emerald - remaining/balance
+    unit: '#7c3aed', // Purple - units/measurements
     measurement: '#1f2937', // Dark gray - measurements
-  }
+  },
 } as const;
 
 // Category colors - consistent across all pages
 export const CATEGORY_COLORS = {
-  safety: '#dc2626',      // Red
-  quality: '#16a34a',     // Green  
-  delivery: '#2563eb',    // Blue
+  safety: '#dc2626', // Red
+  quality: '#16a34a', // Green
+  delivery: '#2563eb', // Blue
   compliance: '#9333ea', // Purple
-  hr: '#ea580c',         // Orange
+  hr: '#ea580c', // Orange
   attractive: '#db2777', // Pink
   environment: '#0d9488', // Teal
-  cost: '#4f46e5',       // Indigo
+  cost: '#4f46e5', // Indigo
 } as const;
 
 // Table styling constants
@@ -100,7 +100,7 @@ export const TABLE_COLORS = {
   // Header gradients by theme
   header: {
     gray: 'bg-gradient-to-r from-gray-50 to-slate-100',
-    blue: 'bg-gradient-to-r from-blue-50 to-indigo-100', 
+    blue: 'bg-gradient-to-r from-blue-50 to-indigo-100',
     emerald: 'bg-gradient-to-r from-emerald-50 to-green-100',
   },
 
@@ -132,7 +132,7 @@ export const TABLE_COLORS = {
       saving: 'text-blue-500',
       edited: 'text-amber-500',
       active: 'text-green-500',
-    }
+    },
   },
 
   // Border colors
@@ -140,7 +140,7 @@ export const TABLE_COLORS = {
     default: 'border-gray-200',
     light: 'border-gray-100',
     header: 'border-gray-300',
-  }
+  },
 } as const;
 
 // Status color mappings

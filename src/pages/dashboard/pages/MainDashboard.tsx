@@ -1,6 +1,15 @@
 import React from 'react';
 import { ShellLayout } from '@/components/layout';
-import { Target, AlertTriangle, CheckCircle2, RefreshCw, CalendarDays } from 'lucide-react';
+import {
+  Target,
+  TrendingUp,
+  CalendarDays,
+  ChevronRight,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+} from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -8,18 +17,67 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StandardPageLayout } from '@/shared/components/StandardPageLayout';
+import { Card, CardContent } from '@/components/ui/card';
 import { MONTHS } from '../constants';
 import { useDashboardData } from '../hooks/useDashboardData';
-import { OverviewTab } from '../components/OverviewTab';
-import { DetailsTab } from '../components/DetailsTab';
-import { DepartmentsTab } from '../components/DepartmentsTab';
-import { CategoriesTab } from '../components/CategoriesTab';
-import { OverviewCharts } from '../charts/OverviewCharts';
-import { CategorySummaryTable } from '../tables/CategorySummaryTable';
+import { useNavigate } from 'react-router-dom';
+
+// Category color mapping
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; light: string }> =
+  {
+    safety: {
+      bg: 'bg-red-500',
+      text: 'text-red-700',
+      border: 'border-red-500',
+      light: 'bg-red-50',
+    },
+    hr: {
+      bg: 'bg-blue-500',
+      text: 'text-blue-700',
+      border: 'border-blue-500',
+      light: 'bg-blue-50',
+    },
+    cost: {
+      bg: 'bg-amber-500',
+      text: 'text-amber-700',
+      border: 'border-amber-500',
+      light: 'bg-amber-50',
+    },
+    delivery: {
+      bg: 'bg-cyan-500',
+      text: 'text-cyan-700',
+      border: 'border-cyan-500',
+      light: 'bg-cyan-50',
+    },
+    compliance: {
+      bg: 'bg-indigo-500',
+      text: 'text-indigo-700',
+      border: 'border-indigo-500',
+      light: 'bg-indigo-50',
+    },
+    attractive: {
+      bg: 'bg-pink-500',
+      text: 'text-pink-700',
+      border: 'border-pink-500',
+      light: 'bg-pink-50',
+    },
+    environment: {
+      bg: 'bg-emerald-500',
+      text: 'text-emerald-700',
+      border: 'border-emerald-500',
+      light: 'bg-emerald-50',
+    },
+    quality: {
+      bg: 'bg-violet-500',
+      text: 'text-violet-700',
+      border: 'border-violet-500',
+      light: 'bg-violet-50',
+    },
+  };
 
 function MainDashboard({ initialCategory }: { initialCategory?: string } = {}) {
+  const navigate = useNavigate();
   const {
     fiscalYear,
     setFiscalYear,
@@ -34,52 +92,93 @@ function MainDashboard({ initialCategory }: { initialCategory?: string } = {}) {
     loading,
     kpiStatus,
     summary,
-    departmentData,
-    filteredAndSortedDetails,
-    paginatedDetails,
-    currentPage,
-    setCurrentPage,
-    itemsPerPage,
-    setItemsPerPage,
-    totalPages,
-    searchQuery,
-    setSearchQuery,
-    sortField,
-    handleSort,
-    sortDirection,
-    categoryChartData,
     kpiData,
-    calculateTotalTargets,
     calculateCategoryStats,
     refreshData,
   } = useDashboardData(initialCategory);
 
-  // For MainDashboard (overview), always show all categories
-  // Category-specific filtering is handled by CategoryDashboard
   const overviewMode = !initialCategory;
   const displayCategory = overviewMode ? 'all' : selectedCategory;
 
-  const statusData = [
+  // Calculate completion status (count by items, not values)
+  const completionRate =
+    summary.targetCount > 0 ? ((summary.resultCount / summary.targetCount) * 100).toFixed(0) : '0';
+
+  // Get category stats for cards (count by items)
+  const getCategoryCard = (cat: any) => {
+    const stats = calculateCategoryStats(cat.id);
+    const colors = CATEGORY_COLORS[cat.key] || {
+      bg: 'bg-gray-200',
+      text: 'text-gray-500',
+      border: 'border-gray-200',
+      light: 'bg-gray-100',
+    };
+    // Use count-based completion (items filled / total items)
+    const completion = stats.count > 0 ? ((stats.resultCount / stats.count) * 100).toFixed(0) : '0';
+
+    return (
+      <Card
+        key={cat.id}
+        className="group cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-gray-200">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between mb-3">
+            <div
+              className={`w-10 h-10 rounded-lg ${colors.light} flex items-center justify-center`}>
+              <Target className={`w-5 h-5 ${colors.text}`} />
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+          </div>
+
+          <h3 className="font-semibold text-gray-900 mb-1">{cat.name}</h3>
+          <p className="text-xs text-gray-500 mb-3">{stats.count} items</p>
+
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Target</span>
+              <span className="font-medium text-gray-700">{stats.count}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-500">Result</span>
+              <span className="font-medium text-gray-700">{stats.resultCount}</span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full ${colors.bg} transition-all duration-500`}
+                style={{ width: `${Math.min(Number(completion), 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500">Progress</span>
+              <span className={`text-sm font-bold ${colors.text}`}>{completion}%</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Status summary
+  const statusItems = [
     {
-      name: 'Complete',
+      label: 'Complete',
       value: summary.completeDepts,
-      color: 'bg-green-500',
       icon: CheckCircle2,
-      pct: kpiStatus.length > 0 ? (summary.completeDepts / kpiStatus.length) * 100 : 0,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50',
     },
     {
-      name: 'In Progress',
+      label: 'In Progress',
       value: summary.partialDepts,
-      color: 'bg-orange-500',
-      icon: RefreshCw,
-      pct: kpiStatus.length > 0 ? (summary.partialDepts / kpiStatus.length) * 100 : 0,
+      icon: Clock,
+      color: 'text-amber-600',
+      bg: 'bg-amber-50',
     },
     {
-      name: 'Not Started',
+      label: 'Not Started',
       value: summary.missingDepts,
-      color: 'bg-red-500',
-      icon: AlertTriangle,
-      pct: kpiStatus.length > 0 ? (summary.missingDepts / kpiStatus.length) * 100 : 0,
+      icon: AlertCircle,
+      color: 'text-red-600',
+      bg: 'bg-red-50',
     },
   ];
 
@@ -88,11 +187,11 @@ function MainDashboard({ initialCategory }: { initialCategory?: string } = {}) {
       <StandardPageLayout
         title={
           overviewMode
-            ? 'KPI Executive Dashboard'
+            ? 'KPI Dashboard'
             : `${categories.find((c) => c.key === selectedCategory)?.name || 'Category'} Dashboard`
         }
         icon={Target}
-        iconColor="text-gray-700"
+        iconColor="text-blue-600"
         department={selectedDept === 'all' ? '' : selectedDept}
         fiscalYear={fiscalYear}
         availableYears={availableYears}
@@ -100,125 +199,141 @@ function MainDashboard({ initialCategory }: { initialCategory?: string } = {}) {
         onFiscalYearChange={(value) => setFiscalYear(value)}
         onRefresh={refreshData}
         loading={loading}
-        theme="gray"
+        theme="blue"
         rightActions={
-          <>
-            <Select
-              value={selectedMonth.toString()}
-              onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-              <SelectTrigger className="w-[120px] h-9 bg-gray-50 border-gray-200 text-gray-700 text-sm font-medium">
-                <CalendarDays className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((m) => (
-                  <SelectItem key={m.value} value={m.value.toString()}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[160px] h-9 bg-gray-50 text-sm border-gray-200">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((c: any) => (
-                  <SelectItem key={c.id} value={c.key}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
+          <Select
+            value={selectedMonth.toString()}
+            onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+            <SelectTrigger className="w-[130px] h-8 bg-white border-gray-200 text-sm">
+              <CalendarDays className="w-4 h-4 mr-2 text-gray-400" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map((m) => (
+                <SelectItem key={m.value} value={m.value.toString()}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         }>
         <div className="space-y-6">
-          {/* Tabs: Overview / Details / Departments / Categories */}
-          <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="bg-muted/50 p-1 h-10">
-              <TabsTrigger
-                value="overview"
-                className="data-[state=active]:bg-white h-8 px-4 text-sm">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="charts" className="data-[state=active]:bg-white h-8 px-4 text-sm">
-                Charts
-              </TabsTrigger>
-              <TabsTrigger value="table" className="data-[state=active]:bg-white h-8 px-4 text-sm">
-                Table
-              </TabsTrigger>
-              <TabsTrigger
-                value="details"
-                className="data-[state=active]:bg-white h-8 px-4 text-sm">
-                Details
-              </TabsTrigger>
-              <TabsTrigger
-                value="departments"
-                className="data-[state=active]:bg-white h-8 px-4 text-sm">
-                Departments
-              </TabsTrigger>
-              <TabsTrigger
-                value="categories"
-                className="data-[state=active]:bg-white h-8 px-4 text-sm">
-                Categories
-              </TabsTrigger>
-            </TabsList>
+          {/* Key Metrics - Enhanced with light backgrounds and dark text */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-white border-2 border-blue-200 shadow-sm">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-blue-700 uppercase tracking-wide">
+                      Targets
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {summary.targetCount.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">Total items</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-200">
+                    <Target className="w-5 h-5 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
-              <OverviewTab
-                calculateTotalTargets={calculateTotalTargets}
-                calculateCategoryStats={calculateCategoryStats}
-                selectedCategory={displayCategory}
-              />
-            </TabsContent>
+            <Card className="bg-white border-2 border-emerald-200 shadow-sm">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-emerald-700 uppercase tracking-wide">
+                      Results
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {summary.resultCount.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">Completed items</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-200">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Charts Tab */}
-            <TabsContent value="charts" className="space-y-6">
-              <OverviewCharts
-                calculateCategoryStats={calculateCategoryStats}
-                selectedCategory={displayCategory}
-                categories={categories}
-              />
-            </TabsContent>
+            <Card className="bg-white border-2 border-violet-200 shadow-sm">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-violet-700 uppercase tracking-wide">
+                      Completion
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{completionRate}%</p>
+                    <p className="text-xs text-gray-600 mt-1">Achievement rate</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center border border-violet-200">
+                    <BarChart3 className="w-5 h-5 text-violet-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Table Tab */}
-            <TabsContent value="table" className="space-y-6">
-              <CategorySummaryTable
-                calculateCategoryStats={calculateCategoryStats}
-                selectedCategory={displayCategory}
-              />
-            </TabsContent>
+            <Card className="bg-white border-2 border-amber-200 shadow-sm">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">
+                      Pass Rate
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                      {summary.passRate.toFixed(1)}%
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">Success rate</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center border border-amber-200">
+                    <TrendingUp className="w-5 h-5 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-            {/* Details Tab */}
-            <TabsContent value="details" className="space-y-4">
-              <DetailsTab
-                filteredAndSortedDetails={filteredAndSortedDetails}
-                paginatedDetails={paginatedDetails}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                totalPages={totalPages}
-                itemsPerPage={itemsPerPage}
-                setItemsPerPage={setItemsPerPage}
-                sortField={sortField}
-                handleSort={handleSort}
-                sortDirection={sortDirection}
-              />
-            </TabsContent>
+          {/* Department Status - Enhanced with better details */}
+          <div className="bg-white rounded-xl border-2 border-gray-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700">Department Progress</h2>
+                <p className="text-xs text-gray-500 mt-1">Overall status across all departments</p>
+              </div>
+              <div className="flex gap-6">
+                {statusItems.map((item) => (
+                  <div key={item.label} className="flex items-center gap-2">
+                    <div
+                      className={`w-8 h-8 rounded-lg ${item.bg} flex items-center justify-center border border-gray-200`}>
+                      <item.icon className={`w-4 h-4 ${item.color}`} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">{item.label}</p>
+                      <p className="text-lg font-bold text-gray-900">{item.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-            {/* Departments Tab */}
-            <TabsContent value="departments" className="space-y-4">
-              <DepartmentsTab departmentData={departmentData} />
-            </TabsContent>
-
-            {/* Categories Tab */}
-            <TabsContent value="categories" className="space-y-4">
-              <CategoriesTab categoryChartData={categoryChartData} />
-            </TabsContent>
-          </Tabs>
+          {/* KPI Categories Grid - Enhanced with more context */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700">KPI Categories</h2>
+                <p className="text-xs text-gray-500 mt-1">Performance by category (count-based)</p>
+              </div>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                {categories.length} categories
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {categories.map((cat: any) => getCategoryCard(cat))}
+            </div>
+          </div>
         </div>
       </StandardPageLayout>
     </ShellLayout>

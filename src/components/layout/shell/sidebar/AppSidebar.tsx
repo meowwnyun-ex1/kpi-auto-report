@@ -25,6 +25,7 @@ import {
   FileText,
   Eye,
   Calendar,
+  CalendarDays,
   GanttChart,
   FormInput,
   KeyRound,
@@ -99,10 +100,10 @@ const KPI_MANAGEMENT_MENU: NavItem = {
     {
       title: 'Monthly',
       url: '/monthly',
-      icon: ClipboardList,
+      icon: CalendarDays,
       children: [
         { title: 'Target', url: '/monthly-targets', icon: Target },
-        { title: 'Result', url: '/monthly-result', icon: ClipboardList },
+        { title: 'Result', url: '/monthly-result', icon: FileCheck },
       ],
     },
     { title: 'Action Plans', url: '/action-plans', icon: GanttChart, disabled: true },
@@ -118,6 +119,7 @@ const ADMIN_MENU: NavItem = {
     { title: 'User Management', url: '/admin/users', icon: Users },
     { title: 'Employees', url: '/admin/employees', icon: UserPlus },
     { title: 'KPI Configuration', url: '/admin/categories', icon: Settings },
+    { title: 'Approval Routes', url: '/admin/approval-routes', icon: Shield },
     { title: 'System Settings', url: '/admin/settings', icon: Settings },
     { title: 'Error Testing', url: '/test-errors', icon: AlertTriangle },
   ],
@@ -156,6 +158,47 @@ export function AppSidebar() {
     }
   });
 
+  // Auto-expand active menu items based on current location
+  React.useEffect(() => {
+    const currentPath = location.pathname;
+    const newOpenCategories: string[] = [];
+
+    // Check Dashboard menu items
+    if (isPathActive(currentPath, DASHBOARD_MENU.url)) {
+      newOpenCategories.push(DASHBOARD_MENU.url);
+    }
+
+    // Check KPI Management menu items
+    if (KPI_MANAGEMENT_MENU.children) {
+      KPI_MANAGEMENT_MENU.children.forEach((child) => {
+        if (isPathActive(currentPath, child.url)) {
+          newOpenCategories.push(child.url);
+        }
+        // Check sub-menu items
+        if (child.children) {
+          child.children.forEach((subChild) => {
+            if (currentPath === subChild.url) {
+              newOpenCategories.push(child.url);
+            }
+          });
+        }
+      });
+    }
+
+    // Check Admin menu items
+    if (ADMIN_MENU.children) {
+      ADMIN_MENU.children.forEach((child) => {
+        if (currentPath === child.url) {
+          newOpenCategories.push(ADMIN_MENU.url);
+        }
+      });
+    }
+
+    if (newOpenCategories.length > 0) {
+      setOpenCategories(newOpenCategories);
+    }
+  }, [location.pathname]);
+
   // Save to localStorage whenever openCategories changes
   React.useEffect(() => {
     try {
@@ -190,6 +233,12 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
+      // Clear sidebar state from localStorage when logout
+      try {
+        localStorage.removeItem(SIDEBAR_STATE_KEY);
+      } catch {
+        // Ignore storage errors
+      }
       await logout();
       navigate('/');
     } catch (error) {
@@ -223,7 +272,7 @@ export function AppSidebar() {
           <div className="flex flex-col min-w-0">
             <Link to="/">
               <span className="text-sm font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
-                KPI Management Tool
+                KPI Management
               </span>
             </Link>
             <span className="text-xs text-gray-600 font-medium truncate">
@@ -234,7 +283,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className="bg-white/80 backdrop-blur-sm px-4 py-6 overflow-y-auto">
+      <SidebarContent className="bg-white/80 backdrop-blur-sm px-4 py-6 overflow-y-auto scroll-smooth">
         {/* Dashboard Menu - Main overview for all users */}
         <SidebarGroup className="mb-4">
           <SidebarGroupLabel className="px-2 mb-2 text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
@@ -275,23 +324,36 @@ export function AppSidebar() {
                     asChild
                     isActive={isPathActive(location.pathname, DASHBOARD_MENU.url)}
                     onClick={(e) => {
-                      if (isPathActive(location.pathname, DASHBOARD_MENU.url)) {
+                      if (DASHBOARD_MENU.children && DASHBOARD_MENU.children.length > 0) {
                         e.preventDefault();
-                        navigate(DASHBOARD_MENU.url);
+                        // Check if currently on a child page
+                        const isOnChildPage = DASHBOARD_MENU.children.some(
+                          (child) => location.pathname === child.url
+                        );
+                        // If on child page, go to main parent; otherwise go to first child
+                        if (isOnChildPage) {
+                          navigate(DASHBOARD_MENU.url);
+                        } else {
+                          navigate(DASHBOARD_MENU.children[0].url);
+                        }
+                        // Also expand the menu
+                        if (!openCategories.includes(DASHBOARD_MENU.url)) {
+                          toggleCategory(DASHBOARD_MENU.url);
+                        }
                       }
                     }}
                     className={cn(
                       'w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
-                      isPathActive(location.pathname, DASHBOARD_MENU.url)
-                        ? 'bg-sky-100 text-sky-700 border-l-4 border-sky-600'
-                        : 'text-gray-600 hover:bg-sky-50 hover:text-sky-700'
+                      location.pathname === DASHBOARD_MENU.url
+                        ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-600'
+                        : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'
                     )}>
                     <Link to={DASHBOARD_MENU.url} className="flex items-center gap-3">
                       <DASHBOARD_MENU.icon
                         className={cn(
                           'h-4 w-4',
-                          isPathActive(location.pathname, DASHBOARD_MENU.url)
-                            ? 'text-sky-600'
+                          location.pathname === DASHBOARD_MENU.url
+                            ? 'text-blue-600'
                             : 'text-gray-400'
                         )}
                       />
@@ -315,8 +377,8 @@ export function AppSidebar() {
                             className={cn(
                               'w-full rounded-lg px-3 py-2 text-sm transition-colors',
                               childActive
-                                ? 'bg-sky-100 text-sky-700 border-l-4 border-sky-500'
-                                : 'text-gray-600 hover:bg-sky-200 hover:text-sky-800'
+                                ? 'bg-blue-100 text-blue-700 border-l-4 border-blue-500'
+                                : 'text-gray-600 hover:bg-blue-50 hover:text-blue-800'
                             )}>
                             <Link to={child.url} className="flex items-center gap-2">
                               <child.icon className="h-4 w-4" />
@@ -358,15 +420,34 @@ export function AppSidebar() {
                         <SidebarMenuButton
                           asChild
                           onClick={(e) => {
-                            if (!isDisabled && (isActive || isChildActive)) {
-                              e.preventDefault();
-                              navigate(child.url);
+                            if (!isDisabled) {
+                              // Navigate to first child if it has children
+                              if (hasChildren && child.children && child.children.length > 0) {
+                                e.preventDefault();
+                                // Check if currently on a child page
+                                const isOnChildPage = child.children.some(
+                                  (subChild) => location.pathname === subChild.url
+                                );
+                                // If on child page, go to main parent; otherwise go to first child
+                                if (isOnChildPage) {
+                                  navigate(child.url);
+                                } else {
+                                  navigate(child.children[0].url);
+                                }
+                                // Also expand the menu
+                                if (!openCategories.includes(child.url)) {
+                                  toggleCategory(child.url);
+                                }
+                              } else if (isActive || isChildActive) {
+                                e.preventDefault();
+                                navigate(child.url);
+                              }
                             }
                           }}
                           className={cn(
                             'w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                             isDisabled && 'opacity-50 cursor-not-allowed',
-                            !isDisabled && (isActive || isChildActive)
+                            !isDisabled && isActive
                               ? 'bg-green-100 text-green-700 border-l-4 border-green-600'
                               : 'text-gray-600 hover:bg-green-50 hover:text-green-700'
                           )}>
@@ -376,7 +457,7 @@ export function AppSidebar() {
                                 'h-4 w-4',
                                 isDisabled
                                   ? 'text-gray-300'
-                                  : isActive || isChildActive
+                                  : isActive
                                     ? 'text-green-600'
                                     : 'text-gray-400'
                               )}
@@ -439,9 +520,7 @@ export function AppSidebar() {
                     asChild
                     className={cn(
                       'w-full rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
-                      location.pathname === child.url ||
-                        (location.pathname === '/admin' &&
-                          location.search.includes(child.url.split('tab=')[1] || ''))
+                      location.pathname === child.url
                         ? 'bg-purple-100 text-purple-700 border-l-4 border-purple-600'
                         : 'text-gray-600 hover:bg-purple-50 hover:text-purple-700'
                     )}>
@@ -449,11 +528,7 @@ export function AppSidebar() {
                       <child.icon
                         className={cn(
                           'h-4 w-4',
-                          location.pathname === child.url ||
-                            (location.pathname === '/admin' &&
-                              location.search.includes(child.url.split('tab=')[1] || ''))
-                            ? 'text-purple-600'
-                            : 'text-gray-400'
+                          location.pathname === child.url ? 'text-purple-600' : 'text-gray-400'
                         )}
                       />
                       <span className="truncate">{child.title}</span>

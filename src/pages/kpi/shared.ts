@@ -63,7 +63,7 @@ export interface YearlyTarget {
   id: number;
   department_id: string;
   category_id: number | null;
-  metric_id: number | null;
+  measurement_id: number | null;
   fiscal_year: number;
   company_policy: string | null;
   department_policy: string | null;
@@ -85,7 +85,6 @@ export interface YearlyTarget {
   dept_target: number | null;
   target_type: string | null;
   main_relate: string | null;
-  metric_no: string | null;
   measurement: string | null;
   unit: string | null;
   main: string | null;
@@ -109,7 +108,6 @@ export interface MonthlyTarget {
   category_id: number | null;
   fiscal_year: number;
   month: number;
-  metric_no?: string | null;
   measurement?: string | null;
   unit?: string | null;
   main?: string | null;

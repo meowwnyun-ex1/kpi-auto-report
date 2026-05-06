@@ -9,33 +9,97 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Target,
-  PieChart,
-  Table as TableIcon,
   CalendarDays,
-  RefreshCw,
   TrendingUp,
   TrendingDown,
   Minus,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  BarChart3,
+  Building2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { KPI_CATEGORIES, MONTHS } from '../constants';
 import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 import { storage } from '@/shared/utils';
-import { CategorySummaryCards } from '../cards/CategorySummaryCards';
-import { DepartmentBreakdownCards } from '../cards/DepartmentBreakdownCards';
-import { CategoryCharts } from '../charts/CategoryCharts';
-import { CategoryDetailsTable } from '../tables/CategoryDetailsTable';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 const VALID_CATEGORIES = KPI_CATEGORIES.map((c) => c.id);
+
+// Category color mapping
+const CATEGORY_COLORS: Record<
+  string,
+  { bg: string; text: string; border: string; light: string; gradient: string }
+> = {
+  safety: {
+    bg: 'bg-red-500',
+    text: 'text-red-700',
+    border: 'border-red-500',
+    light: 'bg-red-50',
+    gradient: 'from-red-500 to-red-600',
+  },
+  hr: {
+    bg: 'bg-blue-500',
+    text: 'text-blue-700',
+    border: 'border-blue-500',
+    light: 'bg-blue-50',
+    gradient: 'from-blue-500 to-blue-600',
+  },
+  cost: {
+    bg: 'bg-amber-500',
+    text: 'text-amber-700',
+    border: 'border-amber-500',
+    light: 'bg-amber-50',
+    gradient: 'from-amber-500 to-amber-600',
+  },
+  delivery: {
+    bg: 'bg-cyan-500',
+    text: 'text-cyan-700',
+    border: 'border-cyan-500',
+    light: 'bg-cyan-50',
+    gradient: 'from-cyan-500 to-cyan-600',
+  },
+  compliance: {
+    bg: 'bg-indigo-500',
+    text: 'text-indigo-700',
+    border: 'border-indigo-500',
+    light: 'bg-indigo-50',
+    gradient: 'from-indigo-500 to-indigo-600',
+  },
+  attractive: {
+    bg: 'bg-pink-500',
+    text: 'text-pink-700',
+    border: 'border-pink-500',
+    light: 'bg-pink-50',
+    gradient: 'from-pink-500 to-pink-600',
+  },
+  environment: {
+    bg: 'bg-emerald-500',
+    text: 'text-emerald-700',
+    border: 'border-emerald-500',
+    light: 'bg-emerald-50',
+    gradient: 'from-emerald-500 to-emerald-600',
+  },
+  quality: {
+    bg: 'bg-violet-500',
+    text: 'text-violet-700',
+    border: 'border-violet-500',
+    light: 'bg-violet-50',
+    gradient: 'from-violet-500 to-violet-600',
+  },
+};
 
 interface CategoryDashboardProps {
   category?: string;
 }
 
-export function CategoryDashboard({ category: propCategory }: CategoryDashboardProps) {
+function CategoryDashboard({ category: propCategory }: CategoryDashboardProps) {
   const params = useParams();
   const navigate = useNavigate();
   const category = propCategory || params.category;
@@ -47,7 +111,7 @@ export function CategoryDashboard({ category: propCategory }: CategoryDashboardP
   });
   const [loading, setLoading] = useState(false);
   const [details, setDetails] = useState<any[]>([]);
-  const [statusData, setStatusData] = useState<any[]>([]);
+  const [expandedDept, setExpandedDept] = useState<string | null>(null);
 
   // Validate category
   if (!category || !VALID_CATEGORIES.includes(category)) {
@@ -57,6 +121,7 @@ export function CategoryDashboard({ category: propCategory }: CategoryDashboardP
   const catConfig = KPI_CATEGORIES.find((c) => c.id === category)!;
   const CatIcon = catConfig.icon;
   const catColor = catConfig.color;
+  const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.hr;
 
   // Fetch category-specific data
   useEffect(() => {
@@ -70,7 +135,6 @@ export function CategoryDashboard({ category: propCategory }: CategoryDashboardP
         const overviewData = await overviewRes.json();
         if (overviewData.success) {
           setDetails(overviewData.data?.details || []);
-          setStatusData(overviewData.data?.status || []);
         }
       } catch {
         /* silent */
@@ -81,72 +145,87 @@ export function CategoryDashboard({ category: propCategory }: CategoryDashboardP
     loadData();
   }, [fiscalYear, selectedMonth, category]);
 
-  // Category-level stats
+  // Category-level stats (count-based)
   const catStats = useMemo(() => {
-    const totalTargets = details.length;
-    const filledCount = details.filter(
+    const targetCount = details.length; // Total items
+    const resultCount = details.filter(
       (d: any) => d.result !== null && d.result !== undefined
-    ).length;
+    ).length; // Items with results
     const passedCount = details.filter((d: any) => d.ev === 'O').length;
     const failedCount = details.filter((d: any) => d.ev === 'X').length;
-    const pendingCount = totalTargets - filledCount;
-    const achievementRate = totalTargets > 0 ? (filledCount / totalTargets) * 100 : 0;
-    const passRate = filledCount > 0 ? (passedCount / filledCount) * 100 : 0;
-    const totalTarget = details.reduce((s: number, d: any) => s + (d.target ?? 0), 0);
-    const totalResult = details.reduce((s: number, d: any) => s + (d.result ?? 0), 0);
-    const resultRate = totalTarget > 0 ? (totalResult / totalTarget) * 100 : 0;
+    const pendingCount = targetCount - resultCount;
+    const achievementRate = targetCount > 0 ? (resultCount / targetCount) * 100 : 0;
+    const passRate = resultCount > 0 ? (passedCount / resultCount) * 100 : 0;
+    // Accumulated values by month
+    const monthlyAccumulate = details.reduce(
+      (acc: Record<number, { target: number; result: number }>, d: any) => {
+        // Assuming d.month exists for monthly data
+        const month = d.month || 0;
+        if (!acc[month]) {
+          acc[month] = { target: 0, result: 0 };
+        }
+        acc[month].target += d.target ?? 0;
+        acc[month].result += d.result ?? 0;
+        return acc;
+      },
+      {}
+    );
+    // Total accumulated values (for reference)
+    const totalTargetValue = details.reduce((s: number, d: any) => s + (d.target ?? 0), 0);
+    const totalResultValue = details.reduce((s: number, d: any) => s + (d.result ?? 0), 0);
     return {
-      totalTargets,
-      filledCount,
+      targetCount,
+      resultCount,
       passedCount,
       failedCount,
       pendingCount,
       achievementRate,
       passRate,
-      totalTarget,
-      totalResult,
-      resultRate,
+      totalTargetValue,
+      totalResultValue,
+      monthlyAccumulate,
     };
   }, [details]);
 
-  // Department breakdown for this category
+  // Department breakdown for this category (count-based)
   const deptBreakdown = useMemo(() => {
     const deptMap = new Map<
       string,
       {
-        target: number;
-        result: number;
+        targetCount: number;
+        resultCount: number;
         passed: number;
         failed: number;
         pending: number;
-        count: number;
+        items: any[];
       }
     >();
     details.forEach((d: any) => {
       const name = d.department_name || d.department_id || 'Unknown';
       const existing = deptMap.get(name) || {
-        target: 0,
-        result: 0,
+        targetCount: 0,
+        resultCount: 0,
         passed: 0,
         failed: 0,
         pending: 0,
-        count: 0,
+        items: [],
       };
       deptMap.set(name, {
-        target: existing.target + (d.target ?? 0),
-        result: existing.result + (d.result ?? 0),
+        targetCount: existing.targetCount + 1,
+        resultCount: existing.resultCount + (d.result != null ? 1 : 0),
         passed: existing.passed + (d.ev === 'O' ? 1 : 0),
         failed: existing.failed + (d.ev === 'X' ? 1 : 0),
         pending: existing.pending + (d.result == null ? 1 : 0),
-        count: existing.count + 1,
+        items: [...existing.items, d],
       });
     });
     return Array.from(deptMap.entries())
       .map(([name, data]) => ({
         name,
         ...data,
-        rate: data.target > 0 ? (data.result / data.target) * 100 : 0,
-        fillRate: data.count > 0 ? ((data.count - data.pending) / data.count) * 100 : 0,
+        rate: data.targetCount > 0 ? (data.resultCount / data.targetCount) * 100 : 0,
+        fillRate:
+          data.targetCount > 0 ? ((data.targetCount - data.pending) / data.targetCount) * 100 : 0,
       }))
       .sort((a, b) => b.rate - a.rate);
   }, [details]);
@@ -160,37 +239,23 @@ export function CategoryDashboard({ category: propCategory }: CategoryDashboardP
       .then((d) => {
         if (d.success) {
           setDetails(d.data?.details || []);
-          setStatusData(d.data?.status || []);
         }
       })
       .finally(() => setLoading(false));
   };
 
   const getTrendIcon = (rate: number) => {
-    if (rate >= 95) return <TrendingUp className="w-4 h-4 text-green-500" />;
+    if (rate >= 95) return <TrendingUp className="w-4 h-4 text-emerald-500" />;
     if (rate >= 75) return <Minus className="w-4 h-4 text-amber-500" />;
     return <TrendingDown className="w-4 h-4 text-red-500" />;
-  };
-
-  const getStatusBadge = (ev: string | null, result: any) => {
-    if (result == null)
-      return (
-        <Badge variant="outline" className="text-gray-500 border-gray-300">
-          Pending
-        </Badge>
-      );
-    if (ev === 'O')
-      return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Achieved</Badge>;
-    if (ev === 'X') return <Badge className="bg-red-100 text-red-700 border-red-200">Missed</Badge>;
-    return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Partial</Badge>;
   };
 
   return (
     <ShellLayout>
       <StandardPageLayout
-        title={`${catConfig.name} Dashboard`}
+        title={catConfig.name}
         icon={CatIcon}
-        iconColor={`text-[${catColor}]`}
+        iconColor={colors.text}
         showBackButton
         onBackClick={() => navigate('/dashboard')}
         fiscalYear={fiscalYear}
@@ -198,14 +263,13 @@ export function CategoryDashboard({ category: propCategory }: CategoryDashboardP
         onFiscalYearChange={setFiscalYear}
         onRefresh={refreshData}
         loading={loading}
+        theme="blue"
         rightActions={
           <Select
             value={selectedMonth.toString()}
             onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-            <SelectTrigger
-              className="w-[120px] h-9 text-sm border-gray-200"
-              style={{ borderColor: `${catColor}40`, backgroundColor: `${catColor}08` }}>
-              <CalendarDays className="w-4 h-4 mr-2" style={{ color: catColor }} />
+            <SelectTrigger className="w-[130px] h-8 bg-white border-gray-200 text-sm">
+              <CalendarDays className="w-4 h-4 mr-2 text-gray-400" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -218,55 +282,164 @@ export function CategoryDashboard({ category: propCategory }: CategoryDashboardP
           </Select>
         }>
         <div className="space-y-6">
-          {/* Tab Navigation */}
-          <Tabs defaultValue="cards" className="space-y-4">
-            <TabsList className="bg-muted/50 p-1 h-10 w-fit">
-              <TabsTrigger
-                value="cards"
-                className="data-[state=active]:bg-white h-8 px-4 text-sm flex items-center gap-2">
-                <Target className="w-4 h-4" />
-                Cards
-              </TabsTrigger>
-              <TabsTrigger
-                value="charts"
-                className="data-[state=active]:bg-white h-8 px-4 text-sm flex items-center gap-2">
-                <PieChart className="w-4 h-4" />
-                Charts
-              </TabsTrigger>
-              <TabsTrigger
-                value="table"
-                className="data-[state=active]:bg-white h-8 px-4 text-sm flex items-center gap-2">
-                <TableIcon className="w-4 h-4" />
-                Table
-              </TabsTrigger>
-            </TabsList>
+          {/* Hero Stats - Light background with dark text */}
+          <div className={`rounded-2xl ${colors.light} border-2 ${colors.border} p-6`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`${colors.text} text-sm font-medium`}>Overall Completion</p>
+                <p className={`text-5xl font-bold mt-1 ${colors.text}`}>
+                  {catStats.achievementRate.toFixed(0)}%
+                </p>
+                <p className={`text-sm mt-2 ${colors.text}/70`}>
+                  {catStats.resultCount} of {catStats.targetCount} items completed
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-600" />
+                  <p className="text-2xl font-bold text-emerald-700">{catStats.passedCount}</p>
+                  <p className="text-xs text-gray-600">Passed</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <XCircle className="w-6 h-6 mx-auto mb-1 text-red-600" />
+                  <p className="text-2xl font-bold text-red-700">{catStats.failedCount}</p>
+                  <p className="text-xs text-gray-600">Failed</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <Clock className="w-6 h-6 mx-auto mb-1 text-amber-600" />
+                  <p className="text-2xl font-bold text-amber-700">{catStats.pendingCount}</p>
+                  <p className="text-xs text-gray-600">Pending</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            {/* Cards Tab */}
-            <TabsContent value="cards" className="space-y-6">
-              <CategorySummaryCards catStats={catStats} catColor={catColor} />
-              <DepartmentBreakdownCards deptBreakdown={deptBreakdown} catColor={catColor} />
-            </TabsContent>
+          {/* Performance Metrics Row - Enhanced with more details */}
+          <div className="grid grid-cols-4 gap-4">
+            <Card className="border border-gray-200 bg-white shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-600">Target (Items)</span>
+                  <Target className="w-4 h-4 text-blue-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{catStats.targetCount}</p>
+                <p className="text-xs text-gray-500 mt-1">Total items</p>
+              </CardContent>
+            </Card>
+            <Card className="border border-gray-200 bg-white shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-600">Result (Items)</span>
+                  <BarChart3 className="w-4 h-4 text-emerald-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{catStats.resultCount}</p>
+                <p className="text-xs text-gray-500 mt-1">Completed items</p>
+              </CardContent>
+            </Card>
+            <Card className="border border-gray-200 bg-white shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-600">Pass Rate</span>
+                  {getTrendIcon(catStats.passRate)}
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{catStats.passRate.toFixed(1)}%</p>
+                <p className="text-xs text-gray-500 mt-1">Success rate</p>
+              </CardContent>
+            </Card>
+            <Card className="border border-gray-200 bg-white shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-600">Accumulate</span>
+                  <TrendingUp className="w-4 h-4 text-purple-600" />
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {catStats.totalResultValue.toFixed(0)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Total value</p>
+              </CardContent>
+            </Card>
+          </div>
 
-            {/* Charts Tab */}
-            <TabsContent value="charts" className="space-y-6">
-              <CategoryCharts
-                catStats={catStats}
-                deptBreakdown={deptBreakdown}
-                catColor={catColor}
-              />
-            </TabsContent>
+          {/* Department Breakdown - Accordion style */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Department Performance
+            </h2>
+            <div className="space-y-2">
+              {deptBreakdown.map((dept) => {
+                const isExpanded = expandedDept === dept.name;
+                return (
+                  <Card key={dept.name} className="border border-gray-100 overflow-hidden">
+                    <div
+                      className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => setExpandedDept(isExpanded ? null : dept.name)}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-lg ${colors.light} flex items-center justify-center`}>
+                            <Building2 className={`w-4 h-4 ${colors.text}`} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{dept.name}</p>
+                            <p className="text-xs text-gray-500">{dept.targetCount} items</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-gray-900">
+                              {dept.rate.toFixed(0)}%
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {dept.resultCount} / {dept.targetCount}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getTrendIcon(dept.rate)}
+                            {isExpanded ? (
+                              <ChevronUp className="w-4 h-4 text-gray-400" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-gray-400" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <Progress value={dept.rate} className="h-1.5" />
+                      </div>
+                    </div>
 
-            {/* Table Tab */}
-            <TabsContent value="table" className="space-y-6">
-              <CategoryDetailsTable
-                details={details}
-                catColor={catColor}
-                CatIcon={CatIcon}
-                catConfig={catConfig}
-                loading={loading}
-              />
-            </TabsContent>
-          </Tabs>
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 bg-gray-50/50 p-4">
+                        <div className="grid grid-cols-4 gap-3 text-xs">
+                          <div className="bg-emerald-50 rounded-lg p-2 text-center">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
+                            <p className="font-bold text-emerald-700">{dept.passed}</p>
+                            <p className="text-emerald-600">Passed</p>
+                          </div>
+                          <div className="bg-red-50 rounded-lg p-2 text-center">
+                            <XCircle className="w-4 h-4 text-red-600 mx-auto mb-1" />
+                            <p className="font-bold text-red-700">{dept.failed}</p>
+                            <p className="text-red-600">Failed</p>
+                          </div>
+                          <div className="bg-amber-50 rounded-lg p-2 text-center">
+                            <Clock className="w-4 h-4 text-amber-600 mx-auto mb-1" />
+                            <p className="font-bold text-amber-700">{dept.pending}</p>
+                            <p className="text-amber-600">Pending</p>
+                          </div>
+                          <div className="bg-blue-50 rounded-lg p-2 text-center">
+                            <BarChart3 className="w-4 h-4 text-blue-600 mx-auto mb-1" />
+                            <p className="font-bold text-blue-700">{dept.fillRate.toFixed(0)}%</p>
+                            <p className="text-blue-600">Fill Rate</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </StandardPageLayout>
     </ShellLayout>

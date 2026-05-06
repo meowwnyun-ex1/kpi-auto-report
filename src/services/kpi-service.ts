@@ -22,9 +22,8 @@ export interface KPISubCategory {
   updated_at: string;
 }
 
-export interface KPIMetric {
+export interface KPIMeasurement {
   id: number;
-  no: string | null;
   measurement: string;
   unit: string | null;
   fy25_target: string | null;
@@ -41,7 +40,7 @@ export interface KPIMetric {
 
 export interface KPIDataEntry {
   id: number;
-  metric_id: number;
+  measurement_id: number;
   month: string;
   year: number;
   target: string | null;
@@ -54,7 +53,6 @@ export interface KPIDataEntry {
   forecast_result_total?: string | null;
   recovery_month?: string | null;
   remark?: string | null;
-  no?: string | null;
   measurement?: string;
   unit?: string | null;
   fy25_target?: string | null;
@@ -116,9 +114,9 @@ export const createKPIService = (category: string) => {
     getSubCategories: () =>
       ApiService.get<{ success: boolean; data: KPISubCategory[] }>(`${basePath}/sub-categories`),
 
-    // Metrics
-    getMetrics: (subCategory?: string) =>
-      ApiService.get<{ success: boolean; data: KPIMetric[] }>(`${basePath}/metrics`, {
+    // Measurements
+    getMeasurements: (subCategory?: string) =>
+      ApiService.get<{ success: boolean; data: KPIMeasurement[] }>(`${basePath}/measurements`, {
         sub_category: subCategory,
       }),
 
@@ -131,10 +129,13 @@ export const createKPIService = (category: string) => {
       ApiService.get<{ success: boolean; data: KPIDataEntry[] }>(`${basePath}/entries/all`, params),
 
     // Trend
-    getTrend: (metricId: number, year?: number) =>
-      ApiService.get<{ success: boolean; data: KPIDataEntry[] }>(`${basePath}/trend/${metricId}`, {
-        year,
-      }),
+    getTrend: (measurementId: number, year?: number) =>
+      ApiService.get<{ success: boolean; data: KPIDataEntry[] }>(
+        `${basePath}/trend/${measurementId}`,
+        {
+          year,
+        }
+      ),
 
     // By Month
     getByMonth: (month: string, year?: number) =>
@@ -171,8 +172,11 @@ export const createKPIService = (category: string) => {
           `${basePath}/dept/sub-categories`
         ),
 
-      getMetrics: (params?: { sub_category?: string; department?: string }) =>
-        ApiService.get<{ success: boolean; data: KPIMetric[] }>(`${basePath}/dept/metrics`, params),
+      getMeasurements: (params?: { sub_category?: string; department?: string }) =>
+        ApiService.get<{ success: boolean; data: KPIMeasurement[] }>(
+          `${basePath}/dept/measurements`,
+          params
+        ),
 
       getEntries: (params?: {
         year?: number;

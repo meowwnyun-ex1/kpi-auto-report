@@ -40,7 +40,6 @@ async function seedDepartmentMapping() {
       id INT IDENTITY(1,1) PRIMARY KEY,
       kpi_code NVARCHAR(20) NOT NULL UNIQUE,
       spo_dept_id NVARCHAR(50) NOT NULL,
-      spo_dept_name NVARCHAR(200),
       description NVARCHAR(200),
       created_at DATETIME DEFAULT GETDATE(),
       updated_at DATETIME DEFAULT GETDATE()
@@ -67,16 +66,15 @@ async function seedDepartmentMapping() {
         .request()
         .input('kpi_code', sql.NVarChar, mapping.kpi_code)
         .input('spo_dept_id', sql.NVarChar, dept.dept_id)
-        .input('spo_dept_name', sql.NVarChar, dept.name_en)
         .input('description', sql.NVarChar, mapping.description).query(`
           MERGE kpi_department_mapping AS target
           USING (SELECT @kpi_code as kpi_code) AS source
           ON target.kpi_code = source.kpi_code
           WHEN MATCHED THEN
-            UPDATE SET spo_dept_id = @spo_dept_id, spo_dept_name = @spo_dept_name, updated_at = GETDATE()
+            UPDATE SET spo_dept_id = @spo_dept_id, updated_at = GETDATE()
           WHEN NOT MATCHED THEN
-            INSERT (kpi_code, spo_dept_id, spo_dept_name, description)
-            VALUES (@kpi_code, @spo_dept_id, @spo_dept_name, @description);
+            INSERT (kpi_code, spo_dept_id, description)
+            VALUES (@kpi_code, @spo_dept_id, @description);
         `);
 
       console.log(`  ${mapping.kpi_code} -> ${dept.dept_id} (${dept.name_en?.trim()})`);
@@ -87,8 +85,8 @@ async function seedDepartmentMapping() {
         .input('kpi_code', sql.NVarChar, mapping.kpi_code)
         .input('description', sql.NVarChar, mapping.description).query(`
           IF NOT EXISTS (SELECT 1 FROM kpi_department_mapping WHERE kpi_code = @kpi_code)
-          INSERT INTO kpi_department_mapping (kpi_code, spo_dept_id, spo_dept_name, description)
-          VALUES (@kpi_code, @kpi_code, @kpi_code, @description)
+          INSERT INTO kpi_department_mapping (kpi_code, spo_dept_id, description)
+          VALUES (@kpi_code, @kpi_code, @description)
         `);
 
       console.log(`  ${mapping.kpi_code} -> (no match, using code as ID)`);
@@ -98,7 +96,7 @@ async function seedDepartmentMapping() {
   // Show final mapping
   console.log('\n=== Final Mapping ===');
   const finalResult = await kpiDb.request().query(`
-    SELECT kpi_code, spo_dept_id, spo_dept_name, description 
+    SELECT kpi_code, spo_dept_id, description 
     FROM kpi_department_mapping 
     ORDER BY kpi_code
   `);

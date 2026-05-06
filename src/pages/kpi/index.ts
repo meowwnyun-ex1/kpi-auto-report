@@ -1,11 +1,4 @@
-export * from './yearly';
-export * from './monthly';
-export * from './actionplans';
-export type {
-  Category,
-  Stats,
-  YearlyTarget,
-  MonthlyTarget,
-  YearlyTargetWithMonths,
-} from './shared';
-export { deriveCategoryValuesFromStats, CatCard, CAT, MONTH_LABELS } from './shared';
+export { YearlyTargetsPage } from './yearly/YearlyTargetsPage';
+export { MonthlyTargetsPage } from './monthly/MonthlyTargetsPage';
+export { MonthlyResultPage } from './monthly/MonthlyResultPage';
+export { ActionPlansPage } from './actionplans/ActionPlansPage';

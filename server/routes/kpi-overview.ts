@@ -62,9 +62,9 @@ router.get('/overview/:fiscal_year/:month', async (req, res) => {
         me.category_id,
         kc.name       as category_name,
         kc.[key]      as category_key,
-        COUNT(*)      as total_metrics,
-        SUM(CASE WHEN me.result IS NOT NULL THEN 1 ELSE 0 END) as filled_metrics,
-        SUM(CASE WHEN me.result IS NULL     THEN 1 ELSE 0 END) as missing_metrics,
+        COUNT(*)      as total_measurements,
+        SUM(CASE WHEN me.result IS NOT NULL THEN 1 ELSE 0 END) as filled_measurements,
+        SUM(CASE WHEN me.result IS NULL     THEN 1 ELSE 0 END) as missing_measurements,
         CASE
           WHEN SUM(CASE WHEN me.result IS NULL THEN 1 ELSE 0 END) = 0 THEN 'complete'
           WHEN SUM(CASE WHEN me.result IS NOT NULL THEN 1 ELSE 0 END) = 0 THEN 'missing'
@@ -123,13 +123,14 @@ router.get('/overview/:fiscal_year/:month', async (req, res) => {
         me.ev,
         kc.name as category_name,
         kc.[key] as category_key,
-        yt.measurement,
-        yt.unit,
-        yt.main,
+        mm.measurement,
+        mm.unit,
+        mm.main,
         yt.fy_target
       FROM kpi_monthly_targets me
       LEFT JOIN kpi_categories kc ON me.category_id = kc.id
       LEFT JOIN kpi_yearly_targets yt ON yt.id = me.yearly_target_id
+      LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
       WHERE me.fiscal_year = @fiscal_year AND me.month = @month
         ${detailsCategoryFilter}
         ${detailsDeptFilter}
@@ -178,10 +179,11 @@ router.get('/timeline/:fiscal_year/:month', async (req, res) => {
           ELSE 'pending'
         END as status,
         kc.name as category_name, kc.[key] as category_key,
-        yt.measurement, yt.unit, yt.metric_no, yt.fy_target
+        mm.measurement, mm.unit, mm.main, yt.fy_target
       FROM kpi_monthly_targets me
       LEFT JOIN kpi_categories kc ON me.category_id = kc.id
       LEFT JOIN kpi_yearly_targets yt ON yt.id = me.yearly_target_id
+      LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
       WHERE me.fiscal_year = @fiscal_year AND me.month = @month
     `;
 
@@ -245,7 +247,7 @@ router.get('/timeline', async (req, res) => {
           'entry_updated' as type,
           me.department_id,
           kc.name as category_name,
-          yt.measurement,
+          mm.measurement,
           CASE me.month
             WHEN 1 THEN 'Jan' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar' WHEN 4 THEN 'Apr'
             WHEN 5 THEN 'May' WHEN 6 THEN 'Jun' WHEN 7 THEN 'Jul' WHEN 8 THEN 'Aug'
@@ -255,6 +257,7 @@ router.get('/timeline', async (req, res) => {
         FROM kpi_monthly_targets me
         LEFT JOIN kpi_categories kc ON me.category_id = kc.id
         LEFT JOIN kpi_yearly_targets yt ON yt.id = me.yearly_target_id
+        LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
         ${yearFilterMonthly}
 
         UNION ALL
@@ -264,11 +267,12 @@ router.get('/timeline', async (req, res) => {
           'target_set' as type,
           yt.department_id,
           kc.name as category_name,
-          yt.measurement,
+          mm.measurement,
           NULL as month_name,
           yt.updated_at as timestamp
         FROM kpi_yearly_targets yt
         LEFT JOIN kpi_categories kc ON yt.category_id = kc.id
+        LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
         ${yearFilterYearly}
 
         UNION ALL

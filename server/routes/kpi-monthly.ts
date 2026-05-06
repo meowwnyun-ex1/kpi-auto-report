@@ -92,7 +92,7 @@ router.get('/monthly/:department_id/:fiscal_year/:month', async (req, res) => {
         yt.id                  as yearly_target_id,
         yt.department_id, yt.category_id,
         yt.fiscal_year,
-        yt.measurement, yt.unit, yt.main, yt.main_relate,
+        mm.measurement, mm.unit, mm.main, mm.main_relate,
         ISNULL(yt.total_quota, 0)                               as total_target,
         ISNULL(yt.used_quota, 0)                                as used_quota,
         ISNULL(yt.total_quota, 0) - ISNULL(yt.used_quota, 0)   as remaining_quota,
@@ -113,7 +113,7 @@ router.get('/monthly/:department_id/:fiscal_year/:month', async (req, res) => {
         me.reason
       FROM kpi_yearly_targets yt
       INNER JOIN kpi_categories kc ON yt.category_id = kc.id
-      LEFT  JOIN kpi_measurements mm ON yt.metric_id = mm.id
+      LEFT  JOIN kpi_measurements mm ON yt.measurement_id = mm.id
       LEFT  JOIN kpi_measurement_sub_categories sc ON mm.sub_category_id = sc.id
       LEFT  JOIN kpi_monthly_targets me
              ON  me.yearly_target_id = yt.id
@@ -123,7 +123,7 @@ router.get('/monthly/:department_id/:fiscal_year/:month', async (req, res) => {
       WHERE (yt.department_id = @department_id OR yt.main_relate LIKE '%'+@department_id+'%')
         AND yt.fiscal_year = @fiscal_year
         ${categoryFilter}
-      ORDER BY kc.sort_order, sc.sort_order, yt.metric_no
+      ORDER BY kc.sort_order, sc.sort_order, mm.id
     `);
 
     const deptMap = await loadDeptMap(spoPool);
@@ -289,6 +289,18 @@ router.post('/monthly/batch', requireManager, async (req, res) => {
           if (accu_result !== undefined && accu_result !== null) {
             updateRequest.input('accu_result', sql.Decimal(18, 4), accu_result);
             fields.push('accu_result=@accu_result');
+          }
+
+          // Auto-reset approval status if editing after approval
+          if (fields.length > 0) {
+            const currentApprovalStatus = existing.recordset[0]?.approval_status;
+            if (
+              currentApprovalStatus === 'approved' ||
+              currentApprovalStatus === 'hos_approved' ||
+              currentApprovalStatus === 'hod_approved'
+            ) {
+              fields.push("approval_status='pending', hos_approved=0, hod_approved=0");
+            }
           }
           if (forecast !== undefined && forecast !== null) {
             updateRequest.input('forecast', sql.Decimal(18, 4), forecast);
@@ -466,7 +478,7 @@ router.put('/monthly/:yearlyTargetId/:month', requireManager, async (req, res) =
                ISNULL(y.total_quota, 0) - ISNULL(y.used_quota, 0) as remaining_quota,
                y.department_id, y.fiscal_year, m.measurement
         FROM kpi_yearly_targets y
-        LEFT JOIN kpi_measurements m ON y.metric_id = m.id
+        LEFT JOIN kpi_measurements m ON y.measurement_id = m.id
         WHERE y.id = @yearlyTargetId
       `);
 
@@ -575,13 +587,25 @@ router.put('/monthly/:id', requireManager, async (req, res) => {
     if (result !== undefined && result !== null) {
       updateRequest.input('result', sql.Decimal(18, 4), parseFloat(result));
       updateFields.push('result=@result');
+    }
 
-      // Auto-calculate EV if target exists
-      if (entry.target !== null) {
-        const evValue = parseFloat(result) >= parseFloat(entry.target.toString()) ? 'O' : 'X';
-        updateRequest.input('ev', sql.NVarChar(10), evValue);
-        updateFields.push('ev=@ev');
+    // Auto-reset approval status if editing after approval
+    if (updateFields.length > 0) {
+      const currentApprovalStatus = entry.approval_status;
+      if (
+        currentApprovalStatus === 'approved' ||
+        currentApprovalStatus === 'hos_approved' ||
+        currentApprovalStatus === 'hod_approved'
+      ) {
+        updateFields.push("approval_status='pending', hos_approved=0, hod_approved=0");
       }
+    }
+
+    // Auto-calculate EV if target exists
+    if (entry.target !== null) {
+      const evValue = parseFloat(result) >= parseFloat(entry.target.toString()) ? 'O' : 'X';
+      updateRequest.input('ev', sql.NVarChar(10), evValue);
+      updateFields.push('ev=@ev');
     }
 
     if (comment !== undefined) {
@@ -687,10 +711,11 @@ router.get('/monthly/all/:fiscal_year', async (req, res) => {
         me.fiscal_year, me.month,
         me.target, me.result, me.accu_target, me.accu_result, me.ev as judge,
         kc.name as category_name, kc.[key] as category_key,
-        yt.fy_target, yt.measurement, yt.unit
+        yt.fy_target, mm.measurement, mm.unit
       FROM kpi_monthly_targets me
       LEFT JOIN kpi_categories kc ON me.category_id = kc.id
       LEFT JOIN kpi_yearly_targets yt ON yt.id = me.yearly_target_id
+      LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
       WHERE me.fiscal_year = @fiscal_year
     `;
     const request = pool.request().input('fiscal_year', sql.Int, parseInt(fiscal_year));
@@ -744,10 +769,11 @@ router.get('/monthly/pending/:fiscal_year/:month', async (req, res) => {
           me.fiscal_year, me.month,
           me.target, me.result, me.ev, me.dept_head_approved, me.approved_at,
           kc.name as category_name,
-          yt.measurement, yt.unit
+          mm.measurement, mm.unit
         FROM kpi_monthly_targets me
         LEFT JOIN kpi_categories kc ON me.category_id = kc.id
         LEFT JOIN kpi_yearly_targets yt ON yt.id = me.yearly_target_id
+        LEFT JOIN kpi_measurements mm ON yt.measurement_id = mm.id
         WHERE me.fiscal_year = @fiscal_year AND me.month = @month
           AND me.result IS NOT NULL
         ORDER BY me.dept_head_approved ASC, me.department_id, kc.sort_order

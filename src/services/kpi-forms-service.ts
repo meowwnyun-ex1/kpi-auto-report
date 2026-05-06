@@ -8,7 +8,7 @@ export interface YearlyTarget {
   id: number;
   department_id: string;
   category_id: number;
-  metric_id: number | null;
+  measurement_id: number | null;
   fiscal_year: number;
   company_policy: string | null;
   department_policy: string | null;
@@ -29,7 +29,6 @@ export interface YearlyTarget {
   color: string;
   measurement: string;
   unit: string;
-  metric_no: string;
   department_name: string;
 }
 
@@ -38,7 +37,7 @@ export interface MonthlyEntry {
   yearly_target_id: number | null;
   department_id: string;
   category_id: number;
-  metric_id: number | null;
+  measurement_id: number | null;
   fiscal_year: number;
   month: number;
   way_of_measurement: string | null;
@@ -62,7 +61,6 @@ export interface MonthlyEntry {
   color: string;
   measurement: string;
   unit: string;
-  metric_no: string;
   department_name: string;
 }
 
@@ -112,8 +110,7 @@ export interface TimelineEntry {
   category_id: number;
   category_name: string;
   category_key: string;
-  metric_id: number | null;
-  metric_no: string;
+  measurement_id: number | null;
   measurement: string;
   unit: string;
   fy_target: number | null;

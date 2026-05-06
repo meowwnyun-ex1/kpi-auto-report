@@ -35,7 +35,6 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
         m.id,
         m.category_id,
         m.sub_category_id,
-        m.metric_no,
         m.name,
         m.description,
         m.unit,
@@ -74,7 +73,7 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
 
     // Note: fiscal_year filter not applicable here — measurements are not year-specific
 
-    query += ` ORDER BY m.category_id, m.sort_order, m.metric_no`;
+    query += ` ORDER BY m.category_id, m.sort_order, m.id`;
 
     const result = await db.request().query(query);
 
@@ -182,7 +181,6 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     const {
       category_id,
       sub_category_id,
-      metric_no,
       name,
       description,
       unit,
@@ -201,7 +199,6 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       .request()
       .input('category_id', category_id)
       .input('sub_category_id', sub_category_id || null)
-      .input('metric_no', metric_no || null)
       .input('name', name)
       .input('description', description || null)
       .input('unit', unit || null)
@@ -214,14 +211,14 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
       .input('sort_order', sort_order || 0)
       .input('created_by', req.user!.userId).query(`
         INSERT INTO kpi_measurements (
-          category_id, sub_category_id, metric_no, name, description,
+          category_id, sub_category_id, name, description,
           unit, unit_type, target_type, measurement,
           main_department_id, related_departments, main_relate,
           sort_order, created_by
         )
         OUTPUT INSERTED.*
         VALUES (
-          @category_id, @sub_category_id, @metric_no, @name, @description,
+          @category_id, @sub_category_id, @name, @description,
           @unit, @unit_type, @target_type, @measurement,
           @main_department_id, @related_departments, @main_relate,
           @sort_order, @created_by
@@ -254,7 +251,6 @@ router.put('/:id', requireAuth, async (req: Request, res: Response, next: NextFu
     const {
       category_id,
       sub_category_id,
-      metric_no,
       name,
       description,
       unit,
@@ -275,7 +271,6 @@ router.put('/:id', requireAuth, async (req: Request, res: Response, next: NextFu
       .input('id', id)
       .input('category_id', category_id)
       .input('sub_category_id', sub_category_id || null)
-      .input('metric_no', metric_no || null)
       .input('name', name)
       .input('description', description || null)
       .input('unit', unit || null)
@@ -290,7 +285,6 @@ router.put('/:id', requireAuth, async (req: Request, res: Response, next: NextFu
         UPDATE kpi_measurements SET
           category_id = @category_id,
           sub_category_id = @sub_category_id,
-          metric_no = @metric_no,
           name = @name,
           description = @description,
           unit = @unit,

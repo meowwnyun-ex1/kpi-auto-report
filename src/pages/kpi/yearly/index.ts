@@ -1,2 +1,2 @@
-export { default as YearlyTargetsPage } from './YearlyTargetsPage';
+export { YearlyTargetsPage } from './YearlyTargetsPage';
 export { useYearlyTargetsData } from './useYearlyTargetsData';

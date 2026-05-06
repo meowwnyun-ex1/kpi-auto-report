@@ -63,7 +63,7 @@ export function QuickStatsCards({
                 style={{ width: `${(highPerformers / categoriesToShow.length) * 100}%` }}></div>
             </div>
             <span className="text-xs text-gray-500 font-medium">
-              {((highPerformers / categoriesToShow.length) * 100).toFixed(0)}%
+              {((highPerformers / categoriesToShow.length) * 100).toFixed(2)}%
             </span>
           </div>
         </CardContent>
@@ -93,7 +93,7 @@ export function QuickStatsCards({
                 style={{ width: `${(needAttention / categoriesToShow.length) * 100}%` }}></div>
             </div>
             <span className="text-xs text-gray-500 font-medium">
-              {((needAttention / categoriesToShow.length) * 100).toFixed(0)}%
+              {((needAttention / categoriesToShow.length) * 100).toFixed(2)}%
             </span>
           </div>
         </CardContent>
@@ -123,7 +123,7 @@ export function QuickStatsCards({
                 style={{ width: `${(onTrack / categoriesToShow.length) * 100}%` }}></div>
             </div>
             <span className="text-xs text-gray-500 font-medium">
-              {((onTrack / categoriesToShow.length) * 100).toFixed(0)}%
+              {((onTrack / categoriesToShow.length) * 100).toFixed(2)}%
             </span>
           </div>
         </CardContent>

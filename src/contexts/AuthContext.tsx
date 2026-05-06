@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
 
-  const validateToken = async (token: string, isRefresh = false) => {
+  const validateToken = async (token: string, isRefresh = false, retryCount = 0) => {
     try {
       const response = await fetch(`${getApiUrl()}/auth/me`, {
         headers: {
@@ -78,7 +78,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             navigateRef.current('/login');
           }
         } else if (response.status === 500) {
-          console.error('Auth validation: Server error - check JWT_SECRET configuration');
+          console.error('Auth validation: Server error - this may be a temporary startup issue');
+          // Retry with exponential backoff for transient errors (max 3 retries)
+          if (retryCount < 3) {
+            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+            console.log(`Retrying auth validation in ${delay}ms (attempt ${retryCount + 1}/3)`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            return validateToken(token, isRefresh, retryCount + 1);
+          }
           // Don't logout on server errors, especially during refresh
           if (!isRefresh) {
             storage.clearAuthData();

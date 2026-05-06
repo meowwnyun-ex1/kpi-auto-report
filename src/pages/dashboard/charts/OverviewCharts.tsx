@@ -70,7 +70,7 @@ export function OverviewCharts({
                           <div
                             className={`absolute -top-2 w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${getPerformanceColor(achievement)}`}>
                             <span className="text-white font-bold text-xs">
-                              {achievement.toFixed(0)}
+                              {achievement.toFixed(2)}
                             </span>
                           </div>
                         </div>
@@ -137,7 +137,7 @@ export function OverviewCharts({
                           }}></div>
                         <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 bg-white rounded-full px-2 py-1 shadow-lg">
                           <span className="text-xs font-bold" style={{ color: cat.color }}>
-                            {percentage.toFixed(0)}%
+                            {percentage.toFixed(2)}%
                           </span>
                         </div>
                       </div>

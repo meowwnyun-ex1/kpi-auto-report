@@ -157,7 +157,7 @@ function CompactDashboard({ initialCategory }: CompactDashboardProps) {
                     <BarChart3 className="w-5 h-5 text-gray-700" />
                   </div>
                   <div className="text-2xl font-black text-gray-900">
-                    {overallStats.overallRate.toFixed(1)}%
+                    {overallStats.overallRate.toFixed(2)}%
                   </div>
                 </div>
                 <div className="text-sm font-medium text-gray-900">Overall Achievement</div>
@@ -279,7 +279,7 @@ function CompactDashboard({ initialCategory }: CompactDashboardProps) {
                             </div>
 
                             <div className="text-2xl font-black text-gray-900 mb-1">
-                              {perf.achievement.toFixed(0)}%
+                              {perf.achievement.toFixed(2)}%
                             </div>
 
                             <div className="grid grid-cols-2 gap-2 text-xs mb-2">
@@ -349,7 +349,7 @@ function CompactDashboard({ initialCategory }: CompactDashboardProps) {
                             <div className="bg-gray-50/80 rounded-xl p-4 border border-gray-200">
                               <div className="text-sm text-gray-600 mb-1">Achievement Rate</div>
                               <div className="text-2xl font-black text-gray-900">
-                                {perf.achievement.toFixed(1)}%
+                                {perf.achievement.toFixed(2)}%
                               </div>
                               <div className="mt-2">
                                 <Progress value={Math.min(100, perf.achievement)} className="h-3" />
@@ -401,12 +401,12 @@ function CompactDashboard({ initialCategory }: CompactDashboardProps) {
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 rounded-full bg-slate-400"></div>
                               <span className="text-sm font-medium text-gray-600">
-                                Achievement: {perf.achievement.toFixed(1)}%
+                                Achievement: {perf.achievement.toFixed(2)}%
                               </span>
                             </div>
                             <div className="text-sm text-gray-500">
                               <span className="text-slate-600 font-medium">
-                                {perf.count} metrics tracked
+                                {perf.count} measurements tracked
                               </span>
                             </div>
                           </div>

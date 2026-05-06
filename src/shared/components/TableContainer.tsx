@@ -9,7 +9,7 @@ import { PRIORITY_COLORS, getPriorityClasses } from '@/shared/constants/priority
 // THEME CONFIG
 // ============================================
 
-export type TableTheme = 'blue' | 'emerald' | 'gray' | 'purple' | 'red' | 'orange';
+export type TableTheme = 'blue' | 'emerald' | 'gray' | 'purple' | 'indigo' | 'red' | 'orange';
 
 const THEME_CONFIG: Record<
   TableTheme,
@@ -62,6 +62,16 @@ const THEME_CONFIG: Record<
     rowNumberBg: TABLE_COLORS.cell.rowNumber,
     dotColor: '#a78bfa',
     iconColor: '#9333ea',
+    priority: 'high',
+  },
+  indigo: {
+    headerBg: 'bg-gradient-to-r from-indigo-50 to-blue-50',
+    headerGradient: 'bg-gradient-to-r from-indigo-50 to-indigo-100',
+    headerCellBg: TABLE_COLORS.cell.header,
+    rowHover: 'hover:bg-indigo-50/30',
+    rowNumberBg: TABLE_COLORS.cell.rowNumber,
+    dotColor: '#818cf8',
+    iconColor: '#4f46e5',
     priority: 'high',
   },
   red: {

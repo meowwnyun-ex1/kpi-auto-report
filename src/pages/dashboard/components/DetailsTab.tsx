@@ -154,6 +154,10 @@ export function DetailsTab({
                         </div>
                       </TableHead>
                       <TableHead
+                        className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[120px] flex-shrink-0`}>
+                        Subcategory
+                      </TableHead>
+                      <TableHead
                         className={`bg-blue-50 ${TABLE_STYLES.headerCell} min-w-[100px] flex-shrink-0`}>
                         Unit
                       </TableHead>
@@ -202,9 +206,16 @@ export function DetailsTab({
                         <TableCell className="py-4 bg-gray-50/30 min-w-[200px] flex-shrink-0">
                           <div>
                             <div className="font-medium">{row.measurement}</div>
-                            {row.category_name && (
-                              <div className="text-xs text-gray-500">{row.category_name}</div>
-                            )}
+                            <div className="text-xs text-gray-500">
+                              {row.category_name && <span>{row.category_name}</span>}
+                              {row.category_name && row.sub_category_name && <span> • </span>}
+                              {row.sub_category_name && <span>{row.sub_category_name}</span>}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm py-4 bg-white min-w-[120px] flex-shrink-0">
+                          <div className="text-sm text-gray-600">
+                            {row.sub_category_name || '-'}
                           </div>
                         </TableCell>
                         <TableCell className="text-sm py-4 bg-white min-w-[100px] flex-shrink-0">
@@ -221,7 +232,7 @@ export function DetailsTab({
                         <TableCell
                           className={`text-right py-4 bg-gray-50/30 ${TABLE_STYLES.numericCell} min-w-[100px] flex-shrink-0`}>
                           {row.target > 0
-                            ? `${(((row.result || 0) / row.target) * 100).toFixed(1)}%`
+                            ? `${(((row.result || 0) / row.target) * 100).toFixed(2)}%`
                             : '-'}
                         </TableCell>
                         <TableCell className="text-center py-4 bg-white min-w-[80px] flex-shrink-0">
@@ -315,7 +326,7 @@ export function DetailsTab({
                         <span className="text-xs text-gray-500">Achievement Rate</span>
                         <span
                           className={`text-xs font-medium ${rate >= 95 ? 'text-green-600' : rate >= 75 ? 'text-blue-600' : rate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
-                          {row.target > 0 ? `${rate.toFixed(1)}%` : '-'}
+                          {row.target > 0 ? `${rate.toFixed(2)}%` : '-'}
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
