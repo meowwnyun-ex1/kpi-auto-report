@@ -243,7 +243,9 @@ const ensureSchema = async (db: sql.ConnectionPool): Promise<void> => {
       await db.request().query(table.sql);
       logger.info(`Checked/created table: ${table.name}`);
     } catch (err) {
-      logger.warn(`Could not create table ${table.name}:`, err);
+      logger.warn(`Could not create table ${table.name}`, {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -253,6 +255,7 @@ const ensureSchema = async (db: sql.ConnectionPool): Promise<void> => {
     { table: 'kpi_categories', column: 'sort_order', type: 'INT', default: '0' },
     { table: 'kpi_categories', column: 'is_active', type: 'BIT', default: '1' },
     // ── kpi_yearly_targets ──
+    { table: 'kpi_yearly_targets', column: 'fiscal_year', type: 'INT' },
     { table: 'kpi_yearly_targets', column: 'measurement_id', type: 'INT' },
     { table: 'kpi_yearly_targets', column: 'company_policy', type: 'NVARCHAR(MAX)' },
     { table: 'kpi_yearly_targets', column: 'department_policy', type: 'NVARCHAR(MAX)' },
