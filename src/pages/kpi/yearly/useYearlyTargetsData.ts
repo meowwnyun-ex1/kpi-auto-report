@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/shared/hooks/use-toast';
 import { storage } from '@/shared/utils';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { Category, YearlyTarget, Stats, deriveCategoryValuesFromStats } from '../shared';
 
 export type { YearlyTarget };
@@ -29,6 +30,8 @@ export function useYearlyTargetsData(fiscalYear?: number, setFiscalYear?: (year:
   const [categoryTargetValues, setCategoryTargetValues] = useState<Record<string, number>>({});
   const [categoryTargetCounts, setCategoryTargetCounts] = useState<Record<string, number>>({});
   const [categoryResultCounts, setCategoryResultCounts] = useState<Record<string, number>>({});
+
+  const { lastEvent } = useRealtimeSync({ fiscalYear, dept, category: cat || undefined });
 
   const canEdit = ['manager', 'admin', 'superadmin'].includes(user?.role ?? '');
 
@@ -83,16 +86,17 @@ export function useYearlyTargetsData(fiscalYear?: number, setFiscalYear?: (year:
   }, [depts]);
 
   const loadAllRows = useCallback(async () => {
+    if (!dept || !fiscalYear) return;
     try {
       const r = await fetch(`/api/kpi-forms/yearly/${dept}/${fiscalYear}`, {
         headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
       });
       const d = await r.json();
-      if (d.success) {
+      if (d.success && Array.isArray(d.data)) {
         setAllRows(d.data); // Store all rows for accurate counts
       }
-    } catch {
-      /* silent */
+    } catch (err) {
+      console.error('Failed to load all rows:', err);
     }
   }, [dept, fiscalYear]);
 
@@ -139,9 +143,14 @@ export function useYearlyTargetsData(fiscalYear?: number, setFiscalYear?: (year:
     try {
       const r = await fetch('/api/kpi-forms/categories');
       const d = await r.json();
-      if (d.success) setCategories(d.data);
-    } catch {
-      /* silent */
+      if (d.success && Array.isArray(d.data)) {
+        setCategories(d.data);
+      } else {
+        setCategories([]);
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      setCategories([]);
     }
   };
 
@@ -149,19 +158,23 @@ export function useYearlyTargetsData(fiscalYear?: number, setFiscalYear?: (year:
     try {
       const r = await fetch('/api/departments');
       const d = await r.json();
-      if (d.success) {
+      if (d.success && Array.isArray(d.data)) {
         const filteredDepts =
           user?.role === 'manager'
             ? d.data.filter((dp: any) => dp.dept_id === user?.department_id)
             : d.data;
         setDepts(filteredDepts);
+      } else {
+        setDepts([]);
       }
-    } catch {
-      /* silent */
+    } catch (err) {
+      console.error('Failed to load departments:', err);
+      setDepts([]);
     }
   };
 
   const loadStats = useCallback(async () => {
+    if (!dept || !fiscalYear) return;
     setStatsLoading(true);
     try {
       const r = await fetch(`/api/kpi-forms/stats/${dept}/${fiscalYear}`, {
@@ -169,21 +182,22 @@ export function useYearlyTargetsData(fiscalYear?: number, setFiscalYear?: (year:
       });
       const d = await r.json();
       if (d.success) setStats(d.data ?? {});
-    } catch {
-      /* silent */
+    } catch (err) {
+      console.error('Failed to load stats:', err);
     } finally {
       setStatsLoading(false);
     }
   }, [dept, fiscalYear]);
 
   const loadRows = async () => {
+    if (!dept || !fiscalYear || !cat) return;
     setLoading(true);
     try {
       const r = await fetch(`/api/kpi-forms/yearly/${dept}/${fiscalYear}?category=${cat}`, {
         headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
       });
       const d = await r.json();
-      if (d.success) {
+      if (d.success && Array.isArray(d.data)) {
         setRows(d.data);
         const initialDrafts: Record<
           number,
@@ -191,7 +205,7 @@ export function useYearlyTargetsData(fiscalYear?: number, setFiscalYear?: (year:
         > = {};
         d.data.forEach((row: YearlyTarget) => {
           initialDrafts[row.id] = {
-            target: row.total_target.toString(),
+            target: (row.total_target ?? 0).toString(),
             note: row.description_of_target || '',
             attachment: null,
           };
@@ -264,6 +278,13 @@ export function useYearlyTargetsData(fiscalYear?: number, setFiscalYear?: (year:
     loadAllRows(); // Refresh all rows for accurate counts
     if (cat) loadRows();
   }, [loadStats, loadAllRows, cat]);
+
+  useEffect(() => {
+    if (!lastEvent) return;
+    if (lastEvent.type === 'api_change') {
+      refreshData();
+    }
+  }, [lastEvent, refreshData]);
 
   return {
     user,

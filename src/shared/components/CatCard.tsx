@@ -18,6 +18,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { CATEGORY_COLORS } from '@/shared/constants/colors';
 import {
   getCategoryPriorityColor,
   KPI_CATEGORY_PRIORITIES,
@@ -55,14 +56,14 @@ interface CatCardProps {
 
 // Category configuration
 export const CAT: Record<string, { color: string; icon: any }> = {
-  safety: { color: '#10B981', icon: Shield },
-  quality: { color: '#3B82F6', icon: Award },
-  delivery: { color: '#F59E0B', icon: Truck },
-  compliance: { color: '#8B5CF6', icon: FileCheck },
-  hr: { color: '#EC4899', icon: Users },
-  attractive: { color: '#F97316', icon: Heart },
-  environment: { color: '#84CC16', icon: Leaf },
-  cost: { color: '#6B7280', icon: DollarSign },
+  safety: { color: CATEGORY_COLORS.safety, icon: Shield },
+  quality: { color: CATEGORY_COLORS.quality, icon: Award },
+  delivery: { color: CATEGORY_COLORS.delivery, icon: Truck },
+  compliance: { color: CATEGORY_COLORS.compliance, icon: FileCheck },
+  hr: { color: CATEGORY_COLORS.hr, icon: Users },
+  attractive: { color: CATEGORY_COLORS.attractive, icon: Heart },
+  environment: { color: CATEGORY_COLORS.environment, icon: Leaf },
+  cost: { color: CATEGORY_COLORS.cost, icon: DollarSign },
 };
 
 export function CatCard({

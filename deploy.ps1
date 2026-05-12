@@ -1,4 +1,4 @@
-# Deploy KPI : Auto Report to Production (PowerShell Script)
+# Deploy DENSO Company KPI to Production (PowerShell Script)
 # Usage: .\deploy.ps1 [-Clean]
 #   -Clean: Force clean reinstall of dependencies
 
@@ -6,7 +6,7 @@ param(
     [switch]$Clean
 )
 
-Write-Host "Deploying KPI : Auto Report to Production..." -ForegroundColor Green
+Write-Host "Deploying DENSO Company KPI to Production..." -ForegroundColor Green
 Write-Host ""
 
 # Change to project directory

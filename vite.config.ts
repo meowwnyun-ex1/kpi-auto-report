@@ -32,6 +32,7 @@ export default defineConfig(({ mode }) => {
           target: `${process.env.API_URL || `http://${process.env.SERVER_IP || 'localhost'}:${process.env.API_PORT || '4007'}`}`,
           changeOrigin: true,
           secure: false,
+          ws: true,
         },
       },
     },

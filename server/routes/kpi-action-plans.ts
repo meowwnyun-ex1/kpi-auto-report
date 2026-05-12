@@ -95,7 +95,7 @@ router.post('/action-plans', requireManager, async (req, res) => {
     } = req.body;
 
     const pool = await getKpiDb();
-    const userId = (req as any).user?.id;
+    const userId = req.user?.userId;
 
     const monthCols = `jan_status=@jan_status, feb_status=@feb_status, mar_status=@mar_status,
       apr_status=@apr_status, may_status=@may_status, jun_status=@jun_status,
@@ -261,11 +261,16 @@ router.get('/action-plans/all/:fiscal_year', async (req, res) => {
     const request = pool.request().input('fiscal_year', sql.Int, parseInt(fiscal_year));
 
     if (company && company !== 'all') {
-      const ids = Array.from(deptMap.values())
+      const deptIds = Array.from(deptMap.values())
         .filter((d: any) => d.company === company)
-        .map((d: any) => `'${d.dept_id}'`)
-        .join(',');
-      if (ids) query += ` AND ap.department_id IN (${ids})`;
+        .map((d: any) => d.dept_id);
+      if (deptIds.length > 0) {
+        query += ` AND ap.department_id IN (SELECT value FROM STRING_SPLIT(@deptIds, ','))`;
+        request.input('deptIds', sql.NVarChar, deptIds.join(','));
+      } else {
+        // No departments match the company filter, return empty result
+        return res.json({ success: true, data: [] });
+      }
     }
     query += ` ORDER BY ap.department_id, ap.sort_order, ap.start_month`;
 

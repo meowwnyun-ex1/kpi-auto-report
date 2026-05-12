@@ -8,6 +8,7 @@ export { getAuthHeaders, createSessionTimeoutChecker } from './session-manager';
 export { useSystemStandards, useSystemValidation } from './useSystemStandards';
 export { useUnifiedColors } from './useUnifiedColors';
 export { getFallbackImage } from './image-utils';
+export { hexToRgba, clampNumber } from './color-utils';
 
 // Number formatting utilities
 export { formatNumber, formatDecimal, formatPercent } from './formatting-utils';

@@ -374,6 +374,23 @@ export const getPriorityClasses = (priority: PriorityLevel) => {
 };
 
 // ============================================
+// PRIORITY LABELS
+// ============================================
+
+export const PRIORITY_LABELS: Record<PriorityLevel, string> = {
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  info: 'Info',
+  neutral: 'Neutral',
+  success: 'Success',
+  warning: 'Warning',
+  error: 'Error',
+  disabled: 'Disabled',
+};
+
+// ============================================
 // PRIORITY ORDER FOR SORTING
 // ============================================
 

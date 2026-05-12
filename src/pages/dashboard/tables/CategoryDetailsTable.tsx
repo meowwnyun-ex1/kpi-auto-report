@@ -30,16 +30,17 @@ export function CategoryDetailsTable({
   catConfig,
   loading,
 }: CategoryDetailsTableProps) {
-  const getStatusBadge = (ev: string | null, result: any) => {
+  const getStatusBadge = (status: string | null, result: any) => {
     if (result == null)
       return (
         <Badge variant="outline" className="text-gray-500 border-gray-300">
           Pending
         </Badge>
       );
-    if (ev === 'O')
+    if (status === 'achieved')
       return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">Achieved</Badge>;
-    if (ev === 'X') return <Badge className="bg-red-100 text-red-700 border-red-200">Missed</Badge>;
+    if (status === 'not_achieved')
+      return <Badge className="bg-red-100 text-red-700 border-red-200">Missed</Badge>;
     return <Badge className="bg-amber-100 text-amber-700 border-amber-200">Partial</Badge>;
   };
 
@@ -143,7 +144,7 @@ export function CategoryDetailsTable({
                       </span>
                     </TableCell>
                     <TableCell className="text-center py-3">
-                      {getStatusBadge(row.ev, row.result)}
+                      {getStatusBadge(row.status, row.result)}
                     </TableCell>
                   </TableRow>
                 );

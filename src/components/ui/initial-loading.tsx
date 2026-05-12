@@ -1,20 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Image } from '@/components/ui/Image';
 import { getApiUrl } from '@/config/api';
-import { useLoading } from '@/contexts/LoadingContext';
+import { useAppLoading } from '@/contexts/LoadingContext';
 import { cn } from '@/shared/utils';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ERROR_MESSAGES, LOADING_MESSAGES } from '@/shared/constants';
 
-// Progressive loading messages - smooth and not annoying
-const getLoadingMessage = (progress?: number): string => {
-  if (!progress) return LOADING_MESSAGES.INITIAL;
-  if (progress < 20) return 'Connecting...';
-  if (progress < 50) return 'Loading...';
-  if (progress < 80) return 'Almost ready...';
-  return 'Ready!';
-};
+// ============================================
+// INITIAL LOADING COMPONENT
+// Handles app initialization (health check)
+// ============================================
 
 export const InitialLoading: React.FC = () => {
   const [progress, setProgress] = useState(0);
@@ -22,10 +17,14 @@ export const InitialLoading: React.FC = () => {
   const [hasError, setHasError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const { completeInitialLoading, setInitialError } = useLoading();
+  const {
+    completeInitialLoading,
+    setInitialError,
+    setProgress: setContextProgress,
+  } = useAppLoading();
   const mountedRef = useRef(true);
 
-  // Smooth progress animation with easing
+  // Smooth progress animation
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -33,15 +32,14 @@ export const InitialLoading: React.FC = () => {
     };
   }, []);
 
-  // Smooth progress animation
   useEffect(() => {
     if (hasError || isFadingOut) return;
 
     const progressInterval = setInterval(() => {
       if (!mountedRef.current) return;
       setProgress((prev) => {
-        if (prev >= 90) return prev; // Pause at 90% until server responds
-        const increment = Math.max(1, (90 - prev) / 10); // Slower as it approaches 90
+        if (prev >= 90) return prev;
+        const increment = Math.max(1, (90 - prev) / 10);
         return Math.min(prev + increment, 90);
       });
     }, 200);
@@ -49,11 +47,16 @@ export const InitialLoading: React.FC = () => {
     return () => clearInterval(progressInterval);
   }, [hasError, isFadingOut]);
 
+  // Sync progress to context
+  useEffect(() => {
+    setContextProgress(progress);
+  }, [progress, setContextProgress]);
+
   useEffect(() => {
     const initializeApp = async () => {
       try {
         const serverResponse = await fetch(`${getApiUrl()}/health`, {
-          signal: AbortSignal.timeout(5000), // 5 second timeout
+          signal: AbortSignal.timeout(5000),
         });
         if (!serverResponse.ok) {
           setInitialError(true);
@@ -64,8 +67,8 @@ export const InitialLoading: React.FC = () => {
         setInitialError(false);
         setHasError(false);
         setProgress(100);
+        setContextProgress(100);
 
-        // Smooth fade out sequence
         setTimeout(() => {
           if (!mountedRef.current) return;
           setIsFadingOut(true);
@@ -82,21 +85,21 @@ export const InitialLoading: React.FC = () => {
       }
     };
 
-    // Start after a delay to allow backend to fully initialize
     const initTimer = setTimeout(() => {
       if (!hasError) {
         initializeApp();
       }
-    }, 1500); // Increased to 1500ms to allow backend startup
+    }, 1500);
 
     return () => clearTimeout(initTimer);
-  }, [completeInitialLoading, setInitialError, hasError]);
+  }, [completeInitialLoading, setInitialError, hasError, setContextProgress]);
 
   const handleRetry = () => {
     setIsRetrying(true);
     setHasError(false);
     setInitialError(false);
     setProgress(0);
+    setContextProgress(0);
 
     setTimeout(() => {
       setIsRetrying(false);
@@ -114,6 +117,7 @@ export const InitialLoading: React.FC = () => {
           setInitialError(false);
           setHasError(false);
           setProgress(100);
+          setContextProgress(100);
           setIsFadingOut(true);
 
           setTimeout(() => {

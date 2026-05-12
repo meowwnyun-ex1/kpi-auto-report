@@ -5,6 +5,16 @@ import { getAuthHeaders } from '@/shared/utils';
 // Simple cache implementation
 const cache = new Map<string, { data: unknown; timestamp: number; ttl: number }>();
 
+// Retry configuration
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelay: 1000, // 1 second
+  maxDelay: 10000, // 10 seconds
+};
+
+// Sleep utility for retry delays
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // Generic API service class
 export class ApiService {
   private static getAuthHeaders(): Record<string, string> | null {
@@ -57,12 +67,16 @@ export class ApiService {
     return data;
   }
 
-  private static async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private static async requestWithRetry<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    retryCount = 0
+  ): Promise<T> {
     const apiBase = getApiUrl();
     const url = `${apiBase}${endpoint}`;
 
     // Check cache for GET requests
-    if (options.method === 'GET' || !options.method) {
+    if ((options.method === 'GET' || !options.method) && retryCount === 0) {
       const cacheKey = `${url}${JSON.stringify(options)}`;
       const cached = cache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < cached.ttl) {
@@ -76,40 +90,69 @@ export class ApiService {
       throw new Error('No authentication token available');
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...headers,
-        ...(options.headers as Record<string, string>),
-      },
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...headers,
+          ...(options.headers as Record<string, string>),
+        },
+      });
 
-    if (!response.ok) {
-      // Handle 401/403 errors
-      if (response.status === 401 || response.status === 403) {
-        // Session will be handled by session manager
-        throw new Error('Authentication failed');
+      if (!response.ok) {
+        // Handle 401/403 errors - don't retry
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Authentication failed');
+        }
+
+        // Retry on 5xx errors and 429 (rate limit)
+        if (
+          (response.status >= 500 || response.status === 429) &&
+          retryCount < RETRY_CONFIG.maxRetries
+        ) {
+          const delay = Math.min(
+            RETRY_CONFIG.baseDelay * Math.pow(2, retryCount),
+            RETRY_CONFIG.maxDelay
+          );
+          await sleep(delay);
+          return this.requestWithRetry<T>(endpoint, options, retryCount + 1);
+        }
+
+        let errorMessage: string;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || response.statusText;
+        } catch {
+          errorMessage = response.statusText;
+        }
+        throw new Error(`API Error: ${response.status} - ${errorMessage}`);
       }
 
-      let errorMessage: string;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || response.statusText;
-      } catch {
-        errorMessage = response.statusText;
+      const data = await response.json();
+
+      // Cache GET requests for 5 minutes
+      if (options.method === 'GET' || !options.method) {
+        const cacheKey = `${url}${JSON.stringify(options)}`;
+        cache.set(cacheKey, { data, timestamp: Date.now(), ttl: 300000 });
       }
-      throw new Error(`API Error: ${response.status} - ${errorMessage}`);
+
+      return data;
+    } catch (error) {
+      // Retry on network errors (TypeError from fetch)
+      if (error instanceof TypeError && retryCount < RETRY_CONFIG.maxRetries) {
+        const delay = Math.min(
+          RETRY_CONFIG.baseDelay * Math.pow(2, retryCount),
+          RETRY_CONFIG.maxDelay
+        );
+        await sleep(delay);
+        return this.requestWithRetry<T>(endpoint, options, retryCount + 1);
+      }
+      throw error;
     }
+  }
 
-    const data = await response.json();
-
-    // Cache GET requests for 5 minutes
-    if (options.method === 'GET' || !options.method) {
-      const cacheKey = `${url}${JSON.stringify(options)}`;
-      cache.set(cacheKey, { data, timestamp: Date.now(), ttl: 300000 });
-    }
-
-    return data;
+  private static async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    return this.requestWithRetry<T>(endpoint, options);
   }
 
   // Clear cache for specific endpoint or all cache

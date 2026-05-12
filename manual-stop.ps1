@@ -1,7 +1,7 @@
-# Manual Stop Script for KPI Auto Report
+# Manual Stop Script for DENSO Company KPI
 # Usage: .\manual-stop.ps1
 
-Write-Host "Manual Stop Script for KPI Auto Report" -ForegroundColor Red
+Write-Host "Manual Stop Script for DENSO Company KPI" -ForegroundColor Red
 Write-Host ""
 
 # Change to project directory

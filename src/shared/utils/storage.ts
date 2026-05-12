@@ -12,7 +12,9 @@ export const storage = {
       const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : null;
     } catch (error) {
-      console.error(`Error getting storage item ${key}:`, error);
+      if (import.meta.env.DEV) {
+        console.error(`Error getting storage item ${key}:`, error);
+      }
       return null;
     }
   },
@@ -24,7 +26,9 @@ export const storage = {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.error(`Error setting storage item ${key}:`, error);
+      if (import.meta.env.DEV) {
+        console.error(`Error setting storage item ${key}:`, error);
+      }
     }
   },
 
@@ -35,7 +39,9 @@ export const storage = {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      console.error(`Error removing storage item ${key}:`, error);
+      if (import.meta.env.DEV) {
+        console.error(`Error removing storage item ${key}:`, error);
+      }
     }
   },
 
@@ -46,7 +52,9 @@ export const storage = {
     try {
       localStorage.clear();
     } catch (error) {
-      console.error('Error clearing storage:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error clearing storage:', error);
+      }
     }
   },
 

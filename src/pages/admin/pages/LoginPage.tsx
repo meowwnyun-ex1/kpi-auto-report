@@ -24,7 +24,7 @@ export default function LoginPage() {
             <div className="flex flex-col items-center justify-center space-y-8">
               <div className="text-center">
                 <h1 className="text-5xl font-bold bg-gradient-to-r from-sky-600 to-pink-600 bg-clip-text text-transparent">
-                  KPI Management Tool
+                  DENSO Company KPI
                 </h1>
                 <p className="mt-4 text-xl text-sky-700/80">Auto KPI Reporting System</p>
               </div>

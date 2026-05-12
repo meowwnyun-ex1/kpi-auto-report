@@ -132,8 +132,12 @@ router.get('/employees/search', async (req: Request, res: Response, next: NextFu
       const casDb = await getCasDb();
       const request = casDb.request();
 
+      // Sanitize limit parameter
+      const safeLimit = Math.min(Math.max(1, parseInt(limit as string) || 20), 100);
+      request.input('limit', sql.Int, safeLimit);
+
       let query = `
-        SELECT TOP(${parseInt(limit as string) || 20})
+        SELECT TOP(@limit)
           employee_id,
           name,
           name_en,
@@ -195,8 +199,12 @@ router.get('/employees/search', async (req: Request, res: Response, next: NextFu
         const kpiDb = await getKpiDb();
         const request = kpiDb.request();
 
+        // Sanitize limit parameter
+        const safeLimit = Math.min(Math.max(1, parseInt(limit as string) || 20), 100);
+        request.input('limit', sql.Int, safeLimit);
+
         let query = `
-          SELECT TOP(${parseInt(limit as string) || 20})
+          SELECT TOP(@limit)
             id as employee_id,
             full_name as name,
             full_name as name_en,
@@ -1060,7 +1068,7 @@ router.get('/stats', async (req: Request, res: Response, next: NextFunction) => 
     const fiscalYear = queryYear || currentFiscalYear;
 
     // Get comprehensive admin statistics
-    const statsResult = await db.request().query(`
+    const statsResult = await db.request().input('fiscalYear', sql.Int, fiscalYear).query(`
       SELECT 
         -- User statistics
         (SELECT COUNT(*) FROM users WHERE is_active = 1) as totalUsers,
@@ -1069,21 +1077,21 @@ router.get('/stats', async (req: Request, res: Response, next: NextFunction) => 
         (SELECT COUNT(*) FROM users WHERE role = 'user' AND is_active = 1) as regularUsers,
         
         -- KPI statistics for the fiscal year
-        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = ${fiscalYear}) as totalTargets,
-        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = ${fiscalYear} AND fy_target IS NOT NULL) as targetsSet,
-        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = ${fiscalYear}) as monthlyEntries,
-        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = ${fiscalYear} AND result IS NOT NULL) as resultsEntered,
-        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = ${fiscalYear} AND result IS NOT NULL AND result >= target) as achievedTargets,
+        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = @fiscalYear) as totalTargets,
+        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = @fiscalYear AND fy_target IS NOT NULL) as targetsSet,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = @fiscalYear) as monthlyEntries,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = @fiscalYear AND result IS NOT NULL) as resultsEntered,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = @fiscalYear AND result IS NOT NULL AND result >= target) as achievedTargets,
         
         -- Department statistics
         (SELECT COUNT(*) FROM kpi_department_mapping) as totalDepartments,
-        (SELECT COUNT(DISTINCT main) FROM kpi_yearly_targets WHERE fiscal_year = ${fiscalYear}) as activeDepartments,
+        (SELECT COUNT(DISTINCT main) FROM kpi_yearly_targets WHERE fiscal_year = @fiscalYear) as activeDepartments,
         
         -- Category statistics
         (SELECT COUNT(*) FROM kpi_categories WHERE is_active = 1) as totalCategories,
         
         -- Action plans
-        (SELECT COUNT(*) FROM kpi_action_plans WHERE fiscal_year = ${fiscalYear}) as actionPlans,
+        (SELECT COUNT(*) FROM kpi_action_plans WHERE fiscal_year = @fiscalYear) as actionPlans,
         
         -- Recent activity
         (SELECT COUNT(*) FROM users WHERE last_login >= DATEADD(day, -7, GETDATE())) as activeUsersLast7Days,

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getKpiDb } from '../config/database';
 import { logger } from '../utils/logger';
 import { authenticateToken } from '../middleware/auth';
+import * as sql from 'mssql';
 
 const router = Router();
 
@@ -18,9 +19,9 @@ const logApproval = async (
     await db
       .request()
       .input('entity_type', entityType)
-      .input('entity_id', entityId)
+      .input('entity_id', sql.Int, entityId)
       .input('approval_level', level)
-      .input('approver_id', approverId)
+      .input('approver_id', sql.Int, approverId)
       .input('action', action)
       .input('comments', comments || null)
       .query(
@@ -34,13 +35,14 @@ const logApproval = async (
 router.post('/yearly/:id/approve', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { level, comments } = req.body;
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     const target = await db
       .request()
-      .input('id', parseInt(id))
+      .input('id', sql.Int, parseInt(id))
       .query('SELECT * FROM kpi_yearly_targets WHERE id = @id');
     if (target.recordset.length === 0) return res.status(404).json({ error: 'Target not found' });
 
@@ -53,8 +55,8 @@ router.post('/yearly/:id/approve', authenticateToken, async (req: Request, res: 
     if (level === 'hos') {
       await db
         .request()
-        .input('id', parseInt(id))
-        .input('user_id', userId)
+        .input('id', sql.Int, parseInt(id))
+        .input('user_id', sql.Int, userId)
         .query(
           `UPDATE kpi_yearly_targets SET hos_approved = 1, hos_approved_by = @user_id, hos_approved_at = GETDATE(), approval_status = 'hos_approved' WHERE id = @id`
         );
@@ -62,8 +64,8 @@ router.post('/yearly/:id/approve', authenticateToken, async (req: Request, res: 
     } else if (level === 'hod') {
       await db
         .request()
-        .input('id', parseInt(id))
-        .input('user_id', userId)
+        .input('id', sql.Int, parseInt(id))
+        .input('user_id', sql.Int, userId)
         .query(
           `UPDATE kpi_yearly_targets SET hod_approved = 1, hod_approved_by = @user_id, hod_approved_at = GETDATE(), approval_status = 'approved' WHERE id = @id`
         );
@@ -80,13 +82,14 @@ router.post('/yearly/:id/approve', authenticateToken, async (req: Request, res: 
 router.post('/yearly/:id/reject', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { level, comments } = req.body;
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     await db
       .request()
-      .input('id', parseInt(id))
+      .input('id', sql.Int, parseInt(id))
       .query(`UPDATE kpi_yearly_targets SET approval_status = 'rejected' WHERE id = @id`);
     await logApproval(db, 'yearly_target', parseInt(id), level, userId, 'rejected', comments);
     res.json({ success: true });
@@ -99,15 +102,16 @@ router.post('/yearly/:id/reject', authenticateToken, async (req: Request, res: R
 router.post('/monthly/:id/approve', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { level, comments } = req.body;
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     if (level === 'hos') {
       await db
         .request()
-        .input('id', parseInt(id))
-        .input('user_id', userId)
+        .input('id', sql.Int, parseInt(id))
+        .input('user_id', sql.Int, userId)
         .query(
           `UPDATE kpi_monthly_targets SET hos_approved = 1, hos_approved_by = @user_id, hos_approved_at = GETDATE(), approval_status = 'hos_approved' WHERE id = @id`
         );
@@ -115,8 +119,8 @@ router.post('/monthly/:id/approve', authenticateToken, async (req: Request, res:
     } else if (level === 'hod') {
       await db
         .request()
-        .input('id', parseInt(id))
-        .input('user_id', userId)
+        .input('id', sql.Int, parseInt(id))
+        .input('user_id', sql.Int, userId)
         .query(
           `UPDATE kpi_monthly_targets SET hod_approved = 1, hod_approved_by = @user_id, hod_approved_at = GETDATE(), approval_status = 'approved' WHERE id = @id`
         );
@@ -132,13 +136,14 @@ router.post('/monthly/:id/approve', authenticateToken, async (req: Request, res:
 router.post('/monthly/:id/reject', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { level, comments } = req.body;
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     await db
       .request()
-      .input('id', parseInt(id))
+      .input('id', sql.Int, parseInt(id))
       .query(`UPDATE kpi_monthly_targets SET approval_status = 'rejected' WHERE id = @id`);
     await logApproval(db, 'monthly_target', parseInt(id), level, userId, 'rejected', comments);
     res.json({ success: true });
@@ -151,15 +156,16 @@ router.post('/monthly/:id/reject', authenticateToken, async (req: Request, res: 
 router.post('/result/:id/approve', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { level, comments } = req.body;
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     if (level === 'admin') {
       await db
         .request()
-        .input('id', parseInt(id))
-        .input('user_id', userId)
+        .input('id', sql.Int, parseInt(id))
+        .input('user_id', sql.Int, userId)
         .query(
           `UPDATE kpi_monthly_targets SET result_admin_approved = 1, result_admin_approved_by = @user_id, result_admin_approved_at = GETDATE(), result_approval_status = 'approved' WHERE id = @id`
         );
@@ -176,10 +182,10 @@ router.post('/result/:id/approve', authenticateToken, async (req: Request, res: 
 router.get('/result/:id/declaration', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const { id } = req.params;
+    const id = String(req.params.id);
     const result = await db
       .request()
-      .input('id', parseInt(id))
+      .input('id', sql.Int, parseInt(id))
       .query('SELECT * FROM kpi_result_declarations WHERE monthly_result_id = @id');
     res.json(result.recordset[0] || null);
   } catch (error) {
@@ -192,20 +198,20 @@ router.get('/result/:id/declaration', authenticateToken, async (req: Request, re
 router.post('/result/:id/declaration', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { declaration_text, attachment_url } = req.body;
 
     // Check if declaration exists
     const existing = await db
       .request()
-      .input('id', parseInt(id))
+      .input('id', sql.Int, parseInt(id))
       .query('SELECT id FROM kpi_result_declarations WHERE monthly_result_id = @id');
 
     if (existing.recordset.length > 0) {
       // Update existing
       await db
         .request()
-        .input('id', parseInt(id))
+        .input('id', sql.Int, parseInt(id))
         .input('declaration_text', sql.NVarChar(sql.MAX), declaration_text)
         .input('attachment_url', sql.NVarChar(500), attachment_url)
         .query(
@@ -215,7 +221,7 @@ router.post('/result/:id/declaration', authenticateToken, async (req: Request, r
       // Insert new
       await db
         .request()
-        .input('id', parseInt(id))
+        .input('id', sql.Int, parseInt(id))
         .input('declaration_text', sql.NVarChar(sql.MAX), declaration_text)
         .input('attachment_url', sql.NVarChar(500), attachment_url)
         .query(
@@ -226,7 +232,7 @@ router.post('/result/:id/declaration', authenticateToken, async (req: Request, r
     // Mark result as incomplete if declaration exists
     await db
       .request()
-      .input('id', parseInt(id))
+      .input('id', sql.Int, parseInt(id))
       .query(`UPDATE kpi_monthly_targets SET is_incomplete = 1 WHERE id = @id`);
 
     res.json({ success: true });
@@ -257,7 +263,7 @@ router.get('/routes/:departmentId', authenticateToken, async (req: Request, res:
     const { departmentId } = req.params;
     const result = await db
       .request()
-      .input('department_id', parseInt(departmentId))
+      .input('department_id', sql.NVarChar(50), String(departmentId))
       .query('SELECT * FROM kpi_department_approvers WHERE department_id = @department_id');
     if (result.recordset.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(result.recordset[0]);
@@ -272,31 +278,32 @@ router.post('/routes', authenticateToken, async (req: Request, res: Response) =>
   try {
     const db = await getKpiDb();
     const { department_id, department_name, hos_approvers, hod_approvers } = req.body;
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
     const existing = await db
       .request()
-      .input('department_id', department_id)
+      .input('department_id', sql.NVarChar(50), String(department_id))
       .query('SELECT id FROM kpi_department_approvers WHERE department_id = @department_id');
 
     if (existing.recordset.length > 0) {
       await db
         .request()
-        .input('department_id', department_id)
+        .input('department_id', sql.NVarChar(50), String(department_id))
         .input('hos_approvers', JSON.stringify(hos_approvers))
         .input('hod_approvers', JSON.stringify(hod_approvers))
-        .input('updated_by', userId)
+        .input('updated_by', sql.Int, userId)
         .query(
           `UPDATE kpi_department_approvers SET hos_approvers = @hos_approvers, hod_approvers = @hod_approvers, updated_at = GETDATE() WHERE department_id = @department_id`
         );
     } else {
       await db
         .request()
-        .input('department_id', department_id)
+        .input('department_id', sql.NVarChar(50), String(department_id))
         .input('department_name', department_name)
         .input('hos_approvers', JSON.stringify(hos_approvers))
         .input('hod_approvers', JSON.stringify(hod_approvers))
-        .input('created_by', userId)
+        .input('created_by', sql.Int, userId)
         .query(
           `INSERT INTO kpi_department_approvers (department_id, department_name, hos_approvers, hod_approvers, created_by) VALUES (@department_id, @department_name, @hos_approvers, @hod_approvers, @created_by)`
         );
@@ -316,7 +323,7 @@ router.delete('/routes/:departmentId', authenticateToken, async (req: Request, r
     const { departmentId } = req.params;
     await db
       .request()
-      .input('department_id', parseInt(departmentId))
+      .input('department_id', sql.NVarChar(50), String(departmentId))
       .query(
         'UPDATE kpi_department_approvers SET is_active = 0 WHERE department_id = @department_id'
       );
@@ -331,7 +338,8 @@ router.delete('/routes/:departmentId', authenticateToken, async (req: Request, r
 router.get('/notifications', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
     const result = await db
       .request()
       .input('user_id', userId)
@@ -350,7 +358,8 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const db = await getKpiDb();
-      const userId = (req as any).user.id;
+      const userId = req.user?.userId;
+      if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
       const result = await db
         .request()
         .input('user_id', userId)
@@ -369,10 +378,10 @@ router.get(
 router.put('/notifications/:id/read', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const { id } = req.params;
+    const id = String(req.params.id);
     await db
       .request()
-      .input('id', parseInt(id))
+      .input('id', sql.Int, parseInt(id))
       .query('UPDATE kpi_notifications SET is_read = 1 WHERE id = @id');
     res.json({ success: true });
   } catch (error) {
@@ -385,7 +394,8 @@ router.put('/notifications/:id/read', authenticateToken, async (req: Request, re
 router.put('/notifications/read-all', authenticateToken, async (req: Request, res: Response) => {
   try {
     const db = await getKpiDb();
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
     await db
       .request()
       .input('user_id', userId)

@@ -19,7 +19,8 @@ export type TextPriority =
   | 'warning' // เตือน - สีเหลืองเข้ม
   | 'success' // สำเร็จ - สีเขียวเข้ม
   | 'info' // ข้อมูล - สีน้ำเงินเข้น
-  | 'muted'; // ซ่อนเสียง - สีเทาอ่อน
+  | 'muted' // ซ่อนเสียง - สีเทาอ่อน
+  | 'error'; // ข้อผิดพลาด - สีแดงสด
 
 // ============================================
 // TEXT PRIORITY COLORS
@@ -33,6 +34,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-red-800', // red-800
     bg: 'bg-red-100', // red-100
     bg_light: 'bg-red-200', // red-200
+    bg_dark: 'bg-red-300', // red-300
     border: 'border-red-300', // red-300
     icon: 'text-red-600',
   },
@@ -44,6 +46,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-orange-800', // orange-800
     bg: 'bg-orange-100', // orange-100
     bg_light: 'bg-orange-200', // orange-200
+    bg_dark: 'bg-orange-300', // orange-300
     border: 'border-orange-300', // orange-300
     icon: 'text-orange-600',
   },
@@ -55,6 +58,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-blue-800', // blue-800
     bg: 'bg-blue-100', // blue-100
     bg_light: 'bg-blue-200', // blue-200
+    bg_dark: 'bg-blue-300', // blue-300
     border: 'border-blue-300', // blue-300
     icon: 'text-blue-600',
   },
@@ -66,6 +70,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-emerald-800', // emerald-800
     bg: 'bg-emerald-100', // emerald-100
     bg_light: 'bg-emerald-200', // emerald-200
+    bg_dark: 'bg-emerald-300', // emerald-300
     border: 'border-emerald-300', // emerald-300
     icon: 'text-emerald-600',
   },
@@ -77,6 +82,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-green-800', // green-800
     bg: 'bg-green-100', // green-100
     bg_light: 'bg-green-200', // green-200
+    bg_dark: 'bg-green-300', // green-300
     border: 'border-green-300', // green-300
     icon: 'text-green-600',
   },
@@ -88,6 +94,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-red-800', // red-800
     bg: 'bg-red-100', // red-100
     bg_light: 'bg-red-200', // red-200
+    bg_dark: 'bg-red-300', // red-300
     border: 'border-red-300', // red-300
     icon: 'text-red-600',
   },
@@ -99,6 +106,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-gray-800', // gray-800
     bg: 'bg-gray-100', // gray-100
     bg_light: 'bg-gray-200', // gray-200
+    bg_dark: 'bg-gray-300', // gray-300
     border: 'border-gray-300', // gray-300
     icon: 'text-gray-600',
   },
@@ -110,6 +118,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-purple-800', // purple-800
     bg: 'bg-purple-100', // purple-100
     bg_light: 'bg-purple-200', // purple-200
+    bg_dark: 'bg-purple-300', // purple-300
     border: 'border-purple-300', // purple-300
     icon: 'text-purple-600',
   },
@@ -121,6 +130,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-amber-800', // amber-800
     bg: 'bg-amber-100', // amber-100
     bg_light: 'bg-amber-200', // amber-200
+    bg_dark: 'bg-amber-300', // amber-300
     border: 'border-amber-300', // amber-300
     icon: 'text-amber-600',
   },
@@ -132,6 +142,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-emerald-800', // emerald-800
     bg: 'bg-emerald-100', // emerald-100
     bg_light: 'bg-emerald-200', // emerald-200
+    bg_dark: 'bg-emerald-300', // emerald-300
     border: 'border-emerald-300', // emerald-300
     icon: 'text-emerald-600',
   },
@@ -143,6 +154,7 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-cyan-800', // cyan-800
     bg: 'bg-cyan-100', // cyan-100
     bg_light: 'bg-cyan-200', // cyan-200
+    bg_dark: 'bg-cyan-300', // cyan-300
     border: 'border-cyan-300', // cyan-300
     icon: 'text-cyan-600',
   },
@@ -154,8 +166,21 @@ export const TEXT_PRIORITY_COLORS = {
     text_dark: 'text-gray-600', // gray-600
     bg: 'bg-gray-50', // gray-50
     bg_light: 'bg-gray-100', // gray-100
+    bg_dark: 'bg-gray-200', // gray-200
     border: 'border-gray-200', // gray-200
     icon: 'text-gray-400',
+  },
+
+  // Error - ข้อผิดพลาด สีแดงสด
+  error: {
+    text: 'text-red-600', // red-600
+    text_light: 'text-red-700', // red-700
+    text_dark: 'text-red-800', // red-800
+    bg: 'bg-red-100', // red-100
+    bg_light: 'bg-red-200', // red-200
+    bg_dark: 'bg-red-300', // red-300
+    border: 'border-red-300', // red-300
+    icon: 'text-red-600',
   },
 } as const;
 
@@ -200,8 +225,8 @@ export const KPI_VALUE_PRIORITIES = {
 export const getTextPriorityColor = (priority: TextPriority) => TEXT_PRIORITY_COLORS[priority];
 
 export const getKpiValuePriorityColor = (valueType: string) => {
-  const priority = KPI_VALUE_PRIORITIES[valueType] || 'neutral';
-  return TEXT_PRIORITY_COLORS[priority];
+  const priority = (KPI_VALUE_PRIORITIES as Record<string, TextPriority>)[valueType] || 'neutral';
+  return TEXT_PRIORITY_COLORS[priority as TextPriority];
 };
 
 // ============================================

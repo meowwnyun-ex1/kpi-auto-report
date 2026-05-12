@@ -28,7 +28,9 @@ export function useKpiPageState() {
       const response = await res.json();
       setCategories(response.data || response);
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to fetch categories:', error);
+      }
       toast({
         title: 'Error',
         description: 'Failed to load categories',
@@ -46,7 +48,9 @@ export function useKpiPageState() {
       const data = await res.json();
       return data;
     } catch (error) {
-      console.error('Failed to fetch departments:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to fetch departments:', error);
+      }
       toast({
         title: 'Error',
         description: 'Failed to load departments',

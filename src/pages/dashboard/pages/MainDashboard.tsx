@@ -22,59 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { MONTHS } from '../constants';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useNavigate } from 'react-router-dom';
-
-// Category color mapping
-const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string; light: string }> =
-  {
-    safety: {
-      bg: 'bg-red-500',
-      text: 'text-red-700',
-      border: 'border-red-500',
-      light: 'bg-red-50',
-    },
-    hr: {
-      bg: 'bg-blue-500',
-      text: 'text-blue-700',
-      border: 'border-blue-500',
-      light: 'bg-blue-50',
-    },
-    cost: {
-      bg: 'bg-amber-500',
-      text: 'text-amber-700',
-      border: 'border-amber-500',
-      light: 'bg-amber-50',
-    },
-    delivery: {
-      bg: 'bg-cyan-500',
-      text: 'text-cyan-700',
-      border: 'border-cyan-500',
-      light: 'bg-cyan-50',
-    },
-    compliance: {
-      bg: 'bg-indigo-500',
-      text: 'text-indigo-700',
-      border: 'border-indigo-500',
-      light: 'bg-indigo-50',
-    },
-    attractive: {
-      bg: 'bg-pink-500',
-      text: 'text-pink-700',
-      border: 'border-pink-500',
-      light: 'bg-pink-50',
-    },
-    environment: {
-      bg: 'bg-emerald-500',
-      text: 'text-emerald-700',
-      border: 'border-emerald-500',
-      light: 'bg-emerald-50',
-    },
-    quality: {
-      bg: 'bg-violet-500',
-      text: 'text-violet-700',
-      border: 'border-violet-500',
-      light: 'bg-violet-50',
-    },
-  };
+import { getCategoryTheme } from '@/shared/utils/category-theme';
 
 function MainDashboard({ initialCategory }: { initialCategory?: string } = {}) {
   const navigate = useNavigate();
@@ -107,12 +55,7 @@ function MainDashboard({ initialCategory }: { initialCategory?: string } = {}) {
   // Get category stats for cards (count by items)
   const getCategoryCard = (cat: any) => {
     const stats = calculateCategoryStats(cat.id);
-    const colors = CATEGORY_COLORS[cat.key] || {
-      bg: 'bg-gray-200',
-      text: 'text-gray-500',
-      border: 'border-gray-200',
-      light: 'bg-gray-100',
-    };
+    const theme = getCategoryTheme(cat.key);
     // Use count-based completion (items filled / total items)
     const completion = stats.count > 0 ? ((stats.resultCount / stats.count) * 100).toFixed(0) : '0';
 
@@ -123,8 +66,9 @@ function MainDashboard({ initialCategory }: { initialCategory?: string } = {}) {
         <CardContent className="p-5">
           <div className="flex items-start justify-between mb-3">
             <div
-              className={`w-10 h-10 rounded-lg ${colors.light} flex items-center justify-center`}>
-              <Target className={`w-5 h-5 ${colors.text}`} />
+              className="w-10 h-10 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: theme.lightBg }}>
+              <Target className="w-5 h-5" style={{ color: theme.hex }} />
             </div>
             <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
           </div>
@@ -143,13 +87,18 @@ function MainDashboard({ initialCategory }: { initialCategory?: string } = {}) {
             </div>
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className={`h-full ${colors.bg} transition-all duration-500`}
-                style={{ width: `${Math.min(Number(completion), 100)}%` }}
+                className="h-full transition-all duration-500"
+                style={{
+                  backgroundColor: theme.hex,
+                  width: `${Math.min(Number(completion), 100)}%`,
+                }}
               />
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-500">Progress</span>
-              <span className={`text-sm font-bold ${colors.text}`}>{completion}%</span>
+              <span className="text-sm font-bold" style={{ color: theme.hex }}>
+                {completion}%
+              </span>
             </div>
           </div>
         </CardContent>

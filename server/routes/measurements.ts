@@ -3,6 +3,7 @@ import { getKpiDb } from '../config/database';
 import { requireAuth } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { DatabaseError } from '../utils/errors';
+import * as sql from 'mssql';
 
 const router = express.Router();
 
@@ -59,23 +60,27 @@ router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunct
     // Role-based filtering - managers see all measurements for now
     // Admin/superadmin see all, manager sees all (can be restricted later if needed)
 
+    const request = db.request();
+
     // Category filter
     if (category && CATEGORY_MAP[category as string]) {
       const categoryId = CATEGORY_MAP[category as string];
       logger.info('Applying category filter', { category, categoryId });
-      query += ` AND m.category_id = ${categoryId}`;
+      query += ` AND m.category_id = @categoryId`;
+      request.input('categoryId', sql.Int, categoryId);
     }
 
     // Department filter - show items where department is main OR related
     if (department_id) {
-      query += ` AND (m.main_department_id = '${department_id}' OR m.related_departments LIKE '%${department_id}%' OR m.related_departments = 'ALL')`;
+      query += ` AND (m.main_department_id = @department_id OR m.related_departments LIKE '%' + @department_id + '%' OR m.related_departments = 'ALL')`;
+      request.input('department_id', sql.NVarChar, department_id);
     }
 
     // Note: fiscal_year filter not applicable here — measurements are not year-specific
 
     query += ` ORDER BY m.category_id, m.sort_order, m.id`;
 
-    const result = await db.request().query(query);
+    const result = await request.query(query);
 
     logger.info('Measurements fetched', { count: result.recordset.length });
 
@@ -108,13 +113,15 @@ router.get(
         WHERE is_active = 1
       `;
 
+      const request = db.request();
       if (category && CATEGORY_MAP[category as string]) {
-        query += ` AND category_id = ${CATEGORY_MAP[category as string]}`;
+        query += ` AND category_id = @categoryId`;
+        request.input('categoryId', sql.Int, CATEGORY_MAP[category as string]);
       }
 
       query += ` ORDER BY sort_order, name`;
 
-      const result = await db.request().query(query);
+      const result = await request.query(query);
 
       res.json({
         success: true,

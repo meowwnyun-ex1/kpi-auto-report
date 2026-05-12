@@ -7,7 +7,7 @@ import { StatsWidget } from '@/shared/components';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { storage } from '@/shared/utils/storage';
+import { api } from '@/config/api';
 import type { LayoutVariant } from '@/components/layout/shell/shell-types';
 
 export interface AppHeaderProps {
@@ -29,42 +29,58 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   showStats,
   headerContent,
 }) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const isMinimal = variant === 'minimal';
+  const [targetStats, setTargetStats] = useState({
+    completed: 0,
+    total: 0,
+    fiscalYear: 0,
+    pendingApprovals: 0,
+    activityAlerts: 0,
+  });
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && isAuthenticated) {
+      fetchTargetStats();
       fetchNotifications();
     }
-  }, [user]);
+  }, [user, isAuthenticated]);
+
+  const fetchTargetStats = async () => {
+    try {
+      const response = await api.get('/stats/target-completion');
+      const data = response.data.data || response.data;
+      setTargetStats({
+        completed: data.completedTargets || 0,
+        total: data.totalTargets || 0,
+        fiscalYear: data.fiscalYear || 0,
+        pendingApprovals: data.pendingApprovals || 0,
+        activityAlerts: data.activityAlerts || 0,
+      });
+    } catch (error) {
+      // Silently ignore errors - axios interceptor will handle 401
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('/api/approval/notifications', {
-        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data || []);
-        setUnreadCount(data?.filter((n: any) => !n.is_read).length || 0);
-      }
+      const response = await api.get('/approval/notifications');
+      setNotifications(response.data || []);
+      setUnreadCount(response.data?.filter((n: any) => !n.is_read).length || 0);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // Silently ignore errors - axios interceptor will handle 401
     }
   };
 
   const markAsRead = async (id: number) => {
     try {
-      await fetch(`/api/approval/notifications/${id}/read`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-      });
+      await api.put(`/approval/notifications/${id}/read`);
       fetchNotifications();
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      // Silently ignore errors - axios interceptor will handle 401
     }
   };
 
@@ -74,7 +90,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         <Link
           to="/"
           className="flex items-center gap-2 text-sm font-semibold text-gray-900 hover:text-gray-700">
-          KPI Management Tool
+          DENSO Company KPI
         </Link>
         <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
           Back to dashboard
@@ -105,6 +121,35 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
       <div className="flex items-center gap-3">
         {showStats && <StatsWidget />}
+
+        {/* Stats Badge Group */}
+        {user && targetStats.total > 0 && (
+          <div className="flex items-center gap-2">
+            {/* FY Year */}
+            <div className="bg-gradient-to-r from-gray-600 to-gray-700 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
+              FY{targetStats.fiscalYear}
+            </div>
+
+            {/* Target Completion */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
+              {targetStats.completed}/{targetStats.total} Targets
+            </div>
+
+            {/* Pending Approvals */}
+            {targetStats.pendingApprovals > 0 && (
+              <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md animate-pulse">
+                {targetStats.pendingApprovals} Pending
+              </div>
+            )}
+
+            {/* Activity Alerts */}
+            {targetStats.activityAlerts > 0 && (
+              <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md animate-pulse">
+                {targetStats.activityAlerts} Alerts
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Notification Bell */}
         {user && (

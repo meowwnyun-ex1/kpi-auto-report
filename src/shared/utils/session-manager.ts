@@ -49,13 +49,17 @@ export const createSessionTimeoutChecker = (
         onTimeout();
       } else if (timeUntilExpiration <= warningTime) {
         // Show warning
-        console.warn('Session will expire soon');
+        if (import.meta.env.DEV) {
+          console.warn('Session will expire soon');
+        }
       } else {
         // Schedule next check
         timeoutId = setTimeout(checkSession, Math.min(timeUntilExpiration, 60000)); // Check every minute or until expiration
       }
     } catch (error) {
-      console.error('Error parsing token:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error parsing token:', error);
+      }
       onTimeout();
     }
   };

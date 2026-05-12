@@ -161,7 +161,7 @@ function CompactDashboard({ initialCategory }: CompactDashboardProps) {
                   </div>
                 </div>
                 <div className="text-sm font-medium text-gray-900">Overall Achievement</div>
-                <div className="text-xs text-gray-500">FY {new Date().getFullYear()}</div>
+                <div className="text-xs text-gray-500">FY {fiscalYear}</div>
                 <div className="mt-2">
                   <Progress value={Math.min(100, overallStats.overallRate)} className="h-2" />
                 </div>

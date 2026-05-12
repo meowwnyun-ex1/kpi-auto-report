@@ -1,7 +1,7 @@
 {
   "name": "kpi-auto-report",
   "version": "1.0.0",
-  "description": "KPI Management Tool System for DENSO",
+  "description": "DENSO Company KPI Management System",
   "scripts": {
     "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:frontend\"",
     "dev:api": "cross-env NODE_ENV=development nodemon server/api.ts",
@@ -22,14 +22,13 @@
     "pm2:save": "echo 'PM2 save disabled for security'",
     "pm2:resurrect": "echo 'PM2 resurrect disabled for security'",
     "db:reset": "tsx server/scripts/reset-kpi-db.ts",
-    "db:seed-users": "tsx server/scripts/seed-admin-users.ts",
-    "db:seed-departments": "tsx server/scripts/seed-spo-departments.ts",
+    "db:seed": "tsx server/scripts/seed-from-excel.ts",
+    "db:seed:check": "powershell -ExecutionPolicy Bypass -File server/scripts/seed-database.ps1 -DryRun",
+    "db:seed:force": "powershell -ExecutionPolicy Bypass -File server/scripts/seed-database.ps1 -SkipConfirm",
     "db:migrate:dept-master": "tsx server/scripts/migrate-to-dept-master.ts",
-    "db:seed-dept-mapping": "tsx server/scripts/seed-department-mapping.ts",
     "db:migrate:measurement-id": "tsx server/scripts/migrate-metric-to-measurement-id.ts",
-    "db:seed:fy25-data": "tsx server/scripts/seed-fy25-kpi-data.ts",
-    "db:seed:monthly-targets": "tsx server/scripts/seed-monthly-targets.ts",
     "db:drop:metric-no": "tsx server/scripts/drop-metric-no-column.ts",
+    "db:init:kpi": "tsx server/scripts/init-kpi-management-db.ts",
     "api-docs": "echo \"📄 API Documentation available at: http://localhost:3007/redoc\" && echo \"📃 Alternative routes: /docs, /api-docs, /swagger, /status\" && pnpm dev:frontend"
   },
   "dependencies": {
@@ -49,6 +48,7 @@
     "@types/multer": "^2.1.0",
     "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.23",
+    "axios": "^1.16.0",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -73,6 +73,7 @@
     "tailwindcss-animate": "^1.0.7",
     "validator": "^13.15.26",
     "vite": "^7.3.1",
+    "ws": "^8.20.0",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
@@ -87,6 +88,7 @@
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "@types/validator": "^13.15.10",
+    "@types/ws": "^8.18.1",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "nodemon": "^3.1.11",

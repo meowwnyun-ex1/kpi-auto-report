@@ -27,18 +27,18 @@ const config: ServerConfig = {
     destination: 'uploads',
   },
   database: {
-    host: process.env.DB_HOST!,
-    port: parseInt(process.env.DB_PORT!),
-    database: process.env.DB_NAME!,
-    username: process.env.DB_USER!,
-    password: process.env.DB_PASSWORD!,
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '1433'),
+    database: process.env.DB_NAME || 'kpi_dev',
+    username: process.env.DB_USER || 'sa',
+    password: process.env.DB_PASSWORD || 'YourPassword123',
   },
   kpiDatabase: {
-    host: process.env.KPI_DB_HOST!,
-    port: parseInt(process.env.KPI_DB_PORT!),
-    database: process.env.KPI_DB_NAME!,
-    username: process.env.KPI_DB_USER!,
-    password: process.env.KPI_DB_PASSWORD!,
+    host: process.env.KPI_DB_HOST || 'localhost',
+    port: parseInt(process.env.KPI_DB_PORT || '1433'),
+    database: process.env.KPI_DB_NAME || 'kpi_dev',
+    username: process.env.KPI_DB_USER || 'sa',
+    password: process.env.KPI_DB_PASSWORD || 'YourPassword123',
   },
 };
 

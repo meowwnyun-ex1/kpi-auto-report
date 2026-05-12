@@ -1,4 +1,4 @@
-# Zero-Downtime Deploy Script for KPI : Auto Report
+# Zero-Downtime Deploy Script for DENSO Company KPI
 # Usage: .\deploy-zero-downtime.ps1 [-SkipBuild] [-FrontendOnly] [-BackendOnly]
 #
 # IMPORTANT: This script ONLY manages kpi-auto-report-api PM2 process
@@ -16,7 +16,7 @@ $ProgressPreference = "SilentlyContinue"
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Zero-Downtime Deployment" -ForegroundColor Cyan
-Write-Host "  KPI : Auto Report" -ForegroundColor Cyan
+Write-Host "  DENSO Company KPI" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  (Only affects kpi-auto-report-api)" -ForegroundColor Gray
 Write-Host "========================================" -ForegroundColor Cyan

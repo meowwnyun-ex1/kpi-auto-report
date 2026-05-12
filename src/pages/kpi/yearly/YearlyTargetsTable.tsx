@@ -39,6 +39,7 @@ import { MONTHS, Category } from '../shared';
 import { YearlyTarget } from './useYearlyTargetsData';
 import { useToast } from '@/shared/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { ApiService } from '@/services/api-service';
 
 interface YearlyTargetsTableProps {
   filteredRows?: YearlyTarget[];
@@ -62,6 +63,7 @@ interface YearlyTargetsTableProps {
   toast?: any;
   showResults?: boolean;
   fiscalYear?: number;
+  onRefreshData?: () => void;
 }
 
 const StatusChip = ({ row }: { row: YearlyTarget }) => {
@@ -98,7 +100,8 @@ const handleApprove = async (
   row: YearlyTarget,
   level: 'hos' | 'hod',
   toast: any,
-  userRole?: string
+  userRole?: string,
+  onRefreshData?: () => void
 ) => {
   // Role-based access control
   if (level === 'hos' && userRole !== 'hos' && userRole !== 'admin' && userRole !== 'superadmin') {
@@ -119,21 +122,13 @@ const handleApprove = async (
   }
 
   try {
-    const response = await fetch(`/api/approval/yearly/${row.id}/approve`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify({ level }),
-    });
-
-    if (response.ok) {
+    const res = await ApiService.post<any>(`/approval/yearly/${row.id}/approve`, { level });
+    if (res?.success !== false) {
       toast({
         title: 'Success',
         description: 'Approved successfully',
       });
-      window.location.reload();
+      onRefreshData?.();
     } else {
       toast({
         title: 'Error',
@@ -154,7 +149,8 @@ const handleReject = async (
   row: YearlyTarget,
   level: 'hos' | 'hod',
   toast: any,
-  userRole?: string
+  userRole?: string,
+  onRefreshData?: () => void
 ) => {
   // Role-based access control
   if (level === 'hos' && userRole !== 'hos' && userRole !== 'admin' && userRole !== 'superadmin') {
@@ -178,21 +174,13 @@ const handleReject = async (
   if (!comments) return;
 
   try {
-    const response = await fetch(`/api/approval/yearly/${row.id}/reject`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify({ level, comments }),
-    });
-
-    if (response.ok) {
+    const res = await ApiService.post<any>(`/approval/yearly/${row.id}/reject`, { level, comments });
+    if (res?.success !== false) {
       toast({
         title: 'Success',
         description: 'Rejected successfully',
       });
-      window.location.reload();
+      onRefreshData?.();
     } else {
       toast({
         title: 'Error',
@@ -231,6 +219,7 @@ export function YearlyTargetsTable({
   toast,
   showResults = false,
   fiscalYear,
+  onRefreshData,
 }: YearlyTargetsTableProps) {
   const { user } = useAuth();
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -541,7 +530,7 @@ export function YearlyTargetsTable({
                                     className="h-7 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleApprove(row, 'hos', toast, user?.role);
+                                      handleApprove(row, 'hos', toast, user?.role, onRefreshData);
                                     }}>
                                     <Check className="w-3 h-3" />
                                   </Button>
@@ -551,7 +540,7 @@ export function YearlyTargetsTable({
                                     className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleReject(row, 'hos', toast, user?.role);
+                                      handleReject(row, 'hos', toast, user?.role, onRefreshData);
                                     }}>
                                     <X className="w-3 h-3" />
                                   </Button>
@@ -565,7 +554,7 @@ export function YearlyTargetsTable({
                                     className="h-7 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleApprove(row, 'hod', toast, user?.role);
+                                      handleApprove(row, 'hod', toast, user?.role, onRefreshData);
                                     }}>
                                     <Check className="w-3 h-3" />
                                   </Button>
@@ -575,7 +564,7 @@ export function YearlyTargetsTable({
                                     className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleReject(row, 'hod', toast, user?.role);
+                                      handleReject(row, 'hod', toast, user?.role, onRefreshData);
                                     }}>
                                     <X className="w-3 h-3" />
                                   </Button>

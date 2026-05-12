@@ -87,7 +87,7 @@ const DASHBOARD_MENU: NavItem = {
 
 // KPI Management - Manager/Admin access
 const KPI_MANAGEMENT_MENU: NavItem = {
-  title: 'KPI Management',
+  title: 'Company KPI',
   url: '/kpi-management',
   icon: ClipboardList,
   children: [
@@ -106,7 +106,7 @@ const KPI_MANAGEMENT_MENU: NavItem = {
         { title: 'Result', url: '/monthly-result', icon: FileCheck },
       ],
     },
-    { title: 'Action Plans', url: '/action-plans', icon: GanttChart, disabled: true },
+    { title: 'Action Plans', url: '/action-plans', icon: GanttChart },
   ],
 };
 
@@ -272,7 +272,7 @@ export function AppSidebar() {
           <div className="flex flex-col min-w-0">
             <Link to="/">
               <span className="text-sm font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
-                KPI Management
+                Company KPI
               </span>
             </Link>
             <span className="text-xs text-gray-600 font-medium truncate">
@@ -399,7 +399,7 @@ export function AppSidebar() {
         {isManagerOrAdmin && (
           <SidebarGroup className="mb-4">
             <SidebarGroupLabel className="px-2 mb-4 text-xs font-bold text-green-600 uppercase tracking-wider flex items-center gap-2">
-              <span>KPI Management</span>
+              <span>Company KPI</span>
               <div className="h-px bg-green-300 flex-1"></div>
             </SidebarGroupLabel>
             <SidebarMenu className="space-y-1">

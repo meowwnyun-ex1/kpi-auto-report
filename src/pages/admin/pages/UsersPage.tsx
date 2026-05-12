@@ -71,7 +71,9 @@ export default function AdminUsersPage() {
       const data = await response.json();
       if (data.success) setSystemUsers(data.data);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to fetch users:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -86,7 +88,9 @@ export default function AdminUsersPage() {
       const data = await response.json();
       if (data.success) setDepartments(data.data);
     } catch (error) {
-      console.error('Failed to fetch departments:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to fetch departments:', error);
+      }
     }
   };
 

@@ -27,6 +27,7 @@ import { MONTHS } from '../shared';
 import { YearlyTarget } from '../shared';
 import { kpiNotifications } from '@/shared/constants/notifications';
 import { useToast } from '@/shared/hooks/use-toast';
+import { ApiService } from '@/services/api-service';
 
 interface MonthlyTargetsTableProps {
   filteredYearlyTargets: YearlyTarget[];
@@ -45,25 +46,23 @@ interface MonthlyTargetsTableProps {
   ) => void;
   fillAllMonths: (yearlyTargetId: number, target: number, toast: any) => void;
   toast: any;
+  onRefreshData?: () => void;
 }
 
-const handleApprove = async (id: number, level: 'hos' | 'hod', toast: any) => {
+const handleApprove = async (
+  id: number,
+  level: 'hos' | 'hod',
+  toast: any,
+  onRefreshData?: () => void
+) => {
   try {
-    const response = await fetch(`/api/approval/monthly/${id}/approve`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify({ level }),
-    });
-
-    if (response.ok) {
+    const res = await ApiService.post<any>(`/approval/monthly/${id}/approve`, { level });
+    if (res?.success !== false) {
       toast({
         title: 'Success',
         description: `Approved by ${level === 'hos' ? 'HoS' : 'HoD'}`,
       });
-      window.location.reload();
+      onRefreshData?.();
     } else {
       toast({
         title: 'Error',
@@ -80,26 +79,23 @@ const handleApprove = async (id: number, level: 'hos' | 'hod', toast: any) => {
   }
 };
 
-const handleReject = async (id: number, level: 'hos' | 'hod', toast: any) => {
+const handleReject = async (
+  id: number,
+  level: 'hos' | 'hod',
+  toast: any,
+  onRefreshData?: () => void
+) => {
   const comments = prompt('Please provide rejection reason:');
   if (!comments) return;
 
   try {
-    const response = await fetch(`/api/approval/monthly/${id}/reject`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify({ level, comments }),
-    });
-
-    if (response.ok) {
+    const res = await ApiService.post<any>(`/approval/monthly/${id}/reject`, { level, comments });
+    if (res?.success !== false) {
       toast({
         title: 'Success',
         description: 'Rejected successfully',
       });
-      window.location.reload();
+      onRefreshData?.();
     } else {
       toast({
         title: 'Error',
@@ -140,6 +136,7 @@ export function MonthlyTargetsTable({
   saveMonthlyTarget,
   fillAllMonths,
   toast,
+  onRefreshData,
 }: MonthlyTargetsTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
@@ -388,7 +385,7 @@ export function MonthlyTargetsTable({
                               className="h-7 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleApprove(row.id, 'hos', toast);
+                                handleApprove(row.id, 'hos', toast, onRefreshData);
                               }}>
                               <Check className="w-3 h-3" />
                             </Button>
@@ -398,7 +395,7 @@ export function MonthlyTargetsTable({
                               className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleReject(row.id, 'hos', toast);
+                                handleReject(row.id, 'hos', toast, onRefreshData);
                               }}>
                               <X className="w-3 h-3" />
                             </Button>
@@ -412,7 +409,7 @@ export function MonthlyTargetsTable({
                               className="h-7 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleApprove(row.id, 'hod', toast);
+                                handleApprove(row.id, 'hod', toast, onRefreshData);
                               }}>
                               <Check className="w-3 h-3" />
                             </Button>
@@ -422,7 +419,7 @@ export function MonthlyTargetsTable({
                               className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleReject(row.id, 'hod', toast);
+                                handleReject(row.id, 'hod', toast, onRefreshData);
                               }}>
                               <X className="w-3 h-3" />
                             </Button>

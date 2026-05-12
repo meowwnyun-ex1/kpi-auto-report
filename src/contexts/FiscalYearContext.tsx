@@ -17,32 +17,53 @@ export const FiscalYearProvider: React.FC<FiscalYearProviderProps> = ({
   children, 
   initialYear 
 }) => {
-  // Get stored year from localStorage or use initial/current year
-  const [fiscalYear, setFiscalYearState] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('kpi-selected-fiscal-year');
-      if (stored) {
-        const year = parseInt(stored);
-        if (!isNaN(year)) return year;
-      }
-    }
-    return initialYear || new Date().getFullYear();
-  });
-
+  const [fiscalYear, setFiscalYearState] = useState<number>(initialYear ?? 0);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  // Generate available years: current year + 3 previous years
   useEffect(() => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
+    let cancelled = false;
 
-    // Add current year and 3 previous years
-    for (let i = 0; i <= 3; i++) {
-      years.push(currentYear - i);
-    }
+    const loadFiscalYears = async () => {
+      try {
+        // Source-of-truth comes from API/DB (no local fallback generation).
+        const res = await fetch('/api/stats');
+        const json = await res.json();
+        if (!json?.success) return;
 
-    setAvailableYears(years);
-  }, []);
+        const apiFiscalYear: number = json.data?.fiscalYear;
+        const apiAvailableYears: number[] = Array.isArray(json.data?.availableYears)
+          ? json.data.availableYears
+          : [];
+
+        if (cancelled) return;
+
+        setAvailableYears(apiAvailableYears);
+
+        const stored =
+          typeof window !== 'undefined' ? localStorage.getItem('kpi-selected-fiscal-year') : null;
+        const storedYear = stored ? parseInt(stored) : NaN;
+        const hasStoredYear = Number.isFinite(storedYear);
+
+        const preferred =
+          initialYear && apiAvailableYears.includes(initialYear)
+            ? initialYear
+            : hasStoredYear && apiAvailableYears.includes(storedYear)
+              ? storedYear
+              : apiFiscalYear;
+
+        if (Number.isFinite(preferred)) {
+          setFiscalYearState(preferred);
+        }
+      } catch {
+        // If API is unavailable we keep current state; callers should handle missing years gracefully.
+      }
+    };
+
+    loadFiscalYears();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialYear]);
 
   // Update localStorage when fiscal year changes
   const setFiscalYear = (year: number) => {

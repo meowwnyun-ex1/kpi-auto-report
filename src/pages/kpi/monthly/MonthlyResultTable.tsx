@@ -39,6 +39,7 @@ import { MONTHS } from '../shared';
 import { MonthlyResultRow } from './useMonthlyResultData';
 import { kpiNotifications } from '@/shared/constants/notifications';
 import { useToast } from '@/shared/hooks/use-toast';
+import { ApiService } from '@/services/api-service';
 
 interface MonthlyResultTableProps {
   filteredRows: MonthlyResultRow[];
@@ -50,25 +51,23 @@ interface MonthlyResultTableProps {
   onChangeResult: (yearlyTargetId: number, month: number, value: string) => void;
   saveMonthResult: (yearlyTargetId: number, month: number, monthData: any, toast: any) => void;
   toast: any;
+  onRefreshData?: () => void;
 }
 
-const handleApproveResult = async (id: number, level: 'admin', toast: any) => {
+const handleApproveResult = async (
+  id: number,
+  level: 'admin',
+  toast: any,
+  onRefreshData?: () => void
+) => {
   try {
-    const response = await fetch(`/api/approval/result/${id}/approve`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify({ level }),
-    });
-
-    if (response.ok) {
+    const res = await ApiService.post<any>(`/approval/result/${id}/approve`, { level });
+    if (res?.success !== false) {
       toast({
         title: 'Success',
         description: 'Result approved',
       });
-      window.location.reload();
+      onRefreshData?.();
     } else {
       toast({
         title: 'Error',
@@ -116,6 +115,7 @@ export function MonthlyResultTable({
   onChangeResult,
   saveMonthResult,
   toast,
+  onRefreshData,
 }: MonthlyResultTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [declarationDialogOpen, setDeclarationDialogOpen] = useState(false);
@@ -164,18 +164,13 @@ export function MonthlyResultTable({
     setSelectedMonthId(monthId);
     setLoadingDeclaration(true);
     try {
-      const response = await fetch(`/api/approval/result/${monthId}/declaration`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data) {
-          setDeclarationText(data.declaration_text || '');
-          setAttachmentUrl(data.attachment_url || '');
-        } else {
-          setDeclarationText('');
-          setAttachmentUrl('');
-        }
+      const data = await ApiService.get<any>(`/approval/result/${monthId}/declaration`);
+      if (data) {
+        setDeclarationText(data.declaration_text || '');
+        setAttachmentUrl(data.attachment_url || '');
+      } else {
+        setDeclarationText('');
+        setAttachmentUrl('');
       }
     } catch (error) {
       console.error('Error fetching declaration:', error);
@@ -189,25 +184,18 @@ export function MonthlyResultTable({
     if (!selectedMonthId) return;
     setLoadingDeclaration(true);
     try {
-      const response = await fetch(`/api/approval/result/${selectedMonthId}/declaration`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          declaration_text: declarationText,
-          attachment_url: attachmentUrl,
-        }),
+      const res = await ApiService.post<any>(`/approval/result/${selectedMonthId}/declaration`, {
+        declaration_text: declarationText,
+        attachment_url: attachmentUrl,
       });
 
-      if (response.ok) {
+      if (res?.success !== false) {
         toast({
           title: 'Success',
           description: 'Declaration saved successfully',
         });
         setDeclarationDialogOpen(false);
-        window.location.reload();
+        onRefreshData?.();
       } else {
         toast({
           title: 'Error',
@@ -431,7 +419,7 @@ export function MonthlyResultTable({
                             className="h-7 px-2 text-xs text-green-600 border-green-200 hover:bg-green-50"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleApproveResult(row.id, 'admin', toast);
+                              handleApproveResult(row.id, 'admin', toast, onRefreshData);
                             }}>
                             <Check className="w-3 h-3" />
                           </Button>

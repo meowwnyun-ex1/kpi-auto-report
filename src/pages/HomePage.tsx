@@ -115,28 +115,8 @@ export default function HomePage() {
 
         setStats(categoryStats);
       } else {
-        // Fallback to categories if stats not available
-        const catRes = await fetch('/api/kpi-forms/categories');
-        const catData = await catRes.json();
-        if (catData.success) {
-          const categories = catData.data;
-          const categoryStats: CategoryStats[] = categories.map((cat: any) => {
-            const config = KPI_CATEGORIES.find((c) => c.id === cat.key);
-            return {
-              category: cat.key,
-              name: cat.name,
-              totalMeasurements: 0,
-              achievedMeasurements: 0,
-              warningMeasurements: 0,
-              criticalMeasurements: 0,
-              achievementRate: 0,
-              trend: 'stable' as const,
-              icon: config?.icon || Target,
-              color: config?.color || '#6B7280',
-            };
-          });
-          setStats(categoryStats);
-        }
+        // No fallback - only use real data from API
+        setStats([]);
       }
     } catch (error) {
       console.error('Failed to load data:', error);

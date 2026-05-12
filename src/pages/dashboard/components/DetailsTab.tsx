@@ -239,11 +239,15 @@ export function DetailsTab({
                           {row.result != null ? (
                             <Badge
                               className={
-                                row.ev === 'O'
+                                row.status === 'achieved'
                                   ? 'bg-green-100 text-green-800 border-green-200'
                                   : 'bg-red-100 text-red-800 border-red-200'
                               }>
-                              {row.ev}
+                              {row.status === 'achieved'
+                                ? 'Achieved'
+                                : row.status === 'not_achieved'
+                                  ? 'Not Achieved'
+                                  : 'Pending'}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-gray-500">
@@ -265,8 +269,8 @@ export function DetailsTab({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedDetails.map((row: any, idx: number) => {
               const rate = row.target > 0 ? ((row.result || 0) / row.target) * 100 : 0;
-              const isAchieved = row.ev === 'O';
-              const isMissed = row.ev === 'X';
+              const isAchieved = row.status === 'achieved';
+              const isMissed = row.status === 'not_achieved';
 
               return (
                 <Card

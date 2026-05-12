@@ -30,7 +30,7 @@ export function MonthlyResultPage() {
     setSearchQuery,
     categoryTargetValues,
     categoryTargetCounts,
-    categoryActualCounts,
+    categoryResultCounts,
     filteredRows,
     canEdit,
     onChangeResult,
@@ -92,6 +92,7 @@ export function MonthlyResultPage() {
               onChangeResult={onChangeResult}
               saveMonthResult={saveMonthResult}
               toast={toast}
+              onRefreshData={refreshData}
             />
           </div>
         )}

@@ -10,6 +10,8 @@ import rateLimit from 'express-rate-limit';
 import { getCorsOrigins, getRateLimitConfig } from './config/app-config';
 import { sanitizeMiddleware } from './middleware/security';
 import { requestLogger } from './middleware/request-logger';
+import auditMiddleware from './middleware/audit-logger';
+import { initRealtime } from './realtime/realtime-hub';
 import { initializeDatabase, closeDatabase, testConnections } from './config/database';
 import { logger } from './utils/logger';
 import { AppError, ValidationError as AppValidationError, NotFoundError } from './utils/errors';
@@ -59,6 +61,10 @@ import exportRoutes from './routes/export';
 import measurementsRoutes from './routes/measurements';
 import adminCategoriesRoutes from './routes/admin-categories';
 import approvalRoutes from './routes/approval';
+import kpiResultsRoutes from './routes/kpi-results';
+import approvalComprehensiveRoutes from './routes/approval-comprehensive';
+import dashboardRoutes from './routes/dashboard';
+import employeesRoutes from './routes/employees';
 
 const app = express();
 const PORT = parseInt(process.env.API_PORT!);
@@ -158,8 +164,10 @@ const writeRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-// KPI write rate limit will be added here
-// app.use('/api/kpi', writeRateLimit);
+// Apply stricter limits to write-heavy KPI endpoints
+app.use('/api/kpi-forms', writeRateLimit);
+app.use('/api/admin', writeRateLimit);
+app.use('/api/approval', writeRateLimit);
 
 // ============================================
 // Body Parsing (MUST be before sanitization)
@@ -225,16 +233,21 @@ app.get('/api/health', async (_req, res) => {
 });
 
 // ============================================
+// Audit Logging (before routes)
+// ============================================
+app.use('/api', auditMiddleware);
+
+// ============================================
 // API Routes
 // ============================================
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/departments', departmentsRoutes);
 app.use('/api/kpi-forms', kpiCategoriesRoutes);
-app.use('/api/kpi-forms', kpiYearlyRoutes);
-app.use('/api/kpi-forms', kpiMonthlyRoutes);
-app.use('/api/kpi-forms', kpiActionPlansRoutes);
-app.use('/api/kpi-forms', kpiOverviewRoutes);
+app.use('/api/kpi-forms/yearly', kpiYearlyRoutes);
+app.use('/api/kpi-forms/monthly', kpiMonthlyRoutes);
+app.use('/api/action-plans', kpiActionPlansRoutes);
+app.use('/api/kpi-forms/overview', kpiOverviewRoutes);
 app.use('/api/admin', adminUsersRoutes);
 
 // File upload endpoint
@@ -253,6 +266,10 @@ app.use('/api/export', exportRoutes);
 app.use('/api/measurements', measurementsRoutes);
 app.use('/api/admin/categories', adminCategoriesRoutes);
 app.use('/api/approval', approvalRoutes);
+app.use('/api/kpi-results', kpiResultsRoutes);
+app.use('/api/approvals', approvalComprehensiveRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/employees', employeesRoutes);
 // app.use('/api/visitor-tracking', visitorTrackingRoutes); // Temporarily disabled
 
 // ============================================
@@ -319,11 +336,25 @@ const startServer = async () => {
     validateEnvironment();
 
     await initializeDatabase();
+    // Ensure audit table exists before serving requests
+    try {
+      const { ensureAuditTable } = await import('./middleware/audit-logger');
+      await ensureAuditTable();
+    } catch (e) {
+      logger.error('Failed to ensure audit table', e);
+    }
 
     server = app.listen(PORT, () => {
       logger.info(`API Server running on port ${PORT}`);
       logger.info(`Health check: http://${process.env.SERVER_IP}:${PORT}/api/health`);
       logger.info(`Environment: ${process.env.NODE_ENV}`);
+
+      // Realtime WebSocket (authenticated via JWT token)
+      try {
+        initRealtime(server);
+      } catch (e) {
+        logger.error('Failed to initialize realtime WS', e);
+      }
 
       // Notify PM2 that app is ready (for zero-downtime deployment)
       if (process.send) {

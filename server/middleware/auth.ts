@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { AuthenticationError, AuthorizationError } from '../utils/errors';
 import { logger } from '../utils/logger';
 
-export type UserRole = 'superadmin' | 'admin' | 'manager' | 'user' | 'guest';
+export type UserRole = 'superadmin' | 'admin' | 'manager' | 'hod' | 'hos' | 'user' | 'guest';
 
 export interface JwtPayload {
   userId: number;
@@ -11,6 +11,7 @@ export interface JwtPayload {
   role: UserRole;
   iat?: number;
   exp?: number;
+  departmentAccess?: string[];
 }
 
 // Extend Express Request to include user
@@ -67,6 +68,7 @@ export const allowGuest = (req: Request, _res: Response, next: NextFunction): vo
 /**
  * Middleware that requires a valid JWT token.
  * Attaches decoded payload to req.user.
+ * Enhanced with better error handling and security checks.
  */
 export const requireAuth = (req: Request, _res: Response, next: NextFunction): void => {
   try {

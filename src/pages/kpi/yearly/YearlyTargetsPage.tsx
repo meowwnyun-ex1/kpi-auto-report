@@ -107,6 +107,7 @@ export function YearlyTargetsPage() {
             categories={categories}
             cat={cat}
             toast={toast}
+            onRefreshData={refreshData}
           />
         )}
       </StandardPageLayout>

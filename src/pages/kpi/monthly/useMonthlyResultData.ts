@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/shared/hooks/use-toast';
-import { storage } from '@/shared/utils';
+import { ApiService } from '@/services/api-service';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { Category, YearlyTargetWithMonths, Stats, deriveCategoryValuesFromStats } from '../shared';
 
 interface Attachment {
@@ -32,6 +33,8 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
   const [categoryTargetCounts, setCategoryTargetCounts] = useState<Record<string, number>>({});
   const [categoryResultCounts, setCategoryResultCounts] = useState<Record<string, number>>({});
 
+  const { lastEvent } = useRealtimeSync({ fiscalYear, dept, category: cat || undefined });
+
   const canEdit = ['manager', 'admin', 'superadmin'].includes(user?.role ?? '');
 
   const filteredRows = useMemo(() => {
@@ -53,23 +56,22 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
   }, [depts]);
 
   const loadAllRows = useCallback(async () => {
+    if (!dept || !fiscalYear) return;
     try {
-      const yearlyRes = await fetch(`/api/kpi-forms/yearly/${dept}/${fiscalYear}`, {
-        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-      });
-      const yearlyData = await yearlyRes.json();
-      if (!yearlyData.success) return;
+      const yearlyRes = await ApiService.get(`/kpi-forms/yearly/${dept}/${fiscalYear}`);
+      if (!yearlyRes.data || !Array.isArray(yearlyRes.data)) {
+        setAllRows([]);
+        return;
+      }
 
-      const monthlyRes = await fetch(`/api/kpi-forms/monthly/${dept}/${fiscalYear}`, {
-        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-      });
-      const monthlyData = await monthlyRes.json();
-      if (!monthlyData.success) return;
+      const monthlyRes = await ApiService.get(`/kpi-forms/monthly/${dept}/${fiscalYear}`);
+      if (!monthlyRes.data || !Array.isArray(monthlyRes.data)) {
+        setAllRows([]);
+        return;
+      }
 
-      const combinedData = yearlyData.data.map((yearly: any) => {
-        const monthlyEntries = monthlyData.data.filter(
-          (m: any) => m.yearly_target_id === yearly.id
-        );
+      const combinedData = yearlyRes.data.map((yearly: any) => {
+        const monthlyEntries = monthlyRes.data.filter((m: any) => m.yearly_target_id === yearly.id);
         const months: Record<number, any> = {};
         monthlyEntries.forEach((m: any) => {
           months[m.month] = {
@@ -104,8 +106,9 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
         };
       });
       setAllRows(combinedData);
-    } catch {
-      /* silent */
+    } catch (err) {
+      console.error('Failed to load all rows:', err);
+      setAllRows([]);
     }
   }, [dept, fiscalYear]);
 
@@ -114,7 +117,7 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
       loadStats();
       loadAllRows();
     }
-  }, [dept, fiscalYear, loadAllRows]);
+  }, [dept, fiscalYear, loadAllRows, loadStats]);
 
   useEffect(() => {
     if (cat && dept && fiscalYear) loadRows();
@@ -132,17 +135,6 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
         );
         if (hasResult) {
           counts[categoryKey] = (counts[categoryKey] || 0) + 1;
-        }
-      } else {
-        // Fallback: find category by category_id
-        const category = categories.find((cat) => cat.id === row.category_id);
-        if (category) {
-          const hasResult = Object.values(row.months).some(
-            (month) => month.result !== null && month.result !== undefined && month.result !== 0
-          );
-          if (hasResult) {
-            counts[category.key] = (counts[category.key] || 0) + 1;
-          }
         }
       }
     });
@@ -167,75 +159,77 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
     }
   }, [dept, fiscalYear, categories, stats, allRows]);
 
-  const loadCategories = async (retryCount = 0) => {
+  const loadCategories = async () => {
     try {
-      const r = await fetch('/api/kpi-forms/categories');
-      const d = await r.json();
-      if (d.success) setCategories(d.data);
-    } catch (error) {
-      // Retry with exponential backoff for transient errors (max 3 retries)
-      if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-        setTimeout(() => loadCategories(retryCount + 1), delay);
+      const response = await ApiService.get<Category[]>('/kpi-forms/categories');
+      if (response.data && Array.isArray(response.data)) {
+        setCategories(response.data);
+      } else {
+        setCategories([]);
       }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      setCategories([]);
     }
   };
 
-  const loadDepts = async (retryCount = 0) => {
+  const loadDepts = async () => {
     try {
-      const r = await fetch('/api/departments');
-      const d = await r.json();
-      if (d.success) {
+      const response = await ApiService.get<{ dept_id: string }[]>('/departments');
+      if (response.data && Array.isArray(response.data)) {
         const filteredDepts =
           user?.role === 'manager'
-            ? d.data.filter((dp: any) => dp.dept_id === user?.department_id)
-            : d.data;
+            ? response.data.filter((dp) => dp.dept_id === user?.department_id)
+            : response.data;
         setDepts(filteredDepts);
+      } else {
+        setDepts([]);
       }
     } catch (error) {
-      // Retry with exponential backoff for transient errors (max 3 retries)
-      if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-        setTimeout(() => loadDepts(retryCount + 1), delay);
-      }
+      console.error('Failed to load departments:', error);
+      setDepts([]);
     }
   };
 
   const loadStats = useCallback(async () => {
+    if (!dept || !fiscalYear) return;
     setStatsLoading(true);
     try {
-      const r = await fetch(`/api/kpi-forms/stats/${dept}/${fiscalYear}`, {
-        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-      });
-      const d = await r.json();
-      if (d.success) setStats(d.data ?? {});
-    } catch {
-      /* silent */
+      const response = await ApiService.get<Record<string, Stats>>(
+        `/kpi-forms/stats/${dept}/${fiscalYear}`
+      );
+      if (response.data) setStats(response.data);
+    } catch (error) {
+      console.error('Failed to load stats:', error);
     } finally {
       setStatsLoading(false);
     }
   }, [dept, fiscalYear]);
 
   const loadRows = async () => {
+    if (!dept || !fiscalYear || !cat) return;
     setLoading(true);
     try {
-      const yearlyRes = await fetch(`/api/kpi-forms/yearly/${dept}/${fiscalYear}?category=${cat}`, {
-        headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-      });
-      const yearlyData = await yearlyRes.json();
-      if (!yearlyData.success) return;
-
-      const monthlyRes = await fetch(
-        `/api/kpi-forms/monthly/${dept}/${fiscalYear}?category=${cat}`,
-        {
-          headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-        }
+      const yearlyRes = await ApiService.get(
+        `/kpi-forms/yearly/${dept}/${fiscalYear}?category=${cat}`
       );
-      const monthlyData = await monthlyRes.json();
-      if (!monthlyData.success) return;
+      if (!yearlyRes.data || !Array.isArray(yearlyRes.data)) {
+        setRows([]);
+        setLoading(false);
+        return;
+      }
 
-      const combinedData = yearlyData.data.map((yearly: any) => {
-        const monthlyEntries = monthlyData.data.filter(
+      const monthlyRes = await ApiService.get(
+        `/kpi-forms/monthly/${dept}/${fiscalYear}?category=${cat}`
+      );
+      if (!monthlyRes.data || !Array.isArray(monthlyRes.data)) {
+        setRows([]);
+        setLoading(false);
+        return;
+      }
+
+      const combinedData = (yearlyRes.data as any[]).map((yearly: any) => {
+        const monthlyEntries = (monthlyRes.data as any[]).filter(
           (m: any) => m.yearly_target_id === yearly.id
         );
         const months: Record<number, any> = {};
@@ -278,8 +272,8 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
         };
       });
       setRows(combinedData);
-    } catch {
-      /* silent */
+    } catch (error) {
+      console.error('Failed to load rows:', error);
     } finally {
       setLoading(false);
     }
@@ -356,21 +350,13 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
       const saveResult = monthData.dirtyResult && monthData.id;
 
       if (saveResult) {
-        const resultResponse = await fetch(`/api/kpi-forms/monthly/${monthData.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${storage.getAuthToken()}`,
-          },
-          body: JSON.stringify({
-            result: parseFloat(monthData.draftResult) || 0,
-            comment: monthData.draftNote || null,
-            image_url: monthData.draftAttachment?.url || null,
-            image_caption: monthData.draftAttachment?.caption || null,
-          }),
+        const resultResponse = await ApiService.put(`/kpi-forms/monthly/${monthData.id}`, {
+          result: parseFloat(monthData.draftResult) || 0,
+          comment: monthData.draftNote || null,
+          image_url: monthData.draftAttachment?.url || null,
+          image_caption: monthData.draftAttachment?.caption || null,
         });
-        const resultData = await resultResponse.json();
-        if (!resultData.success) throw new Error(resultData.message);
+        if (!resultResponse.data) throw new Error('Failed to save result');
       }
 
       toast({ title: 'Saved', description: 'Result updated successfully' });
@@ -410,14 +396,13 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
 
       // Refresh data from server for consistency
       loadStats();
-      loadAllRows(); // Update all rows for accurate counts
-      if (cat) {
-        loadRows(); // Reload filtered rows for current category
-      }
+      loadAllRows();
+      if (cat) loadRows();
     } catch (e: any) {
+      console.error('Failed to save month result:', e);
       toast({
         title: 'Error',
-        description: e.message || 'Failed to save result',
+        description: e.message || 'Failed to save',
         variant: 'destructive',
       });
       setRows((p) =>
@@ -439,6 +424,13 @@ export function useMonthlyResultData(fiscalYear?: number, setFiscalYear?: (year:
     loadAllRows(); // Refresh all rows for accurate counts
     if (cat) loadRows();
   }, [loadStats, loadAllRows, cat]);
+
+  useEffect(() => {
+    if (!lastEvent) return;
+    if (lastEvent.type === 'api_change') {
+      refreshData();
+    }
+  }, [lastEvent, refreshData]);
 
   return {
     user,

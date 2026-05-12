@@ -26,7 +26,7 @@ export function MonthlyTargetsPage() {
     setSearchQuery,
     categoryTargetValues,
     categoryTargetCounts,
-    categoryActualCounts,
+    categoryResultCounts,
     filteredYearlyTargets,
     canEdit,
     getMonthlyTarget,
@@ -90,6 +90,7 @@ export function MonthlyTargetsPage() {
             saveMonthlyTarget={saveMonthlyTarget}
             fillAllMonths={fillAllMonths}
             toast={toast}
+            onRefreshData={refreshData}
           />
         )}
       </StandardPageLayout>

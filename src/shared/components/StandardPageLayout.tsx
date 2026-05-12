@@ -15,7 +15,7 @@ const EMPTY_YEARS: number[] = [];
 
 interface StandardPageLayoutProps {
   title: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string }> | React.ReactElement;
   iconColor?: string;
   showBackButton?: boolean;
   onBackClick?: () => void;
@@ -50,31 +50,31 @@ export function StandardPageLayout({
   loading = false,
   theme = 'blue',
 }: StandardPageLayoutProps) {
+  const iconClassName = `w-3.5 h-3.5 ${iconColor}`;
+  const renderedIcon = React.isValidElement(Icon) ? (
+    React.cloneElement(Icon, {
+      className: [iconClassName, (Icon.props as any)?.className].filter(Boolean).join(' '),
+    })
+  ) : (
+    // Icon is an icon component (lucide-react style)
+    <Icon className={iconClassName} />
+  );
+
   const [dynamicYears, setDynamicYears] = useState<number[]>([]);
   const hasSetDefaultYear = useRef(false);
 
-  // Generate available years: current year + 3 previous years if not provided
+  // Use availableYears from API/DB only (no local fallback generation)
   useEffect(() => {
-    if (availableYears.length > 0) {
-      setDynamicYears(availableYears);
-    } else {
-      const currentYear = new Date().getFullYear();
-      const years = [];
+    setDynamicYears(availableYears);
+  }, [availableYears]);
 
-      // Add current year and 3 previous years
-      for (let i = 0; i <= 3; i++) {
-        years.push(currentYear - i);
-      }
-
-      setDynamicYears(years);
-
-      // Set default to current year if not selected and callback provided
-      if (!fiscalYear && onFiscalYearChange && !hasSetDefaultYear.current) {
-        hasSetDefaultYear.current = true;
-        onFiscalYearChange(currentYear);
-      }
+  // If fiscalYear is not set yet but options are available, pick first option.
+  useEffect(() => {
+    if (!fiscalYear && onFiscalYearChange && dynamicYears.length > 0 && !hasSetDefaultYear.current) {
+      hasSetDefaultYear.current = true;
+      onFiscalYearChange(dynamicYears[0]);
     }
-  }, [availableYears]); // Remove fiscalYear and onFiscalYearChange from dependencies
+  }, [dynamicYears, fiscalYear, onFiscalYearChange]);
 
   const themeColors = {
     blue: {
@@ -130,7 +130,7 @@ export function StandardPageLayout({
             <div>
               <div className="flex items-center gap-2">
                 <div className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-blue-50">
-                  <Icon className={`w-3.5 h-3.5 ${iconColor}`} />
+                  {renderedIcon}
                 </div>
                 <h1 className="text-lg font-bold text-gray-900">{title}</h1>
                 {badge && (
@@ -156,9 +156,9 @@ export function StandardPageLayout({
             )}
 
             {/* Fiscal Year Selector */}
-            {fiscalYear && onFiscalYearChange && (
+            {onFiscalYearChange && (
               <Select
-                value={String(fiscalYear)}
+                value={fiscalYear ? String(fiscalYear) : ''}
                 onValueChange={(v) => onFiscalYearChange(parseInt(v))}>
                 <SelectTrigger className="w-[120px] h-8 bg-gray-50 text-xs border-gray-200">
                   <Calendar className="w-3.5 h-3.5 text-gray-400 mr-1.5" />

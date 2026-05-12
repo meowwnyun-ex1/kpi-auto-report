@@ -29,71 +29,10 @@ import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 import { storage } from '@/shared/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { getCategoryTheme } from '@/shared/utils/category-theme';
+import { ApiService } from '@/services/api-service';
 
 const VALID_CATEGORIES = KPI_CATEGORIES.map((c) => c.id);
-
-// Category color mapping
-const CATEGORY_COLORS: Record<
-  string,
-  { bg: string; text: string; border: string; light: string; gradient: string }
-> = {
-  safety: {
-    bg: 'bg-red-500',
-    text: 'text-red-700',
-    border: 'border-red-500',
-    light: 'bg-red-50',
-    gradient: 'from-red-500 to-red-600',
-  },
-  hr: {
-    bg: 'bg-blue-500',
-    text: 'text-blue-700',
-    border: 'border-blue-500',
-    light: 'bg-blue-50',
-    gradient: 'from-blue-500 to-blue-600',
-  },
-  cost: {
-    bg: 'bg-amber-500',
-    text: 'text-amber-700',
-    border: 'border-amber-500',
-    light: 'bg-amber-50',
-    gradient: 'from-amber-500 to-amber-600',
-  },
-  delivery: {
-    bg: 'bg-cyan-500',
-    text: 'text-cyan-700',
-    border: 'border-cyan-500',
-    light: 'bg-cyan-50',
-    gradient: 'from-cyan-500 to-cyan-600',
-  },
-  compliance: {
-    bg: 'bg-indigo-500',
-    text: 'text-indigo-700',
-    border: 'border-indigo-500',
-    light: 'bg-indigo-50',
-    gradient: 'from-indigo-500 to-indigo-600',
-  },
-  attractive: {
-    bg: 'bg-pink-500',
-    text: 'text-pink-700',
-    border: 'border-pink-500',
-    light: 'bg-pink-50',
-    gradient: 'from-pink-500 to-pink-600',
-  },
-  environment: {
-    bg: 'bg-emerald-500',
-    text: 'text-emerald-700',
-    border: 'border-emerald-500',
-    light: 'bg-emerald-50',
-    gradient: 'from-emerald-500 to-emerald-600',
-  },
-  quality: {
-    bg: 'bg-violet-500',
-    text: 'text-violet-700',
-    border: 'border-violet-500',
-    light: 'bg-violet-50',
-    gradient: 'from-violet-500 to-violet-600',
-  },
-};
 
 interface CategoryDashboardProps {
   category?: string;
@@ -121,18 +60,19 @@ function CategoryDashboard({ category: propCategory }: CategoryDashboardProps) {
   const catConfig = KPI_CATEGORIES.find((c) => c.id === category)!;
   const CatIcon = catConfig.icon;
   const catColor = catConfig.color;
-  const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS.hr;
+  const theme = getCategoryTheme(category);
 
   // Fetch category-specific data
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const overviewRes = await fetch(
-          `/api/kpi-forms/overview/${fiscalYear}/${selectedMonth}?category=${category}`,
-          { headers: { Authorization: `Bearer ${storage.getAuthToken()}` } }
+        const overviewData = await ApiService.get<any>(
+          `/kpi-forms/overview/${fiscalYear}/${selectedMonth}`,
+          {
+            category,
+          }
         );
-        const overviewData = await overviewRes.json();
         if (overviewData.success) {
           setDetails(overviewData.data?.details || []);
         }
@@ -151,8 +91,8 @@ function CategoryDashboard({ category: propCategory }: CategoryDashboardProps) {
     const resultCount = details.filter(
       (d: any) => d.result !== null && d.result !== undefined
     ).length; // Items with results
-    const passedCount = details.filter((d: any) => d.ev === 'O').length;
-    const failedCount = details.filter((d: any) => d.ev === 'X').length;
+    const passedCount = details.filter((d: any) => d.status === 'achieved').length;
+    const failedCount = details.filter((d: any) => d.status === 'not_achieved').length;
     const pendingCount = targetCount - resultCount;
     const achievementRate = targetCount > 0 ? (resultCount / targetCount) * 100 : 0;
     const passRate = resultCount > 0 ? (passedCount / resultCount) * 100 : 0;
@@ -213,8 +153,8 @@ function CategoryDashboard({ category: propCategory }: CategoryDashboardProps) {
       deptMap.set(name, {
         targetCount: existing.targetCount + 1,
         resultCount: existing.resultCount + (d.result != null ? 1 : 0),
-        passed: existing.passed + (d.ev === 'O' ? 1 : 0),
-        failed: existing.failed + (d.ev === 'X' ? 1 : 0),
+        passed: existing.passed + (d.status === 'achieved' ? 1 : 0),
+        failed: existing.failed + (d.status === 'not_achieved' ? 1 : 0),
         pending: existing.pending + (d.result == null ? 1 : 0),
         items: [...existing.items, d],
       });
@@ -232,14 +172,9 @@ function CategoryDashboard({ category: propCategory }: CategoryDashboardProps) {
 
   const refreshData = () => {
     setLoading(true);
-    fetch(`/api/kpi-forms/overview/${fiscalYear}/${selectedMonth}?category=${category}`, {
-      headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
-    })
-      .then((r) => r.json())
+    ApiService.get<any>(`/kpi-forms/overview/${fiscalYear}/${selectedMonth}`, { category })
       .then((d) => {
-        if (d.success) {
-          setDetails(d.data?.details || []);
-        }
+        if (d.success) setDetails(d.data?.details || []);
       })
       .finally(() => setLoading(false));
   };
@@ -255,7 +190,7 @@ function CategoryDashboard({ category: propCategory }: CategoryDashboardProps) {
       <StandardPageLayout
         title={catConfig.name}
         icon={CatIcon}
-        iconColor={colors.text}
+        iconColor="text-gray-700"
         showBackButton
         onBackClick={() => navigate('/dashboard')}
         fiscalYear={fiscalYear}
@@ -283,14 +218,18 @@ function CategoryDashboard({ category: propCategory }: CategoryDashboardProps) {
         }>
         <div className="space-y-6">
           {/* Hero Stats - Light background with dark text */}
-          <div className={`rounded-2xl ${colors.light} border-2 ${colors.border} p-6`}>
+          <div
+            className="rounded-2xl border-2 p-6"
+            style={{ backgroundColor: theme.lightBg, borderColor: theme.hex }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className={`${colors.text} text-sm font-medium`}>Overall Completion</p>
-                <p className={`text-5xl font-bold mt-1 ${colors.text}`}>
+                <p className="text-sm font-medium" style={{ color: theme.hex }}>
+                  Overall Completion
+                </p>
+                <p className="text-5xl font-bold mt-1" style={{ color: theme.hex }}>
                   {catStats.achievementRate.toFixed(0)}%
                 </p>
-                <p className={`text-sm mt-2 ${colors.text}/70`}>
+                <p className="text-sm mt-2 text-gray-700/80">
                   {catStats.resultCount} of {catStats.targetCount} items completed
                 </p>
               </div>
@@ -377,8 +316,9 @@ function CategoryDashboard({ category: propCategory }: CategoryDashboardProps) {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-8 h-8 rounded-lg ${colors.light} flex items-center justify-center`}>
-                            <Building2 className={`w-4 h-4 ${colors.text}`} />
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: theme.lightBg }}>
+                            <Building2 className="w-4 h-4" style={{ color: theme.hex }} />
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">{dept.name}</p>

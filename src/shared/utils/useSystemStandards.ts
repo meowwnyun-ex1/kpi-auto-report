@@ -304,7 +304,7 @@ export function useSystemConfig() {
     return {
       // ตั้งค่าระบบทั่วไป
       app: {
-        name: 'KPI Auto Report',
+        name: 'DENSO Company KPI',
         version: '1.0.0',
         environment: process.env.NODE_ENV || 'development',
       },

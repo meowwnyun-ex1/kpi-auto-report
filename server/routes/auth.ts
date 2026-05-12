@@ -36,12 +36,13 @@ router.post(
         return next(new AuthenticationError('Invalid credentials'));
       }
 
-      const user = result.recordset[0] as User;
+      const user = result.recordset[0] as any;
+      const userId = user.id;
 
       // Fetch all department access for managers (can have multiple departments)
       let departmentAccess: string[] = [];
       if (user.role === 'manager') {
-        const accessResult = await db.request().input('userId', user.id).query(`
+        const accessResult = await db.request().input('userId', userId).query(`
           SELECT department_id FROM user_department_access WHERE user_id = @userId
         `);
         departmentAccess = accessResult.recordset.map((r: any) => r.department_id);
@@ -53,19 +54,19 @@ router.post(
 
       const isPasswordValid = await bcrypt.compare(password, user.password_hash || '');
       if (!isPasswordValid) {
-        logger.warn('Login attempt with invalid password', { username, userId: user.id });
+        logger.warn('Login attempt with invalid password', { username, userId });
         return next(new AuthenticationError('Invalid credentials'));
       }
 
       // Update last login (non-critical, continue on error)
       try {
-        await db.request().input('id', user.id).query(`
+        await db.request().input('id', userId).query(`
           UPDATE users 
           SET last_login = GETDATE() 
           WHERE id = @id
         `);
       } catch (updateError) {
-        logger.warn('Could not update last_login', { userId: user.id, error: updateError });
+        logger.warn('Could not update last_login', { userId, error: updateError });
       }
 
       // JWT_SECRET must be configured in production
@@ -82,7 +83,7 @@ router.post(
 
       const token = jwt.sign(
         {
-          userId: user.id,
+          userId: userId,
           username: user.username,
           role: user.role,
           departmentAccess: departmentAccess.length > 0 ? departmentAccess : undefined,
@@ -121,7 +122,11 @@ router.post(
       // Add department access to user object for frontend
       (userWithoutPassword as any).department_access = departmentAccess;
 
-      logger.info('User logged in', { userId: user.id, username: user.username, departmentAccess });
+      logger.info('User logged in', {
+        userId: userId,
+        username: user.username,
+        departmentAccess,
+      });
 
       res.json({
         success: true,
@@ -159,7 +164,8 @@ router.get('/me', requireAuth, async (req: Request, res: Response, next: NextFun
   try {
     const db = await getKpiDb();
 
-    const result = await db.request().input('userId', req.user!.userId).query(`
+    const userId = req.user!.userId;
+    const result = await db.request().input('userId', userId).query(`
       SELECT id, username, email, full_name, role, is_active, department_id, created_at
       FROM users 
       WHERE id = @userId AND is_active = 1
@@ -306,363 +312,22 @@ router.get('/users', requireAuth, async (req: Request, res: Response, next: Next
 });
 
 /**
- * @route GET /api/auth/department-access
- * @desc Get all department access assignments
- * @access Private - Admin only
- */
-router.get(
-  '/department-access',
-  requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // Check admin role
-      if (!['admin', 'superadmin'].includes(req.user!.role)) {
-        return next(new AuthenticationError('Access denied'));
-      }
-
-      const db = await getKpiDb();
-
-      // Get department names from kpi_department_mapping (primary source)
-      const kpiDeptResult = await db.request().query(`
-        SELECT kpi_code, spo_dept_id, description FROM kpi_department_mapping
-      `);
-      const deptMap = new Map<string, string>();
-      for (const d of kpiDeptResult.recordset) {
-        deptMap.set(d.kpi_code, d.description);
-        if (d.spo_dept_id) deptMap.set(d.spo_dept_id, d.description);
-      }
-
-      // Try SPO_Dev for enrichment (optional)
-      try {
-        const spoDb = await getSpoDb();
-        const spoResult = await spoDb.request().query(`
-          SELECT ID as dept_id, Section_name as name_en FROM dept_master WHERE is_active = 1
-        `);
-        for (const d of spoResult.recordset) {
-          if (!deptMap.has(d.dept_id)) deptMap.set(d.dept_id, d.name_en);
-        }
-      } catch (spoError: unknown) {
-        logger.warn(
-          'SPO_Dev database unavailable for /department-access',
-          spoError as Record<string, unknown>
-        );
-      }
-
-      const result = await db.request().query(`
-        SELECT uda.id, uda.user_id, uda.department_id, uda.access_level, uda.granted_at,
-               u.username
-        FROM user_department_access uda
-        INNER JOIN users u ON uda.user_id = u.id
-        ORDER BY u.username
-      `);
-
-      // Add department names
-      const dataWithDept = result.recordset.map((r: any) => ({
-        ...r,
-        department_name: deptMap.get(r.department_id) || r.department_id,
-      }));
-
-      res.json({
-        success: true,
-        data: dataWithDept,
-      });
-    } catch (error) {
-      logger.error('Get department access error', error);
-      next(error);
-    }
-  }
-);
-
-/**
- * @route POST /api/auth/department-access
- * @desc Grant department access to a user
- * @access Private - Admin only
- */
-router.post(
-  '/department-access',
-  requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // Check admin role
-      if (!['admin', 'superadmin'].includes(req.user!.role)) {
-        return next(new AuthenticationError('Access denied'));
-      }
-
-      const { user_id, department_id, access_level } = req.body;
-
-      if (!user_id || !department_id || !access_level) {
-        return res.status(400).json({
-          success: false,
-          message: 'Missing required fields: user_id, department_id, access_level',
-        });
-      }
-
-      const db = await getKpiDb();
-
-      // Check if access already exists
-      const existing = await db
-        .request()
-        .input('user_id', user_id)
-        .input('department_id', department_id).query(`
-        SELECT id FROM user_department_access
-        WHERE user_id = @user_id AND department_id = @department_id
-      `);
-
-      if (existing.recordset.length > 0) {
-        // Update existing
-        await db
-          .request()
-          .input('user_id', user_id)
-          .input('department_id', department_id)
-          .input('access_level', access_level)
-          .input('granted_by', req.user!.userId).query(`
-          UPDATE user_department_access
-          SET access_level = @access_level, granted_at = GETDATE(), granted_by = @granted_by
-          WHERE user_id = @user_id AND department_id = @department_id
-        `);
-      } else {
-        // Insert new
-        await db
-          .request()
-          .input('user_id', user_id)
-          .input('department_id', department_id)
-          .input('access_level', access_level)
-          .input('granted_by', req.user!.userId).query(`
-          INSERT INTO user_department_access (user_id, department_id, access_level, granted_by)
-          VALUES (@user_id, @department_id, @access_level, @granted_by)
-        `);
-      }
-
-      res.json({
-        success: true,
-        message: 'Access granted successfully',
-      });
-    } catch (error) {
-      logger.error('Grant department access error', error);
-      next(error);
-    }
-  }
-);
-
-/**
- * @route DELETE /api/auth/department-access/:id
- * @desc Revoke department access
- * @access Private - Admin only
- */
-router.delete(
-  '/department-access/:id',
-  requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // Check admin role
-      if (!['admin', 'superadmin'].includes(req.user!.role)) {
-        return next(new AuthenticationError('Access denied'));
-      }
-
-      const { id } = req.params;
-      const db = await getKpiDb();
-
-      await db.request().input('id', id).query(`
-      DELETE FROM user_department_access WHERE id = @id
-    `);
-
-      res.json({
-        success: true,
-        message: 'Access revoked successfully',
-      });
-    } catch (error) {
-      logger.error('Revoke department access error', error);
-      next(error);
-    }
-  }
-);
-
-/**
- * @route POST /api/auth/request-otp
- * @desc Request OTP for password change
- * @access Private - Authenticated users
- */
-router.post(
-  '/request-otp',
-  requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const userId = req.user!.userId;
-      const db = await getKpiDb();
-
-      // Get user email
-      const userResult = await db.request().input('userId', userId).query(`
-        SELECT email, full_name FROM users WHERE id = @userId AND is_active = 1
-      `);
-
-      if (userResult.recordset.length === 0) {
-        return next(new AuthenticationError('User not found'));
-      }
-
-      const user = userResult.recordset[0];
-
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const otpHash = await bcrypt.hash(otp, 10);
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-      // Delete any existing OTPs for this user
-      await db.request().input('userId', userId).query(`
-        DELETE FROM password_reset_otps WHERE user_id = @userId
-      `);
-
-      // Store OTP
-      await db
-        .request()
-        .input('userId', userId)
-        .input('otpHash', otpHash)
-        .input('expiresAt', expiresAt).query(`
-        INSERT INTO password_reset_otps (user_id, otp_hash, expires_at)
-        VALUES (@userId, @otpHash, @expiresAt)
-      `);
-
-      // Send email (log for now, implement actual email sending)
-      logger.info('OTP generated', { userId, email: user.email, otp });
-
-      // TODO: Send actual email
-      // For development, we log the OTP
-      console.log(`\n========================================`);
-      console.log(`OTP for ${user.email}: ${otp}`);
-      console.log(`========================================\n`);
-
-      res.json({
-        success: true,
-        message: 'OTP sent to your email',
-        // For development only - remove in production
-        dev_otp: process.env.NODE_ENV === 'development' ? otp : undefined,
-      });
-    } catch (error) {
-      logger.error('Request OTP error', error);
-      next(error);
-    }
-  }
-);
-
-/**
- * @route POST /api/auth/verify-otp
- * @desc Verify OTP for password change
- * @access Private - Authenticated users
- */
-router.post('/verify-otp', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { otp } = req.body;
-    const userId = req.user!.userId;
-
-    if (!otp || otp.length !== 6) {
-      return next(new AuthenticationError('Invalid OTP format'));
-    }
-
-    const db = await getKpiDb();
-
-    // Get stored OTP
-    const otpResult = await db.request().input('userId', userId).query(`
-        SELECT id, otp_hash, expires_at, used
-        FROM password_reset_otps
-        WHERE user_id = @userId AND used = 0
-        ORDER BY created_at DESC
-      `);
-
-    if (otpResult.recordset.length === 0) {
-      return next(new AuthenticationError('No valid OTP found. Please request a new one.'));
-    }
-
-    const storedOtp = otpResult.recordset[0];
-
-    // Check expiration
-    if (new Date() > new Date(storedOtp.expires_at)) {
-      return next(new AuthenticationError('OTP has expired. Please request a new one.'));
-    }
-
-    // Verify OTP
-    const isValid = await bcrypt.compare(otp, storedOtp.otp_hash);
-    if (!isValid) {
-      return next(new AuthenticationError('Invalid OTP'));
-    }
-
-    // Mark OTP as used
-    await db.request().input('id', storedOtp.id).query(`
-        UPDATE password_reset_otps SET used = 1 WHERE id = @id
-      `);
-
-    res.json({
-      success: true,
-      message: 'OTP verified successfully',
-    });
-  } catch (error) {
-    logger.error('Verify OTP error', error);
-    next(error);
-  }
-});
-
-/**
- * @route POST /api/auth/reset-password
- * @desc Reset password after OTP verification
- * @access Private - Authenticated users
- */
-router.post(
-  '/reset-password',
-  requireAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { new_password, otp } = req.body;
-      const userId = req.user!.userId;
-
-      if (!new_password || new_password.length < 6) {
-        return next(new AuthenticationError('Password must be at least 6 characters'));
-      }
-
-      const db = await getKpiDb();
-
-      // Verify OTP was used (already verified)
-      const otpResult = await db.request().input('userId', userId).query(`
-        SELECT id FROM password_reset_otps
-        WHERE user_id = @userId AND used = 1
-        ORDER BY created_at DESC
-      `);
-
-      if (otpResult.recordset.length === 0) {
-        return next(new AuthenticationError('Please verify OTP first'));
-      }
-
-      // Hash new password
-      const passwordHash = await bcrypt.hash(new_password, 10);
-
-      // Update password
-      await db.request().input('userId', userId).input('passwordHash', passwordHash).query(`
-        UPDATE users SET password_hash = @passwordHash, updated_at = GETDATE()
-        WHERE id = @userId
-      `);
-
-      // Delete used OTPs
-      await db.request().input('userId', userId).query(`
-        DELETE FROM password_reset_otps WHERE user_id = @userId
-      `);
-
-      logger.info('Password reset successful', { userId });
-
-      res.json({
-        success: true,
-        message: 'Password changed successfully',
-      });
-    } catch (error) {
-      logger.error('Reset password error', error);
-      next(error);
-    }
-  }
-);
-
-/**
  * @route POST /api/auth/create-super-admin
  * @desc Temporary endpoint to create Super@Admin user
  * @access Public (temporary for setup)
  */
 router.post('/create-super-admin', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const { password } = req.body;
+
+    // Validate password
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is required and must be at least 8 characters',
+      });
+    }
+
     const db = await getKpiDb();
 
     // Check if user already exists
@@ -671,10 +336,10 @@ router.post('/create-super-admin', async (req: Request, res: Response, next: Nex
       .input('username', 'Super@Admin')
       .query(`SELECT id FROM users WHERE username = @username`);
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     if (checkResult.recordset.length > 0) {
       // Update existing user
-      const hashedPassword = await bcrypt.hash('i@NN636195', 10);
-
       await db
         .request()
         .input('username', 'Super@Admin')
@@ -695,8 +360,6 @@ router.post('/create-super-admin', async (req: Request, res: Response, next: Nex
       res.json({ success: true, message: 'User updated successfully' });
     } else {
       // Create new user
-      const hashedPassword = await bcrypt.hash('i@NN636195', 10);
-
       await db
         .request()
         .input('username', 'Super@Admin')

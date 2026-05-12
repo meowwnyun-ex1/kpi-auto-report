@@ -84,3 +84,24 @@ export interface KPIItem {
   resultValue?: number;
   achievementRate?: number;
 }
+
+// KPI Statistics
+export interface KPIStats {
+  target: number;
+  result: number;
+  count: number;
+  achievement: number;
+  trend?: number;
+}
+
+// Monthly Entry
+export interface MonthlyEntry {
+  id: number;
+  yearlyTargetId: number;
+  month: number;
+  target: number;
+  result: number;
+  comment?: string;
+  imageUrl?: string;
+  imageCaption?: string;
+}

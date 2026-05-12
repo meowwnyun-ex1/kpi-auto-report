@@ -453,7 +453,7 @@ export default function AdminKPICategoriesPage() {
         theme="purple"
         onRefresh={loadDatabaseData}
         loading={loading}>
-        {/* View Mode Selector */}
+        {/* View Mode Selector and Add Button */}
         <div className="flex gap-2 mb-6">
           <Button
             variant={viewMode === 'hierarchy' ? 'default' : 'outline'}
@@ -483,11 +483,7 @@ export default function AdminKPICategoriesPage() {
             <Target className="w-4 h-4" />
             Measurements
           </Button>
-        </div>
-
-        {/* Add Button */}
-        {canEdit && (
-          <div className="mb-4">
+          {canEdit && viewMode !== 'hierarchy' && (
             <Button
               onClick={() =>
                 handleAdd(
@@ -497,7 +493,8 @@ export default function AdminKPICategoriesPage() {
                       ? 'subcategory'
                       : 'measurement'
                 )
-              }>
+              }
+              className="ml-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add{' '}
               {viewMode === 'categories'
@@ -506,8 +503,8 @@ export default function AdminKPICategoriesPage() {
                   ? 'Subcategory'
                   : 'Measurement'}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Content */}
         {viewMode === 'hierarchy'

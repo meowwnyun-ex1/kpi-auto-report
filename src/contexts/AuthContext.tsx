@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '@/shared/utils';
 import { getApiUrl } from '../config/api';
@@ -24,6 +24,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   extendSession: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
 
-  const validateToken = async (token: string, isRefresh = false, retryCount = 0) => {
+  const validateToken = useCallback(async (token: string, isRefresh = false, retryCount = 0) => {
     try {
       const response = await fetch(`${getApiUrl()}/auth/me`, {
         headers: {
@@ -47,139 +48,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.ok) {
         const data = await response.json();
-        // Server returns { success: true, data: user }
         const userData = data.data || data.user;
         if (userData) {
           setUser(userData);
           setIsAuthenticated(true);
-          // Store user data in localStorage for offline access
           storage.setUserData(userData);
         } else {
-          console.warn('Auth validation: No user data in response');
-          // Don't logout immediately, only if it's not a refresh scenario
+          // Only clear auth on non-refresh validation
           if (!isRefresh) {
             storage.clearAuthData();
+            setUser(null);
             setIsAuthenticated(false);
           }
         }
       } else {
-        // Handle different error statuses
+        // For background refresh, don't clear auth on 401 - let user continue with cached data
+        if (isRefresh) {
+          console.warn('Background token validation failed, keeping session:', response.status);
+          return;
+        }
+
+        // For blocking validation, handle 401 by clearing auth
         if (response.status === 401) {
-          console.warn('Auth validation: Token expired or invalid');
-          // Always clear invalid tokens, even during refresh, to prevent repeated 401s
           storage.clearAuthData();
           setUser(null);
           setIsAuthenticated(false);
           setValidationAttempted(false);
-          // Redirect to login if not already there
           const currentPath = window.location.pathname;
           const loginPath = import.meta.env.PROD ? '/kpi-auto-report/login' : '/login';
           if (currentPath !== loginPath) {
             navigateRef.current('/login');
           }
+          return;
         } else if (response.status === 500) {
-          console.error('Auth validation: Server error - this may be a temporary startup issue');
-          // Retry with exponential backoff for transient errors (max 3 retries)
-          if (retryCount < 3) {
-            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-            console.log(`Retrying auth validation in ${delay}ms (attempt ${retryCount + 1}/3)`);
+          if (retryCount < 2) {
+            const delay = 1000 * (retryCount + 1);
             await new Promise((resolve) => setTimeout(resolve, delay));
             return validateToken(token, isRefresh, retryCount + 1);
           }
-          // Don't logout on server errors, especially during refresh
-          if (!isRefresh) {
-            storage.clearAuthData();
-            setIsAuthenticated(false);
-          }
+          storage.clearAuthData();
+          setUser(null);
+          setIsAuthenticated(false);
         } else {
-          console.warn('Auth validation: Unexpected error status:', response.status);
-          // Don't logout on other errors during refresh
-          if (!isRefresh) {
-            storage.clearAuthData();
-            setIsAuthenticated(false);
-          }
+          storage.clearAuthData();
+          setUser(null);
+          setIsAuthenticated(false);
         }
       }
     } catch (error) {
-      console.error('Auth validation: Network or fetch error:', error);
-      // During refresh, don't logout on network errors - allow user to continue
-      if (!isRefresh) {
-        storage.clearAuthData();
-        setIsAuthenticated(false);
-      } else {
-        // On refresh network error, keep user logged in if token exists
-        console.log('Network error during refresh - keeping user logged in');
-        // Try to load user data from localStorage
-        try {
-          const userData = storage.getUserData();
-          if (userData) {
-            setUser(userData);
-            setIsAuthenticated(true);
-          }
-        } catch (e) {
-          console.warn('Failed to parse stored user data');
-          // Keep authenticated state even without user data
-          setIsAuthenticated(true);
-        }
+      // For background refresh, don't clear auth on network errors
+      if (isRefresh) {
+        console.warn('Background token validation network error:', error);
+        return;
       }
+
+      // For blocking validation, clear auth on errors
+      storage.clearAuthData();
+      setUser(null);
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const token = storage.getAuthToken();
 
-    // If no token at all, set unauthenticated state
     if (!token) {
       setUser(null);
       setIsAuthenticated(false);
       setLoading(false);
-      setValidationAttempted(false);
       return;
     }
 
-    // If we've already attempted validation and failed, don't retry automatically
-    if (validationAttempted) {
-      setLoading(false);
-      return;
-    }
-
-    // If token exists, try to load user data and validate in background
+    // Simply restore from localStorage without validation
+    // This prevents logout on refresh when API is temporarily unavailable
     try {
       const userData = storage.getUserData();
       if (userData) {
         setUser(userData);
         setIsAuthenticated(true);
-        setLoading(false);
-
-        // Validate token in background without blocking UI
-        if (!validationAttempted) {
-          setValidationAttempted(true);
-          validateToken(token, true).catch((error) => {
-            // If validation fails, check if it's a network error vs auth error
-            if (error.message.includes('fetch') || error.message.includes('network')) {
-              console.warn('Network error during token validation - keeping user logged in');
-              // Keep user logged in on network errors
-            } else {
-              console.warn('Token validation failed, clearing invalid token:', error);
-              storage.clearAuthData();
-              setUser(null);
-              setIsAuthenticated(false);
-              setValidationAttempted(false);
-            }
-          });
-        }
-      } else {
-        // No stored user data, set basic authenticated state
-        setIsAuthenticated(true);
-        setLoading(false);
       }
     } catch (e) {
-      console.warn('Failed to parse stored user data, setting basic auth state');
-      setIsAuthenticated(true);
-      setLoading(false);
+      // Ignore storage errors
+      storage.clearAuthData();
+      setUser(null);
+      setIsAuthenticated(false);
     }
+
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -187,11 +144,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const onTimeout = () => {
       console.warn('Session timeout reached - checking token validity');
-      // Instead of immediate logout, validate token first
       const token = storage.getAuthToken();
       if (token) {
         validateToken(token, false).catch((error) => {
-          // Only logout if it's actually an auth error, not network error
           if (!error.message.includes('fetch') && !error.message.includes('network')) {
             console.warn('Session truly expired - logging out user');
             storage.clearAuthData();
@@ -200,7 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         });
       } else {
-        // No token, logout
         storage.clearAuthData();
         setUser(null);
         setIsAuthenticated(false);
@@ -265,13 +219,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setValidationAttempted(false); // Reset validation flag on logout
   };
 
-  const extendSession = () => {
+  const extendSession = useCallback(() => {
     // Extend the session by updating the login time
     if (isAuthenticated) {
       storage.extendSession();
       console.log('Session extended for another 16 hours');
     }
-  };
+  }, [isAuthenticated]);
+
+  const refreshUser = useCallback(async () => {
+    const token = storage.getAuthToken();
+    if (!token) {
+      storage.clearAuthData();
+      setUser(null);
+      setIsAuthenticated(false);
+      return;
+    }
+    await validateToken(token, false);
+  }, [validateToken]);
 
   // Auto-extend session on user activity
   useEffect(() => {
@@ -302,7 +267,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isAuthenticated]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, logout, extendSession }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, user, loading, login, logout, extendSession, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

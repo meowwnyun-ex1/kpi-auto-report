@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
 import { storage } from '@/shared/utils';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import {
   Category,
   YearlyTarget,
@@ -30,6 +31,12 @@ export function useMonthlyTargetsData() {
   const [categoryTargetValues, setCategoryTargetValues] = useState<Record<string, number>>({});
   const [categoryTargetCounts, setCategoryTargetCounts] = useState<Record<string, number>>({});
   const [categoryResultCounts, setCategoryResultCounts] = useState<Record<string, number>>({});
+
+  const { lastEvent } = useRealtimeSync({
+    fiscalYear,
+    dept,
+    category: cat || undefined,
+  });
 
   const canEdit = ['manager', 'admin', 'superadmin'].includes(user?.role ?? '');
 
@@ -100,35 +107,23 @@ export function useMonthlyTargetsData() {
         if (hasTarget) {
           counts[categoryKey] = (counts[categoryKey] || 0) + 1;
         }
-      } else {
-        // Fallback: find category by category_id
-        const category = categories.find((cat) => cat.id === target.category_id);
-        if (category) {
-          const hasTarget = allMonthlyTargets.some(
-            (mt) =>
-              mt.yearly_target_id === target.id &&
-              mt.target !== null &&
-              mt.target !== undefined &&
-              mt.target !== 0
-          );
-          if (hasTarget) {
-            counts[category.key] = (counts[category.key] || 0) + 1;
-          }
-        }
       }
     });
     setCategoryResultCounts(counts);
   }, [allYearlyTargets, allMonthlyTargets, categories]);
 
   const loadAllTargets = useCallback(async () => {
+    if (!dept || !fiscalYear) return;
     try {
       // Load all yearly targets (without category filter)
       const yearlyRes = await fetch(`/api/kpi-forms/yearly/${dept}/${fiscalYear}`, {
         headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
       });
       const yearlyData = await yearlyRes.json();
-      if (yearlyData.success) {
+      if (yearlyData.success && Array.isArray(yearlyData.data)) {
         setAllYearlyTargets(yearlyData.data);
+      } else {
+        setAllYearlyTargets([]);
       }
 
       // Load all monthly targets (without category filter)
@@ -136,11 +131,15 @@ export function useMonthlyTargetsData() {
         headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
       });
       const monthlyData = await monthlyRes.json();
-      if (monthlyData.success) {
+      if (monthlyData.success && Array.isArray(monthlyData.data)) {
         setAllMonthlyTargets(monthlyData.data);
+      } else {
+        setAllMonthlyTargets([]);
       }
-    } catch {
-      /* silent */
+    } catch (err) {
+      console.error('Failed to load all targets:', err);
+      setAllYearlyTargets([]);
+      setAllMonthlyTargets([]);
     }
   }, [dept, fiscalYear]);
 
@@ -180,12 +179,18 @@ export function useMonthlyTargetsData() {
     try {
       const r = await fetch('/api/kpi-forms/categories');
       const d = await r.json();
-      if (d.success) setCategories(d.data);
+      if (d.success && Array.isArray(d.data)) {
+        setCategories(d.data);
+      } else {
+        setCategories([]);
+      }
     } catch (error) {
-      // Retry with exponential backoff for transient errors (max 3 retries)
+      console.error('Failed to load categories:', error);
       if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        const delay = Math.pow(2, retryCount) * 1000;
         setTimeout(() => loadCategories(retryCount + 1), delay);
+      } else {
+        setCategories([]);
       }
     }
   };
@@ -194,23 +199,26 @@ export function useMonthlyTargetsData() {
     try {
       const r = await fetch('/api/departments');
       const d = await r.json();
-      if (d.success) {
+      if (d.success && Array.isArray(d.data)) {
         const filteredDepts =
           user?.role === 'manager'
             ? d.data.filter((dp: any) => dp.dept_id === user?.department_id)
             : d.data;
         setDepts(filteredDepts);
+      } else {
+        setDepts([]);
       }
     } catch (error) {
-      // Retry with exponential backoff for transient errors (max 3 retries)
+      console.error('Failed to load departments:', error);
       if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        const delay = Math.pow(2, retryCount) * 1000;
         setTimeout(() => loadDepts(retryCount + 1), delay);
       }
     }
   };
 
   const loadStats = useCallback(async () => {
+    if (!dept || !fiscalYear) return;
     setStatsLoading(true);
     try {
       const r = await fetch(`/api/kpi-forms/stats/${dept}/${fiscalYear}`, {
@@ -218,39 +226,49 @@ export function useMonthlyTargetsData() {
       });
       const d = await r.json();
       if (d.success) setStats(d.data ?? {});
-    } catch {
-      /* silent */
+    } catch (err) {
+      console.error('Failed to load stats:', err);
     } finally {
       setStatsLoading(false);
     }
   }, [dept, fiscalYear]);
 
   const loadYearlyTargets = async () => {
+    if (!dept || !fiscalYear || !cat) return;
     setLoading(true);
     try {
       const r = await fetch(`/api/kpi-forms/yearly/${dept}/${fiscalYear}?category=${cat}`, {
         headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
       });
       const d = await r.json();
-      if (d.success) {
+      if (d.success && Array.isArray(d.data)) {
         setYearlyTargets(d.data);
+      } else {
+        setYearlyTargets([]);
       }
-    } catch {
-      /* silent */
+    } catch (err) {
+      console.error('Failed to load yearly targets:', err);
+      setYearlyTargets([]);
     } finally {
       setLoading(false);
     }
   };
 
   const loadMonthlyTargets = async () => {
+    if (!dept || !fiscalYear || !cat) return;
     try {
       const r = await fetch(`/api/kpi-forms/monthly/${dept}/${fiscalYear}?category=${cat}`, {
         headers: { Authorization: `Bearer ${storage.getAuthToken()}` },
       });
       const d = await r.json();
-      if (d.success) setMonthlyTargets(d.data);
-    } catch {
-      /* silent */
+      if (d.success && Array.isArray(d.data)) {
+        setMonthlyTargets(d.data);
+      } else {
+        setMonthlyTargets([]);
+      }
+    } catch (err) {
+      console.error('Failed to load monthly targets:', err);
+      setMonthlyTargets([]);
     }
   };
 
@@ -449,6 +467,13 @@ export function useMonthlyTargetsData() {
       loadMonthlyTargets().then(() => loadYearlyTargets());
     }
   }, [loadStats, loadAllTargets, cat]);
+
+  useEffect(() => {
+    if (!lastEvent) return;
+    if (lastEvent.type === 'api_change') {
+      refreshData();
+    }
+  }, [lastEvent, refreshData]);
 
   return {
     user,

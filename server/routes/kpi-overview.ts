@@ -193,11 +193,16 @@ router.get('/timeline/:fiscal_year/:month', async (req, res) => {
       .input('month', sql.TinyInt, parseInt(month));
 
     if (company && company !== 'all') {
-      const ids = Array.from(deptMap.values())
+      const deptIds = Array.from(deptMap.values())
         .filter((d: any) => d.company === company)
-        .map((d: any) => `'${d.dept_id}'`)
-        .join(',');
-      if (ids) query += ` AND me.department_id IN (${ids})`;
+        .map((d: any) => d.dept_id);
+      if (deptIds.length > 0) {
+        query += ` AND me.department_id IN (SELECT value FROM STRING_SPLIT(@deptIds, ','))`;
+        request.input('deptIds', sql.NVarChar, deptIds.join(','));
+      } else {
+        // No departments match the company filter, return empty result
+        return res.json({ success: true, data: [] });
+      }
     }
     query += ` ORDER BY me.department_id, kc.sort_order, yt.id`;
 
@@ -293,11 +298,16 @@ router.get('/timeline', async (req, res) => {
     `;
 
     if (company && company !== 'all') {
-      const ids = Array.from(deptMap.values())
+      const deptIds = Array.from(deptMap.values())
         .filter((d: any) => d.company === company)
-        .map((d: any) => `'${d.dept_id}'`)
-        .join(',');
-      if (ids) query += ` AND department_id IN (${ids})`;
+        .map((d: any) => d.dept_id);
+      if (deptIds.length > 0) {
+        query += ` AND department_id IN (SELECT value FROM STRING_SPLIT(@deptIds, ','))`;
+        request.input('deptIds', sql.NVarChar, deptIds.join(','));
+      } else {
+        // No departments match the company filter, return empty result
+        return res.json({ success: true, data: [] });
+      }
     }
 
     query += ` ORDER BY timestamp DESC OFFSET 0 ROWS FETCH NEXT @limit ROWS ONLY`;

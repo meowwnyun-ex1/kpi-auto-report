@@ -1,8 +1,8 @@
-# Manual Start Script for KPI Auto Report
+# Manual Start Script for DENSO Company KPI
 # This script replaces the auto-start functionality to prevent Windows Defender false positives
 # Usage: .\manual-start.ps1
 
-Write-Host "Manual Start Script for KPI Auto Report" -ForegroundColor Green
+Write-Host "Manual Start Script for DENSO Company KPI" -ForegroundColor Green
 Write-Host "This script manually starts the application without auto-restart features" -ForegroundColor Yellow
 Write-Host ""
 
@@ -23,7 +23,7 @@ try {
 }
 
 # Start the application
-Write-Host "Starting KPI Auto Report..." -ForegroundColor Cyan
+Write-Host "Starting DENSO Company KPI..." -ForegroundColor Cyan
 try {
     & pnpm pm2:start
     if ($LASTEXITCODE -eq 0) {

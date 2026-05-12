@@ -24,7 +24,9 @@ export function useKpiData() {
         const data = await response.json();
         return data;
       } catch (error) {
-        console.error('Failed to fetch stats:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to fetch stats:', error);
+        }
         toast({
           title: 'Error',
           description: 'Failed to load statistics',
@@ -55,7 +57,9 @@ export function useKpiData() {
         const data = await response.json();
         return data;
       } catch (error) {
-        console.error('Failed to fetch yearly targets:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to fetch yearly targets:', error);
+        }
         toast({
           title: 'Error',
           description: 'Failed to load yearly targets',
@@ -82,7 +86,9 @@ export function useKpiData() {
         const data = await response.json();
         return data;
       } catch (error) {
-        console.error('Failed to fetch monthly targets:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to fetch monthly targets:', error);
+        }
         toast({
           title: 'Error',
           description: 'Failed to load monthly targets',
@@ -118,7 +124,9 @@ export function useKpiData() {
         });
         return data;
       } catch (error) {
-        console.error('Failed to save yearly target:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to save yearly target:', error);
+        }
         toast({
           title: 'Error',
           description: 'Failed to save target',
@@ -154,7 +162,9 @@ export function useKpiData() {
         });
         return data;
       } catch (error) {
-        console.error('Failed to save monthly target:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to save monthly target:', error);
+        }
         toast({
           title: 'Error',
           description: 'Failed to save monthly target',
@@ -190,7 +200,9 @@ export function useKpiData() {
         });
         return data;
       } catch (error) {
-        console.error('Failed to save monthly result:', error);
+        if (import.meta.env.DEV) {
+          console.error('Failed to save monthly result:', error);
+        }
         toast({
           title: 'Error',
           description: 'Failed to save monthly result',

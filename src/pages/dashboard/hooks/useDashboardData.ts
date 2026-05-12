@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFiscalYearSelector } from '@/contexts/FiscalYearContext';
-import { storage } from '@/shared/utils';
+import { ApiService } from '@/services/api-service';
 import { KPI_CATEGORIES, MONTHS, type SortField, type SortDirection } from '../constants';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 
 export function useDashboardData(initialCategory?: string) {
   const { user } = useAuth();
   const { fiscalYear, setFiscalYear, availableYears } = useFiscalYearSelector();
+  const { lastEvent } = useRealtimeSync({ fiscalYear });
 
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const m = new Date().getMonth() + 1;
@@ -32,15 +34,13 @@ export function useDashboardData(initialCategory?: string) {
   useEffect(() => {
     const load = async () => {
       try {
-        const r = await fetch('/api/departments');
-        const d = await r.json();
+        const d = await ApiService.get<any>('/departments');
         if (d.success) setDepartments(d.data);
       } catch {
         /* silent */
       }
       try {
-        const r = await fetch('/api/kpi-forms/categories');
-        const d = await r.json();
+        const d = await ApiService.get<any>('/kpi-forms/categories');
         setCategories(d.data || []);
       } catch {
         /* silent */
@@ -54,21 +54,18 @@ export function useDashboardData(initialCategory?: string) {
     const loadData = async () => {
       setLoading(true);
       try {
-        const overviewRes = await fetch(
-          `/api/kpi-forms/overview/${fiscalYear}/${selectedMonth}?category=${selectedCategory === 'all' ? '' : selectedCategory}`,
-          { headers: { Authorization: `Bearer ${storage.getAuthToken()}` } }
+        const overviewData = await ApiService.get<any>(
+          `/kpi-forms/overview/${fiscalYear}/${selectedMonth}`,
+          { category: selectedCategory === 'all' ? '' : selectedCategory }
         );
-        const overviewData = await overviewRes.json();
         if (overviewData.success) {
           setKpiStatus(overviewData.data?.status || []);
           setKpiDetails(overviewData.data?.details || []);
         }
 
-        const yearlyRes = await fetch(
-          `/api/kpi-forms/yearly/${selectedDept === 'all' ? 'all' : selectedDept}/${fiscalYear}`,
-          { headers: { Authorization: `Bearer ${storage.getAuthToken()}` } }
+        const yearlyData = await ApiService.get<any>(
+          `/kpi-forms/yearly/${selectedDept === 'all' ? 'all' : selectedDept}/${fiscalYear}`
         );
-        const yearlyData = await yearlyRes.json();
         if (yearlyData.success) setKpiData(yearlyData.data || []);
       } catch {
         /* silent */
@@ -90,7 +87,7 @@ export function useDashboardData(initialCategory?: string) {
     const resultCount = kpiDetails.filter(
       (d: any) => d.result !== null && d.result !== undefined
     ).length;
-    const passedItems = kpiDetails.filter((d: any) => d.ev === 'O').length;
+    const passedItems = kpiDetails.filter((d: any) => d.status === 'achieved').length;
     const overallRate = targetCount > 0 ? (resultCount / targetCount) * 100 : 0;
     const passRate = resultCount > 0 ? (passedItems / resultCount) * 100 : 0;
     const completeDepts = kpiStatus.filter((s: any) => s.status === 'complete').length;
@@ -168,8 +165,8 @@ export function useDashboardData(initialCategory?: string) {
           bVal = b.target > 0 ? (b.result ?? 0) / b.target : 0;
           break;
         case 'status':
-          aVal = a.result != null ? (a.ev === 'O' ? 1 : 0) : -1;
-          bVal = b.result != null ? (b.ev === 'O' ? 1 : 0) : -1;
+          aVal = a.result != null ? (a.status === 'achieved' ? 1 : 0) : -1;
+          bVal = b.result != null ? (b.status === 'achieved' ? 1 : 0) : -1;
           break;
         default:
           return 0;
@@ -196,7 +193,7 @@ export function useDashboardData(initialCategory?: string) {
       catMap.set(cat, {
         target: existing.target + (d.target ?? 0),
         result: existing.result + (d.result ?? 0),
-        passed: existing.passed + (d.ev === 'O' ? 1 : 0),
+        passed: existing.passed + (d.status === 'achieved' ? 1 : 0),
       });
     });
     return Array.from(catMap.entries())
@@ -257,11 +254,9 @@ export function useDashboardData(initialCategory?: string) {
 
   const refreshData = () => {
     setLoading(true);
-    fetch(
-      `/api/kpi-forms/overview/${fiscalYear}/${selectedMonth}?category=${selectedCategory === 'all' ? '' : selectedCategory}`,
-      { headers: { Authorization: `Bearer ${storage.getAuthToken()}` } }
-    )
-      .then((r) => r.json())
+    ApiService.get<any>(`/kpi-forms/overview/${fiscalYear}/${selectedMonth}`, {
+      category: selectedCategory === 'all' ? '' : selectedCategory,
+    })
       .then((d) => {
         if (d.success) {
           setKpiStatus(d.data?.status || []);
@@ -270,6 +265,14 @@ export function useDashboardData(initialCategory?: string) {
       })
       .finally(() => setLoading(false));
   };
+
+  // Realtime: refresh on any write event
+  useEffect(() => {
+    if (!lastEvent) return;
+    if (lastEvent.type === 'api_change') {
+      refreshData();
+    }
+  }, [lastEvent]);
 
   return {
     user,

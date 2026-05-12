@@ -1,7 +1,7 @@
-# Start KPI : Auto Report Development Server (PowerShell Script)
+# Start DENSO Company KPI Development Server (PowerShell Script)
 # Usage: .\run.ps1
 
-Write-Host "Starting KPI : Auto Report Development Server..." -ForegroundColor Green
+Write-Host "Starting DENSO Company KPI Development Server..." -ForegroundColor Green
 Write-Host ""
 
 # Change to project directory
@@ -152,7 +152,7 @@ Write-Host ""
 
 # Start the application
 Write-Host ""
-Write-Host "Starting KPI : Auto Report..." -ForegroundColor Cyan
+Write-Host "Starting DENSO Company KPI..." -ForegroundColor Cyan
 if ($envFile -eq ".env.development") {
     Write-Host "Environment: Development" -ForegroundColor Gray
     Write-Host "Frontend: http://localhost:5173" -ForegroundColor White

@@ -75,7 +75,7 @@ export default function ApprovalRoutesPage() {
       <ShellLayout variant="admin">
         <StandardPageLayout
           title="Approval Route Management"
-          icon={<Settings className="w-6 h-6" />}>
+          icon={Settings}>
           <div className="flex flex-col items-center justify-center h-64">
             <Shield className="w-16 h-16 text-gray-400 mb-4" />
             <h2 className="text-xl font-semibold text-gray-700 mb-2">Access Denied</h2>
@@ -234,7 +234,7 @@ export default function ApprovalRoutesPage() {
       <ShellLayout variant="admin">
         <StandardPageLayout
           title="Approval Route Management"
-          icon={<Settings className="w-6 h-6" />}>
+          icon={Settings}>
           <div className="flex items-center justify-center h-64">
             <div className="text-gray-500">Loading...</div>
           </div>
@@ -247,7 +247,7 @@ export default function ApprovalRoutesPage() {
     <ShellLayout variant="admin">
       <StandardPageLayout
         title="Approval Route Management"
-        icon={<Settings className="w-6 h-6" />}
+        icon={Settings}
         description="Configure HoS and HoD approvers for each department"
         actions={
           <Dialog

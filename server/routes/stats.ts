@@ -35,13 +35,13 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const availableYears = yearsResult.recordset.map((r: any) => r.fiscal_year);
 
     // Stats for the specified fiscal year
-    const yearStats = await db.request().query(`
+    const yearStats = await db.request().input('fiscalYear', sql.Int, fiscalYear).query(`
       SELECT 
-        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = ${fiscalYear}) as totalTargets,
-        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = ${fiscalYear} AND fy_target IS NOT NULL) as targetsSet,
-        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = ${fiscalYear}) as monthlyEntries,
-        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = ${fiscalYear} AND result IS NOT NULL) as resultsEntered,
-        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = ${fiscalYear} AND result IS NOT NULL AND result >= target) as achievedTargets
+        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = @fiscalYear) as totalTargets,
+        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = @fiscalYear AND fy_target IS NOT NULL) as targetsSet,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = @fiscalYear) as monthlyEntries,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = @fiscalYear AND result IS NOT NULL) as resultsEntered,
+        (SELECT COUNT(*) FROM kpi_monthly_targets WHERE fiscal_year = @fiscalYear AND result IS NOT NULL AND result >= target) as achievedTargets
     `);
 
     const stats = yearStats.recordset[0];
@@ -61,6 +61,65 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     });
   } catch (error: any) {
     logger.error('Error fetching KPI stats', error);
+    next(error);
+  }
+});
+
+/**
+ * @route GET /api/stats/fy25-summary/:year
+ * @desc Get FY25 summary data for specified fiscal year
+ * @access Public
+ */
+router.get('/fy25-summary/:year', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const db = await getKpiDb();
+    const fiscalYear = parseInt(
+      Array.isArray(req.params.year) ? req.params.year[0] : req.params.year
+    );
+
+    // Get FY25 summary data
+    const summaryQuery = `
+      SELECT 
+        c.key as category_key,
+        c.name as category_name,
+        COUNT(DISTINCT yt.id) as total_targets,
+        COUNT(DISTINCT CASE WHEN mt.result IS NOT NULL THEN mt.id END) as total_results,
+        COUNT(DISTINCT CASE WHEN mt.result >= mt.target THEN mt.id END) as achieved_count,
+        COUNT(DISTINCT CASE WHEN mt.result IS NOT NULL AND mt.result < mt.target THEN mt.id END) as not_achieved_count,
+        COUNT(DISTINCT CASE WHEN mt.result IS NULL THEN mt.id END) as pending_count,
+        ROUND(
+          COUNT(DISTINCT CASE WHEN mt.result IS NOT NULL THEN mt.id END) * 100.0 / 
+          NULLIF(COUNT(DISTINCT yt.id), 0)
+        , 2
+        ) as achievement_rate
+      FROM kpi_categories c
+      LEFT JOIN kpi_yearly_targets yt ON c.id = yt.category_id AND yt.fiscal_year = @fiscalYear
+      LEFT JOIN kpi_monthly_targets mt ON yt.id = mt.yearly_target_id
+      WHERE yt.fiscal_year = @fiscalYear
+      GROUP BY c.key, c.name
+      ORDER BY c.sort_order, c.name
+    `;
+
+    const result = await db.request().query(summaryQuery);
+
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({
+      success: true,
+      data: result.recordset.reduce((acc, row) => {
+        acc[row.category_key] = {
+          total_targets: row.total_targets || 0,
+          total_results: row.total_results || 0,
+          achieved_count: row.achieved_count || 0,
+          not_achieved_count: row.not_achieved_count || 0,
+          pending_count: row.pending_count || 0,
+          achievement_rate: row.achievement_rate || 0,
+          monthly_data: {}, // Could be populated with monthly breakdown if needed
+        };
+        return acc;
+      }, {}),
+    });
+  } catch (error: any) {
+    logger.error('Error fetching FY25 summary:', error);
     next(error);
   }
 });
@@ -140,11 +199,11 @@ router.get('/overview', async (_req: Request, res: Response, next: NextFunction)
     // Get current year
     const currentYear = new Date().getFullYear();
 
-    const result = await db.request().query(`
+    const result = await db.request().input('currentYear', sql.Int, currentYear).query(`
       SELECT 
-        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = ${currentYear}) as currentYearTargets,
+        (SELECT COUNT(*) FROM kpi_yearly_targets WHERE fiscal_year = @currentYear) as currentYearTargets,
         (SELECT COUNT(*) FROM kpi_monthly_targets WHERE month = MONTH(GETDATE())) as currentMonthEntries,
-        (SELECT COUNT(*) FROM kpi_action_plans WHERE fiscal_year = ${currentYear}) as currentYearActionPlans,
+        (SELECT COUNT(*) FROM kpi_action_plans WHERE fiscal_year = @currentYear) as currentYearActionPlans,
         (SELECT COUNT(DISTINCT main) FROM kpi_yearly_targets) as departmentsWithTargets
     `);
 
@@ -296,5 +355,93 @@ router.get(
     }
   }
 );
+
+/**
+ * @route GET /api/stats/target-completion
+ * @desc Get target completion statistics for badge (completed/total targets by FY, pending approvals, activity alerts)
+ * @access Public
+ */
+router.get('/target-completion', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const db = await getKpiDb();
+
+    // Get current fiscal year (Thai fiscal year starts April)
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const fiscalYear = currentMonth >= 4 ? now.getFullYear() : now.getFullYear() - 1;
+
+    // Allow override via query param
+    const queryYear = req.query.year ? parseInt(req.query.year as string) : fiscalYear;
+
+    // Count total active yearly targets (excluding archived)
+    const totalTargetsResult = await db.request().input('fiscalYear', sql.Int, queryYear).query(`
+      SELECT COUNT(*) as total
+      FROM kpi_yearly_targets
+      WHERE fiscal_year = @fiscalYear
+        AND is_active = 1
+    `);
+
+    // Count targets with super complete results (approved by HOS, HOD, and Admin)
+    const completedTargetsResult = await db.request().input('fiscalYear', sql.Int, queryYear)
+      .query(`
+      SELECT COUNT(DISTINCT yt.id) as completed
+      FROM kpi_yearly_targets yt
+      INNER JOIN kpi_monthly_targets mt ON yt.id = mt.yearly_target_id
+      INNER JOIN kpi_monthly_results mr ON mt.id = mr.monthly_target_id
+      WHERE yt.fiscal_year = @fiscalYear
+        AND yt.is_active = 1
+        AND mr.approval_status = 'approved'
+        AND mr.hos_approved = 1
+        AND mr.hod_approved = 1
+        AND mr.admin_approved = 1
+        AND mr.is_incomplete = 0
+    `);
+
+    // Count pending approvals (pending, under_review status)
+    const pendingApprovalsResult = await db.request().input('fiscalYear', sql.Int, queryYear)
+      .query(`
+      SELECT COUNT(*) as pending
+      FROM (
+        SELECT id, 'yearly_target' as type FROM kpi_yearly_targets WHERE fiscal_year = @fiscalYear AND approval_status IN ('pending', 'under_review') AND is_active = 1
+        UNION ALL
+        SELECT id, 'monthly_target' as type FROM kpi_monthly_targets WHERE fiscal_year = @fiscalYear AND approval_status IN ('pending', 'under_review') AND is_active = 1
+        UNION ALL
+        SELECT id, 'monthly_result' as type FROM kpi_monthly_results mr
+        INNER JOIN kpi_monthly_targets mt ON mr.monthly_target_id = mt.id
+        INNER JOIN kpi_yearly_targets yt ON mt.yearly_target_id = yt.id
+        WHERE yt.fiscal_year = @fiscalYear AND mr.approval_status IN ('pending', 'under_review') AND mr.is_active = 1
+      ) as pending_items
+    `);
+
+    // Count activity alerts (unread notifications)
+    const activityAlertsResult = await db.request().input('fiscalYear', sql.Int, queryYear).query(`
+      SELECT COUNT(*) as alerts
+      FROM kpi_notifications
+      WHERE is_read = 0
+        AND is_active = 1
+        AND created_at >= DATEFROMPARTS(@fiscalYear, 4, 1)
+    `);
+
+    const totalTargets = totalTargetsResult.recordset[0]?.total || 0;
+    const completedTargets = completedTargetsResult.recordset[0]?.completed || 0;
+    const pendingApprovals = pendingApprovalsResult.recordset[0]?.pending || 0;
+    const activityAlerts = activityAlertsResult.recordset[0]?.alerts || 0;
+
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({
+      success: true,
+      data: {
+        fiscalYear: queryYear,
+        completedTargets,
+        totalTargets,
+        pendingApprovals,
+        activityAlerts,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error fetching target completion stats', error);
+    next(error);
+  }
+});
 
 export default router;
